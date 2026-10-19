@@ -7,7 +7,10 @@ import androidx.lifecycle.viewModelScope
 import io.cttech.lighthouse.LighthouseApp
 import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
+import io.cttech.lighthouse.launch.GameLauncher
+import io.cttech.lighthouse.launch.LaunchResult
 import io.cttech.lighthouse.library.PlatformCatalog
+import kotlinx.coroutines.launch
 import io.cttech.lighthouse.library.ScanInfo
 import io.cttech.lighthouse.model.HomeItem
 import io.cttech.lighthouse.model.HomeRow
@@ -68,6 +71,40 @@ private data class UiPrefs(
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LighthouseApp).repository
+    private val launcher = GameLauncher(app)
+
+    private val _launchIssue = MutableStateFlow<LaunchResult?>(null)
+    /** A launch that didn't start (missing emulator, permission, core…), shown as a dialog with a fix. */
+    val launchIssue: StateFlow<LaunchResult?> = _launchIssue
+
+    fun launch(game: Game) {
+        viewModelScope.launch {
+            when (val r = launcher.launch(game)) {
+                LaunchResult.Started -> repo.recordLaunch(game.key)
+                else -> { _launchIssue.value = r; pendingRetry = game }
+            }
+        }
+    }
+
+    private var pendingRetry: Game? = null
+
+    fun dismissLaunchIssue() { _launchIssue.value = null; pendingRetry = null }
+
+    /** Root extra from the dialog: grant the emulator storage access, then retry the same game. */
+    fun grantStorageAndRetry(pkg: String) {
+        viewModelScope.launch {
+            val game = pendingRetry
+            if (launcher.grantStorageWithRoot(pkg) && game != null) { _launchIssue.value = null; launch(game) }
+            else _launchIssue.value = LaunchResult.Failed("Couldn't grant storage access with root. Use the app's settings instead.")
+        }
+    }
+
+    fun openAppInfo(pkg: String) = launcher.openAppInfo(pkg)
+
+    fun openApp(pkg: String) {
+        getApplication<Application>().packageManager.getLaunchIntentForPackage(pkg)
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { getApplication<Application>().startActivity(it) }
+    }
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
     val state: StateFlow<HomeState> = combine(repo.games, repo.favourites, repo.plays, repo.scanInfo, prefs) { games, favKeys, plays, scan, p ->

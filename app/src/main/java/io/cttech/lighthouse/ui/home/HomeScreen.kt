@@ -97,7 +97,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val panelIcons = remember { QuickPanel.entries.associateWith { FocusRequester() } }
     val (btEpoch, bumpBt) = rememberBtEpoch()
     val requestBt = rememberBluetoothPermissionRequest(onResult = bumpBt)
-    val overlay = state.showAccessPrompt || openPanel != null
+    val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
+    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null
 
     // As the home app, Back must never leave Lighthouse: it only closes a panel.
     BackHandler(enabled = true) { openPanel = null }
@@ -153,7 +154,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     accent = shownTab.accent(),
                     favourites = state.favourites,
                     onFocused = { i -> vm.onFocused(shownTab, i) },
-                    onLaunch = { g -> if (launch(context, g)) vm.recordLaunch(g) },
+                    onLaunch = vm::launch,
                     onToggleFavourite = vm::toggleFavourite,
                 )
                 // Re-key on size so removing the focused favourite rebuilds the shelf and restores focus.
@@ -189,6 +190,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 runCatching { panelIcons.getValue(panel).requestFocus() }
             }
         }
+        launchIssue?.let { issue ->
+            LaunchIssueDialog(
+                issue = issue,
+                onDismiss = { vm.dismissLaunchIssue(); refocusToken++ },
+                onGrantWithRoot = vm::grantStorageAndRetry,
+                onOpenAppInfo = vm::openAppInfo,
+                onOpenApp = vm::openApp,
+            )
+        }
         if (state.showAccessPrompt) {
             AccessPrompt(
                 onGrant = { vm.storageAccessIntent()?.let { runCatching { context.startActivity(it) } } },
@@ -199,18 +209,6 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     }
 }
 
-/** Returns true if something was actually started (so it counts towards Continue playing). */
-private fun launch(context: android.content.Context, game: Game): Boolean {
-    val pkg = game.packageName
-    if (pkg != null) {
-        val intent = context.packageManager.getLaunchIntentForPackage(pkg)
-        if (intent != null) { context.startActivity(intent); return true }
-        Toast.makeText(context, "Can't open ${game.title}", Toast.LENGTH_SHORT).show()
-    } else {
-        Toast.makeText(context, "Launching games arrives in milestone 3", Toast.LENGTH_SHORT).show()
-    }
-    return false
-}
 
 internal class CardActions(
     val accent: Color,

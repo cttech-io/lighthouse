@@ -1,0 +1,81 @@
+{
+  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {package} the installed package, {ime} default input method. rom: content = FileProvider URI as intent data; extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
+  "profiles": [
+    {
+      "id": "eden",
+      "label": "Eden",
+      "platforms": ["switch"],
+      "packages": ["dev.eden.eden_emulator"],
+      "activity": "org.yuzu.yuzu_emu.activities.EmulationActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "armsx2",
+      "label": "ARMSX2",
+      "platforms": ["ps2"],
+      "packages": ["com.armsx2"],
+      "activity": "com.armsx2.BootSplashActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "retroarch-mgba",
+      "label": "RetroArch · mGBA",
+      "platforms": ["gba", "gbc"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/mgba_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/mgba_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-mupen64plus",
+      "label": "RetroArch · Mupen64Plus-Next",
+      "platforms": ["n64"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/mupen64plus_next_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/mupen64plus_next_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "droiddeck",
+      "label": "DroidDeck",
+      "platforms": ["droiddeck"],
+      "packages": ["com.droiddeck.launcher"],
+      "action": "com.droiddeck.launcher.LAUNCH_GAME",
+      "rom": "steamAppId"
+    },
+    {
+      "id": "gamenative",
+      "label": "GameNative",
+      "platforms": ["gamenative"],
+      "packages": ["app.gamenative"],
+      "action": "app.gamenative.LAUNCH_GAME",
+      "rom": "steamAppId"
+    }
+  ]
+}

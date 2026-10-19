@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lighthouse hands ROMs to emulators as content:// URIs with a temporary read grant.
+     ROMs live on any storage volume (/storage/emulated/0, /storage/XXXX-XXXX), hence root-path. -->
+<paths>
+    <root-path name="storage" path="/storage" />
+</paths>
