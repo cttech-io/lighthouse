@@ -106,7 +106,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
     val pickerFor by vm.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
-    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null
+    var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
+    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen
 
     var rootFocused by remember { mutableStateOf(false) }
     var refocusToken by remember { mutableIntStateOf(0) }
@@ -115,6 +116,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         when {
             pickerFor != null -> vm.closeCoverPicker()
             optionsFor != null -> vm.closeOptions()
+            drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
             menuOpen -> menuOpen = false
             openPanel != null -> openPanel = null
@@ -140,6 +142,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
                 if (event.key == Key.ButtonStart) { vm.refreshSettingsInfo(); menuOpen = true; return@onPreviewKeyEvent true }
+                // B with nothing open: the app drawer (like a console's "all software" list).
+                if (event.key == Key.ButtonB) { drawerOpen = true; return@onPreviewKeyEvent true }
                 if (rootFocused && event.key in DPadKeys) { refocusToken++; return@onPreviewKeyEvent true }
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
@@ -198,7 +202,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 }
             }
             HintBar(
-                buildList {
+                onTap = { b ->
+                    when (b) {
+                        "B" -> drawerOpen = true
+                        "☰" -> { vm.refreshSettingsInfo(); menuOpen = true }
+                        "Y" -> if (tab !is HomeTab.Home) vm.toggleLayout()
+                    }
+                },
+                hints = buildList {
+                    add("B" to "Apps")
                     if (tab !is HomeTab.Home) add("Y" to if (state.layout == HomeLayout.Carousel) "Grid" else "Carousel")
                     add("☰" to "Settings")
                     add("⧉" to "Options")
@@ -231,6 +243,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             )
         }
         pickerFor?.let { g -> CoverPicker(g, vm) { vm.closeCoverPicker(); refocusToken++ } }
+        if (drawerOpen) AppDrawer { drawerOpen = false; refocusToken++ }
         if (menuOpen) {
             SettingsScreen(
                 info = settingsInfo,

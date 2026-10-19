@@ -91,17 +91,23 @@ fun TopBar(
 }
 
 @Composable
-fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, onTap: (button: String) -> Unit = {}) {
     Row(
         modifier.fillMaxWidth().height(44.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End,
     ) {
         hints.forEach { (button, label) ->
-            ButtonGlyph(button, round = true)
-            Spacer(Modifier.width(6.dp))
-            Text(label, color = Color.White, fontSize = 14.sp)
-            Spacer(Modifier.width(18.dp))
+            // Tappable for touch users (not focusable: the controller uses the real buttons).
+            Row(
+                Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(button) } }.padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ButtonGlyph(button, round = true)
+                Spacer(Modifier.width(6.dp))
+                Text(label, color = Color.White, fontSize = 14.sp)
+            }
+            Spacer(Modifier.width(12.dp))
         }
     }
 }
