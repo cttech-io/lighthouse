@@ -55,6 +55,11 @@ object RootRadios {
         Root.run("svc bluetooth ${if (on) "enable" else "disable"}") != null ||
             Root.run("cmd bluetooth_manager ${if (on) "enable" else "disable"}") != null
 
+    /** Battery saver; `cmd power set-mode` on Android 10+, global setting as a fallback. */
+    suspend fun setBatterySaver(on: Boolean): Boolean =
+        Root.run("cmd power set-mode ${if (on) 1 else 0}") != null ||
+            Root.run("settings put global low_power ${if (on) 1 else 0}") != null
+
     /** Connected network name from `cmd wifi status` ("Wifi is connected to \"Name\""). */
     suspend fun wifiName(): String? =
         Root.run("cmd wifi status")?.let { Regex("""connected to "([^"]+)"""").find(it)?.groupValues?.get(1) }

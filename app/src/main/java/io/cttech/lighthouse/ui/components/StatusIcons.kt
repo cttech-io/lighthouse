@@ -58,6 +58,33 @@ fun BluetoothGlyph(enabled: Boolean, connected: Boolean, tint: Color, size: Dp =
     }
 }
 
+/** Battery outline filled to [level]; bolt while charging; amber when saver is on, red when low. */
+@Composable
+fun BatteryGlyph(level: Int, charging: Boolean, powerSave: Boolean, tint: Color, size: Dp = 22.dp) {
+    Canvas(Modifier.size(size)) {
+        val body = androidx.compose.ui.geometry.Rect(u(2f), u(7f), u(20f), u(17f))
+        drawRoundRect(tint, topLeft = body.topLeft, size = body.size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(2.5f)), style = stroke(1.8f))
+        drawRoundRect(tint, topLeft = Offset(u(20.8f), u(10f)), size = Size(u(1.8f), u(4f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(0.8f)))
+        val frac = (level.coerceIn(0, 100)) / 100f
+        val fill = when {
+            powerSave -> Color(0xFFFFB300)
+            level in 0..15 && !charging -> Color(0xFFFF5252)
+            else -> tint
+        }
+        if (frac > 0f) {
+            drawRoundRect(fill, topLeft = Offset(u(3.8f), u(8.8f)), size = Size((u(16.4f)) * frac, u(6.4f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(1.2f)))
+        }
+        if (charging) {
+            val bolt = Path().apply {
+                moveTo(u(12.5f), u(5f)); lineTo(u(8f), u(12.8f)); lineTo(u(11.2f), u(12.8f))
+                lineTo(u(10f), u(19f)); lineTo(u(14.5f), u(11.2f)); lineTo(u(11.3f), u(11.2f)); close()
+            }
+            drawPath(bolt, Color.Black.copy(alpha = 0.55f), style = stroke(2.2f))
+            drawPath(bolt, Color(0xFFFFD166))
+        }
+    }
+}
+
 /** Speaker with 0–2 waves by level; a cross when muted or at zero. */
 @Composable
 fun VolumeGlyph(level: Int, max: Int, muted: Boolean, tint: Color, size: Dp = 22.dp) {

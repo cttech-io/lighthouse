@@ -62,11 +62,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.input.pointer.pointerInput
 import io.cttech.lighthouse.system.hasBluetoothPermission
+import io.cttech.lighthouse.system.rememberBatteryState
 import io.cttech.lighthouse.system.rememberBluetoothState
 import io.cttech.lighthouse.system.rememberVolume
 import io.cttech.lighthouse.system.rememberWifiState
 
-enum class QuickPanel { Wifi, Bluetooth, Volume }
+enum class QuickPanel { Wifi, Bluetooth, Volume, Battery }
 
 private val PanelBg = Color(0xFF151A26)
 private val Muted = Color(0xFFB7C1D6)
@@ -80,6 +81,7 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
     val wifi = rememberWifiState()
     val bt = rememberBluetoothState(btEpoch)
     val (vol, _) = rememberVolume()
+    val battery = rememberBatteryState()
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         StatusButton(requesters.getValue(QuickPanel.Wifi), { onOpen(QuickPanel.Wifi) }) { tint ->
             WifiGlyph(wifi.enabled, wifi.connected, wifi.level, tint)
@@ -92,21 +94,31 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
         StatusButton(requesters.getValue(QuickPanel.Volume), { onOpen(QuickPanel.Volume) }) { tint ->
             VolumeGlyph(vol.level, vol.max, vol.muted, tint)
         }
+        if (battery.level >= 0) {
+            StatusButton(requesters.getValue(QuickPanel.Battery), { onOpen(QuickPanel.Battery) }, wide = true) { tint ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    BatteryGlyph(battery.level, battery.charging, battery.powerSave, tint)
+                    Text("${battery.level}%", color = tint, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun StatusButton(requester: FocusRequester, onClick: () -> Unit, glyph: @Composable (Color) -> Unit) {
+private fun StatusButton(requester: FocusRequester, onClick: () -> Unit, wide: Boolean = false, glyph: @Composable (Color) -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Box(
         Modifier
-            .size(36.dp)
-            .clip(CircleShape)
+            .then(if (wide) Modifier.height(36.dp).padding(horizontal = 0.dp) else Modifier.size(36.dp))
+            .clip(if (wide) RoundedCornerShape(50) else CircleShape)
+            .then(if (wide) Modifier.background(Color.Transparent).padding(horizontal = 0.dp) else Modifier)
             .background(if (focused) Color.White else Color.Transparent)
             .focusRequester(requester)
             .onFocusChanged { focused = it.isFocused }
             .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { onClick(); true } else false }
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .then(if (wide) Modifier.padding(horizontal = 10.dp) else Modifier),
         contentAlignment = Alignment.Center,
     ) { glyph(if (focused) Color.Black else Color.White) }
 }
@@ -141,6 +153,7 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
                 QuickPanel.Wifi -> WifiPanel(first)
                 QuickPanel.Bluetooth -> BluetoothPanel(first, btEpoch, onBtPermission)
                 QuickPanel.Volume -> VolumePanel(first)
+                QuickPanel.Battery -> BatteryPanel(first)
             }
         }
     }
@@ -232,6 +245,35 @@ private fun VolumePanel(first: FocusRequester) {
         PillButton("Haptics: ${if (settings.hapticsEnabled) "on" else "off"}") { settings.setHaptics(!settings.hapticsEnabled) }
     }
     PillButton("All volume controls") { context.openFirst(Settings.Panel.ACTION_VOLUME, Settings.ACTION_SOUND_SETTINGS) }
+}
+
+@Composable
+private fun BatteryPanel(first: FocusRequester) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val b = rememberBatteryState()
+    PanelTitle("Battery")
+    StatusLine(
+        "${b.level}% · " + when {
+            b.full -> "Fully charged"
+            b.charging -> b.chargeTimeRemainingMs?.let { "Charging · ${formatDuration(it)} to full" } ?: "Charging"
+            else -> "On battery"
+        },
+        Color.White,
+    )
+    StatusLine(listOfNotNull(b.temperatureC?.let { "Temperature %.0f °C".format(it) }, "Health ${b.health.lowercase()}").joinToString(" · "))
+    // Silent with root; otherwise the system battery-saver screen (apps can't switch it).
+    PillButton("Battery saver: ${if (b.powerSave) "on" else "off"}", Modifier.focusRequester(first)) {
+        scope.launch {
+            if (!RootRadios.setBatterySaver(!b.powerSave)) context.openFirst(Settings.ACTION_BATTERY_SAVER_SETTINGS)
+        }
+    }
+    PillButton("Battery usage") { context.openFirst(Intent.ACTION_POWER_USAGE_SUMMARY, Settings.ACTION_BATTERY_SAVER_SETTINGS) }
+}
+
+private fun formatDuration(ms: Long): String {
+    val mins = (ms / 60_000).coerceAtLeast(1)
+    return if (mins >= 60) "${mins / 60} h ${mins % 60} m" else "$mins min"
 }
 
 /** Focusable slider: D-pad left/right steps media volume; touch drags or taps to any level. */

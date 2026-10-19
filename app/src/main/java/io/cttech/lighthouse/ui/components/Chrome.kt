@@ -84,11 +84,9 @@ fun TopBar(
         Spacer(Modifier.width(10.dp))
         ButtonGlyph("R1")
         Spacer(Modifier.weight(1f))
-        status()
-        Spacer(Modifier.width(12.dp))
+        status() // Wi-Fi · Bluetooth · Volume · Battery
+        Spacer(Modifier.width(14.dp))
         Clock()
-        Spacer(Modifier.width(16.dp))
-        Battery()
     }
 }
 
@@ -134,25 +132,3 @@ private fun Clock() {
     Text(now.format(fmt), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
 }
 
-@Composable
-private fun Battery() {
-    val context = LocalContext.current
-    var level by remember { mutableIntStateOf(-1) }
-    var charging by remember { mutableStateOf(false) }
-    DisposableEffect(context) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, intent: Intent) {
-                val l = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val s = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-                level = if (l >= 0) l * 100 / s else -1
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-            }
-        }
-        ContextCompat.registerReceiver(context, receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
-        onDispose { context.unregisterReceiver(receiver) }
-    }
-    if (level >= 0) {
-        Text((if (charging) "⚡" else "") + "$level%", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-    }
-}

@@ -196,3 +196,67 @@ fun rememberVolume(): Pair<VolumeState, VolumeControl> {
     }
     return state to remember { VolumeControl(audio) }
 }
+
+// ---------------------------------------------------------------- Battery
+
+data class BatteryState(
+    val level: Int,
+    val charging: Boolean,
+    val full: Boolean,
+    /** Android's own estimate while charging, else null. */
+    val chargeTimeRemainingMs: Long?,
+    val temperatureC: Float?,
+    val health: String,
+    val powerSave: Boolean,
+)
+
+/** Live battery state from the sticky ACTION_BATTERY_CHANGED broadcast plus battery-saver mode. No permission. */
+@Composable
+fun rememberBatteryState(): BatteryState {
+    val context = LocalContext.current
+    var state by remember { mutableStateOf(BatteryState(-1, false, false, null, null, "Unknown", false)) }
+    DisposableEffect(context) {
+        val bm = context.getSystemService(android.os.BatteryManager::class.java)
+        val pm = context.getSystemService(android.os.PowerManager::class.java)
+        var last: Intent? = null
+        fun publish() {
+            val i = last ?: return
+            val raw = i.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+            val scale = i.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100)
+            val status = i.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+            val charging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING
+            val full = status == android.os.BatteryManager.BATTERY_STATUS_FULL
+            val temp = i.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
+            state = BatteryState(
+                level = if (raw >= 0) raw * 100 / scale else -1,
+                charging = charging,
+                full = full,
+                chargeTimeRemainingMs = if (charging) bm.computeChargeTimeRemaining().takeIf { it > 0 } else null,
+                temperatureC = if (temp != Int.MIN_VALUE) temp / 10f else null,
+                health = when (i.getIntExtra(android.os.BatteryManager.EXTRA_HEALTH, -1)) {
+                    android.os.BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
+                    android.os.BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheating"
+                    android.os.BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
+                    android.os.BatteryManager.BATTERY_HEALTH_DEAD -> "Worn out"
+                    android.os.BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over voltage"
+                    else -> "Unknown"
+                },
+                powerSave = pm.isPowerSaveMode,
+            )
+        }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                if (i.action == Intent.ACTION_BATTERY_CHANGED) last = i
+                publish()
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_BATTERY_CHANGED)
+            addAction(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        }
+        last = ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        publish()
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+    return state
+}
