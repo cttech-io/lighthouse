@@ -131,7 +131,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                     singleLine = true,
                     textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
                     cursorBrush = SolidColor(Color.White),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, showKeyboardOnFocus = false),
                     keyboardActions = KeyboardActions(onSearch = { search() }),
                     modifier = Modifier
                         .width(520.dp)

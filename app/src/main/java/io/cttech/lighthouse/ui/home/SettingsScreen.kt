@@ -99,14 +99,18 @@ fun SettingsScreen(
             androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(themes.size) { i ->
                     val t = themes[i]
-                    ThemeCard(t, selected = t.id == settings.themeId) { settings.updateTheme(t.id) }
+                    val current = t.id == settings.themeId || (i == 0 && themes.none { it.id == settings.themeId })
+                    // Settings opens on the current theme, not the key field (which would raise the keyboard).
+                    ThemeCard(t, selected = t.id == settings.themeId, modifier = if (current) Modifier.focusRequester(first) else Modifier) {
+                        settings.updateTheme(t.id)
+                    }
                 }
             }
             Note("Add your own: put a folder with a theme.json (and background images) in Lighthouse/themes/ on your storage. See docs/THEMES.md in the Lighthouse repo.")
 
             Section("Covers")
             Text("SteamGridDB API key", color = Color.White, fontSize = 16.sp)
-            ApiKeyField(settings.steamGridDbKey, Modifier.focusRequester(first), settings::updateSteamGridDbKey)
+            ApiKeyField(settings.steamGridDbKey, Modifier, settings::updateSteamGridDbKey)
             KeyTest(settings.steamGridDbKey, onTestKey)
             Note("Free from steamgriddb.com → sign in → Preferences → API. Without a key, Lighthouse uses libretro box art only.")
             PillButton("Open SteamGridDB in browser") {
@@ -156,7 +160,8 @@ private fun ApiKeyField(value: String, modifier: Modifier, onChange: (String) ->
         textStyle = TextStyle(color = Color.White, fontSize = 16.sp, fontFamily = FontFamily.Monospace),
         cursorBrush = SolidColor(Color.White),
         visualTransformation = if (focused) VisualTransformation.None else PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false),
+        // Keyboard only on A / tap, never just because focus landed here.
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false, showKeyboardOnFocus = false),
         keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
         modifier = modifier
             .fillMaxWidth()
@@ -203,10 +208,10 @@ private fun Note(text: String) = Text(text, color = Lh.colors.textMuted, fontSiz
 
 /** Theme preview: its HOME background (or a swatch of its colours), name, and a ring when focused. */
 @Composable
-private fun ThemeCard(theme: io.cttech.lighthouse.theme.LhTheme, selected: Boolean, onSelect: () -> Unit) {
+private fun ThemeCard(theme: io.cttech.lighthouse.theme.LhTheme, selected: Boolean, modifier: Modifier = Modifier, onSelect: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Column(
-        Modifier
+        modifier
             .width(176.dp)
             .onFocusChanged { focused = it.isFocused }
             .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { onSelect(); true } else false }
