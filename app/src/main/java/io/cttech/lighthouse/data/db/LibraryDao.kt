@@ -71,6 +71,15 @@ interface LibraryDao {
     @Query("SELECT * FROM games")
     suspend fun allGames(): List<GameEntity>
 
+    @Query("SELECT gameKey FROM hidden ORDER BY hiddenAt")
+    fun observeHidden(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun hide(h: HiddenEntity)
+
+    @Query("DELETE FROM hidden WHERE gameKey = :key")
+    suspend fun unhide(key: String)
+
     @Query("SELECT * FROM sources ORDER BY id")
     suspend fun sources(): List<SourceEntity>
 

@@ -223,6 +223,10 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onToggleFavourite = { vm.toggleFavourite(g) },
                 onChangeCover = { vm.openCoverPicker(g) },
                 onRemoveCover = { vm.removeCover(g); refocusToken++ },
+                onHide = {
+                    vm.hide(g); refocusToken++
+                    Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
+                },
                 onClose = { vm.closeOptions(); refocusToken++ },
             )
         }
@@ -231,6 +235,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             SettingsScreen(
                 info = settingsInfo,
                 themes = themes,
+                hidden = state.hidden,
+                onUnhide = vm::unhide,
                 onTestKey = vm::testSteamGridDbKey,
                 onFindCovers = vm::findMissingCovers,
                 onRescan = vm::rescanLibrary,

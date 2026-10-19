@@ -69,6 +69,8 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     info: HomeViewModel.SettingsInfo,
     themes: List<io.cttech.lighthouse.theme.LhTheme>,
+    hidden: List<io.cttech.lighthouse.model.Game>,
+    onUnhide: (io.cttech.lighthouse.model.Game) -> Unit,
     onTestKey: suspend (String) -> Boolean,
     onFindCovers: () -> Unit,
     onRescan: () -> Unit,
@@ -133,6 +135,17 @@ fun SettingsScreen(
             Section("Library")
             Note(if (info.storageAccess) "All files access: allowed (folders are watched for new games)" else "All files access: not allowed: ROM folders can't be read")
             PillButton("Rescan library") { onRescan(); onClose() }
+            Text("Hidden", color = Color.White, fontSize = 16.sp)
+            if (hidden.isEmpty()) {
+                Note("Nothing hidden. Hide apps or games from a game's options (Select or long-press).")
+            } else {
+                hidden.forEach { g ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        PillButton("Unhide") { onUnhide(g) }
+                        Text(g.title + (g.subtitle?.let { "  ·  $it" } ?: ""), color = Color.White, fontSize = 15.sp, maxLines = 1)
+                    }
+                }
+            }
 
             Section("System")
             if (!info.network) {

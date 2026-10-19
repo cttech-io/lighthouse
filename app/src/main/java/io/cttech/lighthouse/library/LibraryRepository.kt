@@ -48,6 +48,11 @@ class LibraryRepository(
         dao.observeCovers().map { list -> list.filter { it.path.isNotEmpty() }.associate { it.gameKey to it.path } } // "none" = removed
     val favourites: Flow<List<String>> = dao.observeFavourites().map { list -> list.map { it.gameKey } }
     val plays: Flow<List<PlayEntity>> = dao.observePlays()
+    val hidden: Flow<List<String>> = dao.observeHidden()
+
+    fun setHidden(key: String, hidden: Boolean) {
+        scope.launch { if (hidden) dao.hide(io.cttech.lighthouse.data.db.HiddenEntity(key, System.currentTimeMillis())) else dao.unhide(key) }
+    }
 
     private val _scanInfo = MutableStateFlow(ScanInfo())
     /** Free space per volume and when the library was last refreshed, for Home's status strip. */

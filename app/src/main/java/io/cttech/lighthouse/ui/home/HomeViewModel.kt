@@ -30,6 +30,8 @@ import java.util.Locale
 data class HomeState(
     val tabs: List<HomeTab> = listOf(HomeTab.Home),
     val homeRows: List<HomeRow> = emptyList(),
+    /** Hidden items, listed in Settings so they can be unhidden. */
+    val hidden: List<Game> = emptyList(),
     /** e.g. "31 games · 14 apps · SD 87 GB free · Internal 52 GB free · scanned 14:05" */
     val statusLine: String = "",
     val selectedTab: Int = 0,
@@ -179,9 +181,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
-    private val gamesAndCovers = combine(repo.games, repo.coverPaths) { g, c -> g to c }
+    /** Games minus hidden ones, with covers attached; hidden items are kept aside for Settings. */
+    private val gamesAndCovers = combine(repo.games, repo.coverPaths, repo.hidden) { g, c, h -> Triple(g, c, h.toSet()) }
 
-    val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (games, covers), favKeys, plays, scan, p ->
+    val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (allGames, covers, hiddenKeys), favKeys, plays, scan, p ->
+        val games = allGames.filter { it.key !in hiddenKeys }
+        val hiddenUi = allGames.filter { it.key in hiddenKeys }.map { it.toUi() }
         val ui = games.map { it.toUi().copy(coverPath = covers[it.key]) }
         val byPlatform = ui.groupBy { it.platformId }
         val byKey = ui.associateBy { it.key }
@@ -205,6 +210,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         HomeState(
             tabs = tabs,
             homeRows = homeRows,
+            hidden = hiddenUi,
             statusLine = statusLine(games, scan),
             // Home always has something (at least the Platforms row), so it is the natural starting tab.
             selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
@@ -266,6 +272,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFavourite(game: Game) = repo.toggleFavourite(game.key)
+
+    fun hide(game: Game) { repo.setHidden(game.key, true); _optionsFor.value = null }
+    fun unhide(game: Game) = repo.setHidden(game.key, false)
 
     fun recordLaunch(game: Game) = repo.recordLaunch(game.key)
 

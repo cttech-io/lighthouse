@@ -57,6 +57,13 @@ data class CoverEntity(
     val updatedAt: Long,
 )
 
+/** Items the user hid from Lighthouse (e.g. Gboard). Keyed like favourites; reversible in Settings. */
+@Entity(tableName = "hidden")
+data class HiddenEntity(
+    @PrimaryKey val gameKey: String,
+    val hiddenAt: Long,
+)
+
 @Entity(tableName = "favourites")
 data class FavouriteEntity(
     @PrimaryKey val gameKey: String,

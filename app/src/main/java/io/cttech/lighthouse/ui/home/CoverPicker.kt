@@ -198,6 +198,7 @@ fun GameOptionsSheet(
     onToggleFavourite: () -> Unit,
     onChangeCover: () -> Unit,
     onRemoveCover: () -> Unit,
+    onHide: () -> Unit,
     onClose: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
@@ -226,6 +227,7 @@ fun GameOptionsSheet(
             PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites") { onToggleFavourite(); onClose() }
             PillButton("Change cover", onClick = onChangeCover)
             if (game.coverPath != null) PillButton("Remove cover", onClick = onRemoveCover)
+            PillButton("Hide from Lighthouse", onClick = onHide)
         }
     }
     FocusOnAppear(first, game.key)
