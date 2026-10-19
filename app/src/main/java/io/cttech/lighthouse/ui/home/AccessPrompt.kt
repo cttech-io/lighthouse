@@ -65,7 +65,7 @@ fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
             }
         }
     }
-    LaunchedEffect(Unit) { runCatching { grant.requestFocus() } }
+    io.cttech.lighthouse.ui.components.FocusOnAppear(grant, Unit)
 }
 
 @Composable

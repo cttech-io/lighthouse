@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.BuildConfig
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.components.PillButton
+import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
 
 private val Muted = Color(0xFFB7C1D6)
@@ -127,7 +128,7 @@ fun SettingsScreen(
             PillButton("Close", onClick = onClose)
         }
     }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    FocusOnAppear(first, Unit)
 }
 
 /** Single-line key entry. A (or a tap) opens the keyboard; the value is masked unless the field is focused. */

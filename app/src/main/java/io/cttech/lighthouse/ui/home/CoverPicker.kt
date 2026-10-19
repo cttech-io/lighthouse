@@ -59,6 +59,7 @@ import coil3.compose.AsyncImage
 import io.cttech.lighthouse.covers.SteamGridDb
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.ui.components.PillButton
+import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
 
 private val Muted = Color(0xFFB7C1D6)
@@ -216,13 +217,18 @@ fun GameOptionsSheet(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.6f))
+            .clickable(indication = null, interactionSource = null, onClick = onClose) // tap outside closes
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && e.key in setOf(Key.ButtonB, Key.Escape, Key.ButtonSelect)) { onClose(); true } else false
             },
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.width(420.dp).background(Color(0xFF151A26), RoundedCornerShape(18.dp)).padding(24.dp),
+            Modifier
+                .width(420.dp)
+                .background(Color(0xFF151A26), RoundedCornerShape(18.dp))
+                .clickable(indication = null, interactionSource = null) {} // taps inside don't close
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
@@ -233,5 +239,5 @@ fun GameOptionsSheet(
             if (game.coverPath != null) PillButton("Remove cover", onClick = onRemoveCover)
         }
     }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    FocusOnAppear(first, game.key)
 }

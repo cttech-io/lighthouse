@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.launch.LaunchResult
 import io.cttech.lighthouse.system.Root
 import io.cttech.lighthouse.ui.components.PillButton
+import io.cttech.lighthouse.ui.components.FocusOnAppear
 
 /** Explains why a game didn't start and offers the fix. B / Back closes it. */
 @Composable
@@ -48,13 +50,18 @@ fun LaunchIssueDialog(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.72f))
+            .clickable(indication = null, interactionSource = null, onClick = onDismiss) // tap outside closes
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Back || e.key == Key.Escape)) { onDismiss(); true } else false
             },
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.width(600.dp).background(Color(0xFF151A26), RoundedCornerShape(18.dp)).padding(30.dp),
+            Modifier
+                .width(600.dp)
+                .background(Color(0xFF151A26), RoundedCornerShape(18.dp))
+                .clickable(indication = null, interactionSource = null) {}
+                .padding(30.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val (title, body) = when (issue) {
@@ -87,5 +94,5 @@ fun LaunchIssueDialog(
             }
         }
     }
-    LaunchedEffect(issue, rootAvailable) { runCatching { first.requestFocus() } }
+    FocusOnAppear(first, issue, rootAvailable)
 }

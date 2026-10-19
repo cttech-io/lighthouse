@@ -105,10 +105,20 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null
 
-    // As the home app, Back must never leave Lighthouse: it only closes a panel.
-    BackHandler(enabled = true) { openPanel = null }
     var rootFocused by remember { mutableStateOf(false) }
     var refocusToken by remember { mutableIntStateOf(0) }
+    // As the home app, Back must never leave Lighthouse: it only closes a panel.
+    BackHandler(enabled = true) {
+        when {
+            pickerFor != null -> vm.closeCoverPicker()
+            optionsFor != null -> vm.closeOptions()
+            launchIssue != null -> vm.dismissLaunchIssue()
+            menuOpen -> menuOpen = false
+            openPanel != null -> openPanel = null
+            else -> return@BackHandler // nothing open: stay put (home app)
+        }
+        refocusToken++
+    }
     LaunchedEffect(vm) { vm.homePresses.collect { openPanel = null; refocusToken++ } }
 
     // Focus safety net. Controller input only reaches Compose when something is focused, so the root takes

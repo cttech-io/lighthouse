@@ -157,7 +157,7 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
             }
         }
     }
-    LaunchedEffect(panel) { runCatching { first.requestFocus() } }
+    FocusOnAppear(first, panel)
 }
 
 @Composable
