@@ -37,12 +37,22 @@ class AppSettings(context: Context) {
         prefs.edit().putString(KEY_SGDB, key).apply()
     }
 
+    /** Selected theme id ("lighthouse" = built-in look). */
+    var themeId by mutableStateOf(prefs.getString(KEY_THEME, "lighthouse").orEmpty())
+        private set
+
+    fun updateTheme(id: String) {
+        themeId = id
+        prefs.edit().putString(KEY_THEME, id).apply()
+    }
+
     init { Root.enabled = rootExtrasEnabled }
 
     private companion object {
         const val KEY_HAPTICS = "haptics_enabled"
         const val KEY_ROOT = "root_extras_enabled"
         const val KEY_SGDB = "steamgriddb_api_key"
+        const val KEY_THEME = "theme_id"
     }
 }
 

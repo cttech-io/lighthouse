@@ -170,7 +170,8 @@ class LibraryRepository(
                 VolumeSpace(if (v.isPrimary) "Internal" else if (v.isRemovable) "SD" else v.getDescription(app), dir.freeSpace)
             }
 
-    private fun storageRoots(): List<File> =
+    /** Mounted storage volumes (internal, SD…); also where user themes and covers are looked up. */
+    fun storageRoots(): List<File> =
         app.getSystemService(StorageManager::class.java).storageVolumes
             .filter { it.state == android.os.Environment.MEDIA_MOUNTED }
             .mapNotNull { it.directory }

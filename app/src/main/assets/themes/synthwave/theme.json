@@ -1,0 +1,31 @@
+{
+  "id": "synthwave",
+  "name": "Synthwave",
+  "author": "Lighthouse",
+  "version": 1,
+  "colors": {
+    "background": "#0B0221",
+    "surface": "#1A0F2E",
+    "accent": "#FF2E97",
+    "text": "#FFFFFF",
+    "textMuted": "#C9B8E8",
+    "focus": "#FFFFFF"
+  },
+  "cover": {
+    "cornerRadius": 10,
+    "focusScale": 1.06
+  },
+  "scrim": 0.25,
+  "backgrounds": {
+    "default": "home.webp",
+    "home": "home.webp",
+    "platform:android": "android.webp",
+    "platform:switch": "switch.webp",
+    "platform:ps2": "ps2.webp",
+    "platform:gba": "gba.webp",
+    "platform:gbc": "gbc.webp",
+    "platform:n64": "n64.webp",
+    "platform:droiddeck": "droiddeck.webp",
+    "platform:gamenative": "gamenative.webp"
+  }
+}

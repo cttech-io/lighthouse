@@ -12,7 +12,8 @@ import sys
 
 W, H = 1920, 1080
 OUT = sys.argv[1] if len(sys.argv) > 1 else "svg"
-PLATFORMS = ["android", "ns", "ps2", "gba", "wallpaper"]
+# File names map to Lighthouse view keys: ns -> platform:switch, wallpaper -> home/default.
+PLATFORMS = ["android", "ns", "ps2", "gba", "gbc", "n64", "droiddeck", "gamenative", "wallpaper"]
 
 
 def svg(body, defs=""):
@@ -43,6 +44,10 @@ SYNTH = {
     "ns":       ("#12030a", "#4a0f2a", "#ffd166", "#ff4554", "#00c3e3"),
     "ps2":      ("#03041a", "#1b1460", "#7fd4ff", "#2f6bff", "#b44cff"),
     "gba":      ("#0a0420", "#3a1470", "#ffb3f0", "#9b5cff", "#ff6ad5"),
+    "gbc":      ("#021012", "#0f3b38", "#c8ffe9", "#26c6a6", "#26c6a6"),
+    "n64":      ("#120c02", "#3d2a07", "#fff0a8", "#ffb300", "#3fa9f5"),
+    "droiddeck": ("#02070f", "#0c2a4a", "#bfe6ff", "#1a9fff", "#1a9fff"),
+    "gamenative": ("#07080a", "#2a2f36", "#e8edf2", "#b0bec5", "#8fa3b8"),
     "wallpaper": ("#0b0221", "#4a0f5c", "#ffd23f", "#ff2e97", "#ff2e97"),
 }
 
@@ -96,6 +101,9 @@ def synthwave(p):
 
 
 # ---------------------------------------------------------------- Console Heritage
+TINT = {"gbc": "#26c6a6", "n64": "#ffb300", "droiddeck": "#1a9fff", "gamenative": "#b0bec5"}
+
+
 def heritage(p):
     sc_defs, sc_body = readability_scrim()
     rnd = random.Random("h" + p)
@@ -173,6 +181,13 @@ def heritage(p):
                     rx = 26 if shape == "rr" else 10
                     tiles += f'<rect x="{x}" y="{y}" width="88" height="88" rx="{rx}" fill="#3ddc84" opacity="{o:.2f}"/>'
         body = f'<rect width="{W}" height="{H}" fill="url(#bg)"/>{tiles}'
+    elif p in TINT:  # newer platforms: platform-tinted glow + fine line texture
+        c = TINT[p]
+        base = (f'<radialGradient id="bg" cx=".75" cy=".45" r=".9"><stop offset="0" stop-color="{c}" stop-opacity=".45"/>'
+                f'<stop offset=".6" stop-color="{c}" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>')
+        lines = "".join(f'<line x1="{x}" y1="0" x2="{x - 600}" y2="{H}"/>' for x in range(700, 2600, 46))
+        body = (f'<rect width="{W}" height="{H}" fill="#0b0d12"/><rect width="{W}" height="{H}" fill="url(#bg)"/>'
+                f'<g stroke="{c}" stroke-width="1" opacity=".08">{lines}</g>')
     else:  # wallpaper / favourites: all four console colours
         base = '<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="120"/></filter>'
         blobs = "".join(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{c}" opacity=".45"/>' for x, y, r, c in
@@ -182,7 +197,8 @@ def heritage(p):
 
 
 # ---------------------------------------------------------------- Midnight
-MID = {"android": "#3ddc84", "ns": "#ff3b4b", "ps2": "#2f6bff", "gba": "#7a5cff", "wallpaper": "#8a93a6"}
+MID = {"android": "#3ddc84", "ns": "#ff3b4b", "ps2": "#2f6bff", "gba": "#7a5cff", "gbc": "#26c6a6",
+       "n64": "#ffb300", "droiddeck": "#1a9fff", "gamenative": "#b0bec5", "wallpaper": "#8a93a6"}
 
 
 def midnight(p):

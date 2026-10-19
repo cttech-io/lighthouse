@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,7 +47,7 @@ fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
         Column(
             Modifier
                 .width(560.dp)
-                .background(Color(0xFF151A26), RoundedCornerShape(18.dp))
+                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .padding(32.dp),
         ) {
             Text("Find your games", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
@@ -54,7 +55,7 @@ fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
             Text(
                 "Lighthouse needs \"All files access\" to find ROM folders (like Games/PS2 on your SD card) " +
                     "and to spot new games as soon as you copy them over. It only reads your game folders.",
-                color = Color(0xFFCDD6E8),
+                color = Lh.colors.text.copy(alpha = 0.85f),
                 fontSize = 16.sp,
                 lineHeight = 22.sp,
             )

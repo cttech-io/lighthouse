@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -62,7 +63,6 @@ import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
 
-private val Muted = Color(0xFFB7C1D6)
 
 /**
  * Choose a cover: search SteamGridDB (prefilled with the title; Steam shortcuts open on their own art),
@@ -116,7 +116,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0xF50B0E14))
+            .background(Lh.colors.background.copy(alpha = 0.96f))
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false
             },
@@ -158,7 +158,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                     }
                 }
             }
-            status?.let { Text(it, color = Muted, fontSize = 15.sp) }
+            status?.let { Text(it, color = Lh.colors.textMuted, fontSize = 15.sp) }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
                 contentPadding = PaddingValues(vertical = 8.dp),
@@ -226,13 +226,13 @@ fun GameOptionsSheet(
         Column(
             Modifier
                 .width(420.dp)
-                .background(Color(0xFF151A26), RoundedCornerShape(18.dp))
+                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {} // taps inside don't close
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-            game.subtitle?.let { Text(it, color = Muted, fontSize = 14.sp) }
+            game.subtitle?.let { Text(it, color = Lh.colors.textMuted, fontSize = 14.sp) }
             PillButton("Play", Modifier.focusRequester(first)) { onClose(); onPlay() }
             PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites") { onToggleFavourite(); onClose() }
             PillButton("Change cover", onClick = onChangeCover)

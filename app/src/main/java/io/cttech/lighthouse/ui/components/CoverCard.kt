@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.components
 
+import io.cttech.lighthouse.theme.Lh
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -50,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.model.Game
 
-private val CoverShape = RoundedCornerShape(10.dp)
 
 /**
  * A 2:3 cover tile. Until real artwork arrives (milestone 4) it draws a generated placeholder.
@@ -62,7 +62,7 @@ fun CoverCard(
     accent: Color,
     isFavourite: Boolean,
     modifier: Modifier = Modifier,
-    focusedScale: Float = 1.06f,
+    focusedScale: Float = Lh.theme.focusScale,
     onFocused: () -> Unit,
     onLaunch: () -> Unit,
     onToggleFavourite: () -> Unit,
@@ -71,6 +71,9 @@ fun CoverCard(
 ) {
     var focused by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
+    val corner = Lh.theme.coverCorner
+    val CoverShape = remember(corner) { RoundedCornerShape(corner) }
+    val ringColor = Lh.colors.focus
     val hapticsOn = io.cttech.lighthouse.system.LocalAppSettings.current.hapticsEnabled
     val scale by animateFloatAsState(
         if (focused) focusedScale else 1f,
@@ -92,10 +95,10 @@ fun CoverCard(
                 if (a > 0f) {
                     val w = 3.dp.toPx()
                     drawRoundRect(
-                        Color.White.copy(alpha = 0.92f * a),
+                        ringColor.copy(alpha = 0.92f * a),
                         topLeft = Offset(w / 2, w / 2),
                         size = Size(size.width - w, size.height - w),
-                        cornerRadius = CornerRadius(10.dp.toPx()),
+                        cornerRadius = CornerRadius(corner.toPx()),
                         style = Stroke(w),
                     )
                 }

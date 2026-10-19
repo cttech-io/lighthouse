@@ -1,0 +1,31 @@
+{
+  "id": "heritage",
+  "name": "Console Heritage",
+  "author": "Lighthouse",
+  "version": 1,
+  "colors": {
+    "background": "#0D0E12",
+    "surface": "#16181F",
+    "accent": "#9AA6BD",
+    "text": "#FFFFFF",
+    "textMuted": "#B7C1D6",
+    "focus": "#FFFFFF"
+  },
+  "cover": {
+    "cornerRadius": 8,
+    "focusScale": 1.06
+  },
+  "scrim": 0.2,
+  "backgrounds": {
+    "default": "home.webp",
+    "home": "home.webp",
+    "platform:android": "android.webp",
+    "platform:switch": "switch.webp",
+    "platform:ps2": "ps2.webp",
+    "platform:gba": "gba.webp",
+    "platform:gbc": "gbc.webp",
+    "platform:n64": "n64.webp",
+    "platform:droiddeck": "droiddeck.webp",
+    "platform:gamenative": "gamenative.webp"
+  }
+}

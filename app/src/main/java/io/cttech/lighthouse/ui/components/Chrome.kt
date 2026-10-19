@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.components
 
+import io.cttech.lighthouse.theme.Lh
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -46,7 +47,6 @@ import kotlinx.coroutines.delay
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-private val Dim = Color(0xFF9AA6BD)
 
 @Composable
 fun TopBar(
@@ -68,7 +68,7 @@ fun TopBar(
             itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
                 val active = i == selected
                 val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
-                val fg by animateColorAsState(if (active) Color.White else Dim, label = "tabFg")
+                val fg by animateColorAsState(if (active) Color.White else Lh.colors.textMuted, label = "tabFg")
                 Box(
                     Modifier
                         .clip(RoundedCornerShape(50))

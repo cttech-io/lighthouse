@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,7 +51,6 @@ import io.cttech.lighthouse.model.HomeRow
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.components.CoverCard
 
-private val RowTitle = Color(0xFFB7C1D6)
 
 /**
  * Console-style dashboard: stacked rows, D-pad up/down between rows, left/right within a row.
@@ -84,7 +84,7 @@ internal fun HomeDashboard(
         item(key = "status") {
             Text(
                 statusLine,
-                color = RowTitle.copy(alpha = 0.8f),
+                color = Lh.colors.textMuted.copy(alpha = 0.8f),
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -95,7 +95,7 @@ internal fun HomeDashboard(
             Column {
                 Text(
                     row.title,
-                    color = RowTitle,
+                    color = Lh.colors.textMuted,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 32.dp, top = 8.dp),

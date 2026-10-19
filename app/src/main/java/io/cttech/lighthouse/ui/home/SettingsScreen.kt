@@ -1,8 +1,11 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,13 +61,12 @@ import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
 
-private val Muted = Color(0xFFB7C1D6)
-private val Dim = Color(0xFF8A93A6)
 
 /** Full-screen Settings (Start button). B / Back / Start closes it. */
 @Composable
 fun SettingsScreen(
     info: HomeViewModel.SettingsInfo,
+    themes: List<io.cttech.lighthouse.theme.LhTheme>,
     onTestKey: suspend (String) -> Boolean,
     onFindCovers: () -> Unit,
     onRescan: () -> Unit,
@@ -77,7 +79,7 @@ fun SettingsScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0xF20B0E14))
+            .background(Lh.colors.background.copy(alpha = 0.96f))
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && e.key in setOf(Key.ButtonB, Key.Escape, Key.ButtonStart)) { onClose(); true } else false
             },
@@ -91,6 +93,16 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Settings", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+
+            Section("Appearance")
+            Text("Theme", color = Color.White, fontSize = 16.sp)
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(themes.size) { i ->
+                    val t = themes[i]
+                    ThemeCard(t, selected = t.id == settings.themeId) { settings.updateTheme(t.id) }
+                }
+            }
+            Note("Add your own: put a folder with a theme.json (and background images) in Lighthouse/themes/ on your storage. See docs/THEMES.md in the Lighthouse repo.")
 
             Section("Covers")
             Text("SteamGridDB API key", color = Color.White, fontSize = 16.sp)
@@ -158,7 +170,7 @@ private fun ApiKeyField(value: String, modifier: Modifier, onChange: (String) ->
                     .border(if (focused) 2.dp else 0.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
                     .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
-                if (text.isEmpty()) Text(if (focused) "Paste or type your key" else "Not set: press A to enter", color = Dim, fontSize = 16.sp)
+                if (text.isEmpty()) Text(if (focused) "Paste or type your key" else "Not set: press A to enter", color = Lh.colors.textMuted.copy(alpha = 0.7f), fontSize = 16.sp)
                 inner()
             }
         },
@@ -175,15 +187,49 @@ private fun KeyTest(key: String, onTest: suspend (String) -> Boolean) {
             result = "Testing…"
             scope.launch { result = if (onTest(key)) "✓ Key works" else "✗ Key rejected (or no network)" }
         }
-        result?.let { Text(it, color = if (it.startsWith("✓")) Color(0xFF5BD68A) else Muted, fontSize = 15.sp) }
+        result?.let { Text(it, color = if (it.startsWith("✓")) Color(0xFF5BD68A) else Lh.colors.textMuted, fontSize = 15.sp) }
     }
 }
 
 @Composable
 private fun Section(title: String) {
     Spacer(Modifier.height(10.dp))
-    Text(title.uppercase(), color = Dim, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    Text(title.uppercase(), color = Lh.colors.textMuted.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
 }
 
 @Composable
-private fun Note(text: String) = Text(text, color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
+private fun Note(text: String) = Text(text, color = Lh.colors.textMuted, fontSize = 14.sp, lineHeight = 19.sp)
+
+
+/** Theme preview: its HOME background (or a swatch of its colours), name, and a ring when focused. */
+@Composable
+private fun ThemeCard(theme: io.cttech.lighthouse.theme.LhTheme, selected: Boolean, onSelect: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    Column(
+        Modifier
+            .width(176.dp)
+            .onFocusChanged { focused = it.isFocused }
+            .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { onSelect(); true } else false }
+            .clickable(onClick = onSelect),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(99.dp)
+                .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(theme.colors.accent.copy(alpha = 0.5f), theme.colors.background)), RoundedCornerShape(10.dp))
+                .border(if (focused) 3.dp else if (selected) 2.dp else 0.dp, if (focused) Color.White else theme.colors.accent, RoundedCornerShape(10.dp)),
+        ) {
+            theme.backgroundFor("home")?.let { bg ->
+                coil3.compose.AsyncImage(
+                    model = bg, contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().padding(if (focused) 3.dp else if (selected) 2.dp else 0.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                )
+            }
+        }
+        Text((if (selected) "● " else "") + theme.name + if (theme.userTheme) " (yours)" else "", color = Color.White, fontSize = 14.sp, maxLines = 1)
+    }
+}
+

@@ -160,6 +160,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun removeCover(game: Game) { viewModelScope.launch { coverService.removeCover(game.key) }; _optionsFor.value = null; _pickerFor.value = null }
 
+    // --- Themes ------------------------------------------------------------------------------------
+    private val themeRepo = io.cttech.lighthouse.theme.ThemeRepository(app)
+    private val _themes = MutableStateFlow<List<io.cttech.lighthouse.theme.LhTheme>>(emptyList())
+    /** Bundled + user themes (Lighthouse/themes/<id>/theme.json), reloaded on every resume. */
+    val themes: StateFlow<List<io.cttech.lighthouse.theme.LhTheme>> = _themes
+
+    fun reloadThemes() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { _themes.value = themeRepo.loadAll(repo.storageRoots()) }
+    }
+
     fun findMissingCovers() { viewModelScope.launch { coverService.findMissing() } }
     fun rescanLibrary() = repo.refreshAll()
 
@@ -211,6 +221,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Called from Activity.onResume: re-check permission (it may have just been granted) and rescan. */
     fun onResume() {
+        reloadThemes()
         prefs.update { it.copy(hasAccess = repo.hasStorageAccess()) }
         repo.refreshAll()
     }

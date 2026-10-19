@@ -10,6 +10,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.cttech.lighthouse.theme.LocalLhTheme
+import io.cttech.lighthouse.theme.ThemeRepository
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.home.HomeScreen
 import io.cttech.lighthouse.ui.home.HomeViewModel
@@ -23,7 +27,9 @@ class MainActivity : ComponentActivity() {
         hideSystemBars()
         val settings = (application as LighthouseApp).settings
         setContent {
-            CompositionLocalProvider(LocalAppSettings provides settings) { HomeScreen(home) }
+            val themes by home.themes.collectAsStateWithLifecycle()
+            val theme = themes.firstOrNull { it.id == settings.themeId } ?: themes.firstOrNull() ?: ThemeRepository.Fallback
+            CompositionLocalProvider(LocalAppSettings provides settings, LocalLhTheme provides theme) { HomeScreen(home) }
         }
     }
 

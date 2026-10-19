@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +60,7 @@ fun LaunchIssueDialog(
         Column(
             Modifier
                 .width(600.dp)
-                .background(Color(0xFF151A26), RoundedCornerShape(18.dp))
+                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {}
                 .padding(30.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -76,7 +77,7 @@ fun LaunchIssueDialog(
                 LaunchResult.Started -> "" to ""
             }
             Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(body, color = Color(0xFFCDD6E8), fontSize = 16.sp, lineHeight = 22.sp)
+            Text(body, color = Lh.colors.text.copy(alpha = 0.85f), fontSize = 16.sp, lineHeight = 22.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 when (issue) {
                     is LaunchResult.NeedsStoragePermission -> {

@@ -1,0 +1,31 @@
+{
+  "id": "midnight",
+  "name": "Midnight",
+  "author": "Lighthouse",
+  "version": 1,
+  "colors": {
+    "background": "#06070A",
+    "surface": "#11141B",
+    "accent": "#2F6BFF",
+    "text": "#F2F5FA",
+    "textMuted": "#9AA6BD",
+    "focus": "#6FA8FF"
+  },
+  "cover": {
+    "cornerRadius": 12,
+    "focusScale": 1.05
+  },
+  "scrim": 0.1,
+  "backgrounds": {
+    "default": "home.webp",
+    "home": "home.webp",
+    "platform:android": "android.webp",
+    "platform:switch": "switch.webp",
+    "platform:ps2": "ps2.webp",
+    "platform:gba": "gba.webp",
+    "platform:gbc": "gbc.webp",
+    "platform:n64": "n64.webp",
+    "platform:droiddeck": "droiddeck.webp",
+    "platform:gamenative": "gamenative.webp"
+  }
+}

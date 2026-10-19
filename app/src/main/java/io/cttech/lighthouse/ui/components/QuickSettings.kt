@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.components
 
+import io.cttech.lighthouse.theme.Lh
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
@@ -69,8 +70,6 @@ import io.cttech.lighthouse.system.rememberWifiState
 
 enum class QuickPanel { Wifi, Bluetooth, Volume, Battery }
 
-private val PanelBg = Color(0xFF151A26)
-private val Muted = Color(0xFFB7C1D6)
 
 /**
  * The three status icons for the top bar. Each is focusable (D-pad Up from the shelf) and tappable;
@@ -144,7 +143,7 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
             Modifier
                 .padding(top = 56.dp, end = 20.dp)
                 .width(380.dp)
-                .background(PanelBg, RoundedCornerShape(18.dp))
+                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {} // swallow taps inside
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -175,7 +174,7 @@ private fun WifiPanel(first: FocusRequester) {
             wifi.name != null -> "Connected to ${wifi.name}"
             else -> "Connected"
         },
-        if (wifi.connected) Color.White else Muted,
+        if (wifi.connected) Color.White else Lh.colors.textMuted,
     )
     // Silent with root; otherwise Android 10+ only allows its own floating Wi-Fi panel to switch it.
     PillButton(if (wifi.enabled) "Turn Wi-Fi off" else "Turn Wi-Fi on", Modifier.focusRequester(first)) {
@@ -208,7 +207,7 @@ private fun BluetoothPanel(first: FocusRequester, btEpoch: Int, onPermission: ()
     // Without root, "turn on" is Android's small confirmation dialog over Lighthouse (not the settings app).
     val requestEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     PanelTitle("Bluetooth")
-    StatusLine(if (bt.enabled) "On" else "Off", if (bt.enabled) Color.White else Muted)
+    StatusLine(if (bt.enabled) "On" else "Off", if (bt.enabled) Color.White else Lh.colors.textMuted)
     PillButton(if (bt.enabled) "Turn Bluetooth off" else "Turn Bluetooth on", Modifier.focusRequester(first)) {
         scope.launch {
             val turningOn = !bt.enabled
@@ -295,7 +294,7 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Media volume", color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
-            Text(if (muted) "Muted" else "$level / $max", color = Muted, fontSize = 14.sp)
+            Text(if (muted) "Muted" else "$level / $max", color = Lh.colors.textMuted, fontSize = 14.sp)
         }
         Spacer(Modifier.height(10.dp))
         val frac = if (muted || max == 0) 0f else level / max.toFloat()
@@ -315,7 +314,7 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
         ) {
             val track = if (focused) 10.dp else 8.dp
             Box(Modifier.fillMaxWidth().height(track).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f)))
-            Box(Modifier.fillMaxWidth(frac).height(track).clip(RoundedCornerShape(50)).background(if (focused) Color.White else Color(0xFF6FA8FF)))
+            Box(Modifier.fillMaxWidth(frac).height(track).clip(RoundedCornerShape(50)).background(if (focused) Color.White else Lh.colors.accent))
             val thumb = 22.dp
             Box(
                 Modifier
@@ -327,7 +326,7 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
         }
         if (focused) {
             Spacer(Modifier.height(4.dp))
-            Text("◀ ▶ to adjust", color = Muted, fontSize = 12.sp)
+            Text("◀ ▶ to adjust", color = Lh.colors.textMuted, fontSize = 12.sp)
         }
     }
 }
@@ -336,7 +335,7 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
 private fun PanelTitle(text: String) = Text(text, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
 @Composable
-private fun StatusLine(text: String, color: Color = Muted) = Text(text, color = color, fontSize = 15.sp, lineHeight = 20.sp)
+private fun StatusLine(text: String, color: Color = Lh.colors.textMuted) = Text(text, color = color, fontSize = 15.sp, lineHeight = 20.sp)
 
 @Composable
 fun PillButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {

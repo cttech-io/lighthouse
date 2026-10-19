@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.theme.Lh
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -90,6 +91,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val tab = state.currentTab
     val accent = tab.accent()
     // Read only in the draw phase, so the colour animation never recomposes the screen.
+    val themeBg = Lh.colors.background
     val bgTop = animateColorAsState(lerpToDark(accent, 0.82f), tween(450), label = "bgTop")
 
     val rootFocus = remember { FocusRequester() }
@@ -100,6 +102,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
     val coverJob by vm.coverJob.collectAsStateWithLifecycle()
     val settingsInfo by vm.settingsInfo.collectAsStateWithLifecycle()
+    val themes by vm.themes.collectAsStateWithLifecycle()
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
     val pickerFor by vm.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
@@ -132,7 +135,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             .focusRequester(rootFocus)
             .onFocusChanged { rootFocused = it.isFocused }
             .focusable()
-            .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
+            // No theme image for this view: the original platform-tinted gradient.
+            .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, themeBg))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
                 if (event.key == Key.ButtonStart) { vm.refreshSettingsInfo(); menuOpen = true; return@onPreviewKeyEvent true }
@@ -145,6 +149,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 }
             },
     ) {
+        ThemeBackground(tab.key)
         Column(Modifier.fillMaxSize()) {
             TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab) {
                 QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
@@ -225,6 +230,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         if (menuOpen) {
             SettingsScreen(
                 info = settingsInfo,
+                themes = themes,
                 onTestKey = vm::testSteamGridDbKey,
                 onFindCovers = vm::findMissingCovers,
                 onRescan = vm::rescanLibrary,
@@ -272,7 +278,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
     Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
         Column(Modifier.padding(horizontal = 40.dp).height(64.dp)) {
             Text(current.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(current.detailLine(), color = Color(0xFFB7C1D6), fontSize = 15.sp)
+            Text(current.detailLine(), color = Lh.colors.textMuted, fontSize = 15.sp)
         }
         LazyRow(
             state = listState,
@@ -388,7 +394,7 @@ private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {
     Box(Modifier.fillMaxSize().focusRequester(requester).focusable(), contentAlignment = Alignment.Center) {
         Text(
             if (tab is HomeTab.Home) "No favourites yet. Press X on a game to add it." else "Nothing here yet.",
-            color = Color(0xFFB7C1D6),
+            color = Lh.colors.textMuted,
             fontSize = 18.sp,
         )
     }
@@ -423,7 +429,7 @@ private fun CoverJobPill(job: io.cttech.lighthouse.covers.CoverJob?, modifier: M
         val j = job ?: return@AnimatedVisibility
         Column(
             Modifier
-                .background(Color(0xE6151A26), androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                .background(Lh.colors.surface.copy(alpha = 0.92f), androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                 .padding(horizontal = 14.dp, vertical = 10.dp)
                 .width(260.dp),
         ) {
@@ -434,9 +440,28 @@ private fun CoverJobPill(job: io.cttech.lighthouse.covers.CoverJob?, modifier: M
             if (j.running && j.total > 0) {
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.15f), androidx.compose.foundation.shape.RoundedCornerShape(50))) {
-                    Box(Modifier.fillMaxWidth(j.done / j.total.toFloat()).height(4.dp).background(Color(0xFF6FA8FF), androidx.compose.foundation.shape.RoundedCornerShape(50)))
+                    Box(Modifier.fillMaxWidth(j.done / j.total.toFloat()).height(4.dp).background(Lh.colors.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)))
                 }
             }
         }
     }
+}
+
+/**
+ * The theme's background for this view (HOME, a platform tab…), cross-faded on tab changes, with the
+ * theme's scrim on top. Draws nothing when the theme has no image, leaving the tinted gradient.
+ */
+@Composable
+private fun ThemeBackground(viewKey: String) {
+    val theme = Lh.theme
+    val model = theme.backgroundFor(viewKey) ?: return
+    androidx.compose.animation.Crossfade(model, animationSpec = tween(350), label = "themeBackground") { m ->
+        coil3.compose.AsyncImage(
+            model = m,
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+    if (theme.scrim > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = theme.scrim)))
 }
