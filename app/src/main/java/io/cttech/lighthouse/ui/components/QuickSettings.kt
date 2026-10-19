@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.system.RootRadios
 import io.cttech.lighthouse.system.hasLocationPermission
+import io.cttech.lighthouse.system.isLocationOn
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -170,11 +171,21 @@ private fun WifiPanel(first: FocusRequester) {
     if (wifi.enabled) {
         PillButton("Choose network") { context.openFirst(Settings.Panel.ACTION_WIFI, Settings.ACTION_WIFI_SETTINGS) }
     }
-    if (wifi.connected && wifi.name == null && !context.hasLocationPermission()) {
-        // No root: Android only reveals network names to apps with location permission (and Location on).
-        PillButton("Show network name") { askLocation.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
+    if (wifi.connected && wifi.name == null) {
+        // Without root, Android only reveals network names with location permission AND Location switched on.
+        when {
+            !context.hasLocationPermission() -> {
+                StatusLine("Android shares the network name only with apps allowed to use location. Lighthouse uses it just for this.")
+                PillButton("Show network name") { askLocation.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
+            }
+            !context.isLocationOn() -> {
+                StatusLine("Location is off, so Android hides the network name.")
+                PillButton("Turn on Location") { context.openFirst(Settings.ACTION_LOCATION_SOURCE_SETTINGS) }
+            }
+        }
     }
     PillButton("Wi-Fi settings") { context.openFirst(Settings.ACTION_WIFI_SETTINGS) }
+    RootExtrasToggle { epoch++ }
 }
 
 @Composable
@@ -276,6 +287,16 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
             Spacer(Modifier.height(4.dp))
             Text("◀ ▶ to adjust", color = Muted, fontSize = 12.sp)
         }
+    }
+}
+
+/** Temporary home for the root switch until the Settings screen (M6). Off = test the non-root experience. */
+@Composable
+private fun RootExtrasToggle(onChanged: () -> Unit) {
+    val settings = LocalAppSettings.current
+    PillButton("Root extras: ${if (settings.rootExtrasEnabled) "on" else "off"}") {
+        settings.setRootExtras(!settings.rootExtrasEnabled)
+        onChanged()
     }
 }
 

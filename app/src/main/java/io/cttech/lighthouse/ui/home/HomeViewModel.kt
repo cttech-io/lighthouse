@@ -86,7 +86,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             byKey = byKey,
             byPlatform = byPlatform,
             favKeys = favKeys,
-            recentlyPlayed = plays.map { it.gameKey },
+            // Only things you play: ROMs and game-like apps (not Bitwarden & co.).
+            recentlyPlayed = plays.map { it.gameKey }.filter { key -> games.firstOrNull { it.key == key }?.isGame == true },
             recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
                 .sortedByDescending { it.addedAt }.map { it.key },
         )
@@ -120,9 +121,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     /** Fires when the Home button is pressed while Lighthouse is already the foreground home app. */
     val homePresses: kotlinx.coroutines.flow.SharedFlow<Unit> = _homePresses
 
-    /** Home button: back to the HOME tab, like a console's home button. */
+    /** Home button: back to the HOME tab, top-left item, like a console's home button. */
     fun onHomePressed() {
-        prefs.update { it.copy(selectedKey = HomeTab.Home.key, tabDirection = -1) }
+        prefs.update { it.copy(selectedKey = HomeTab.Home.key, tabDirection = -1, focusByTab = it.focusByTab - HomeTab.Home.key) }
         _homePresses.tryEmit(Unit)
     }
 

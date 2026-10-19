@@ -15,7 +15,15 @@ export JAVA_HOME
 
 ./gradlew --console=plain -q "assemble$(cap "$flavour")$(cap "$buildtype")"
 adb install -r "app/build/outputs/apk/${flavour}/${buildtype}/app-${flavour}-${buildtype}.apk"
-adb shell am start -n "io.cttech.lighthouse.${buildtype}/io.cttech.lighthouse.MainActivity"
+# Lighthouse is a home app: launch it through the HOME intent so there is exactly one instance
+# (an explicit `am start -n` creates a second, ordinary task with its own state). If Lighthouse isn't the
+# default home app this opens whichever is, so fall back to an explicit start.
+default_home=$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tail -1 | tr -d '\r')
+if [[ "$default_home" == io.cttech.lighthouse.${buildtype}/* ]]; then
+  adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME
+else
+  adb shell am start -n "io.cttech.lighthouse.${buildtype}/io.cttech.lighthouse.MainActivity"
+fi
 adb shell dumpsys gfxinfo "io.cttech.lighthouse.${buildtype}" reset >/dev/null   # fresh frame stats for this test
 echo "Installed and launched (${flavour} ${buildtype})."
 echo "Frame stats after testing: adb shell dumpsys gfxinfo io.cttech.lighthouse.${buildtype} | grep -E 'Janky|percentile'"

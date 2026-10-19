@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -45,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -99,15 +101,25 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
 
     // As the home app, Back must never leave Lighthouse: it only closes a panel.
     BackHandler(enabled = true) { openPanel = null }
-    LaunchedEffect(vm) { vm.homePresses.collect { openPanel = null } }
+    var rootFocused by remember { mutableStateOf(false) }
+    var refocusToken by remember { mutableIntStateOf(0) }
+    LaunchedEffect(vm) { vm.homePresses.collect { openPanel = null; refocusToken++ } }
+
+    // Focus safety net. Controller input only reaches Compose when something is focused, so the root takes
+    // focus at once; the shelf then claims it. If a D-pad press ever lands on the root itself (shelf not
+    // laid out yet, or focus lost after returning from another app), bump the token so the shelf re-claims it.
+    LaunchedEffect(Unit) { runCatching { rootFocus.requestFocus() } }
+    CompositionLocalProvider(LocalRefocusToken provides refocusToken) {
     Box(
         Modifier
             .fillMaxSize()
             .focusRequester(rootFocus)
-            .focusable() // last-resort focus target: D-pad from here moves into the shelf
+            .onFocusChanged { rootFocused = it.isFocused }
+            .focusable()
             .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
+                if (rootFocused && event.key in DPadKeys) { refocusToken++; return@onPreviewKeyEvent true }
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
                     Key.ButtonR1 -> { vm.moveTab(+1); true }
@@ -183,6 +195,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onDismiss = vm::dismissAccessPrompt,
             )
         }
+    }
     }
 }
 
@@ -307,12 +320,23 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
  */
 @Composable
 internal fun RestoreFocus(requester: FocusRequester, overlayShowing: Boolean) {
-    LaunchedEffect(requester, overlayShowing) {
+    val token = LocalRefocusToken.current
+    LaunchedEffect(requester, overlayShowing, token) {
         if (overlayShowing) return@LaunchedEffect
-        withFrameNanos { }
-        runCatching { requester.requestFocus() }
+        // The target item may not be composed on the first frame (rows still loading, lazy lists measuring):
+        // keep trying for a few frames instead of failing silently once.
+        // requestFocus() throws until the requester's item is attached.
+        repeat(30) {
+            withFrameNanos { }
+            if (runCatching { requester.requestFocus() }.isSuccess) return@LaunchedEffect
+        }
     }
 }
+
+/** Bumped when focus must be re-claimed by the visible shelf (see the root's D-pad safety net). */
+internal val LocalRefocusToken = androidx.compose.runtime.compositionLocalOf { 0 }
+
+private val DPadKeys = setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight)
 
 @Composable
 private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {

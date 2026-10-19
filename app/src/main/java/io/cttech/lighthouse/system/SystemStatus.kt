@@ -32,6 +32,10 @@ import androidx.core.content.ContextCompat
 
 data class WifiState(val enabled: Boolean, val connected: Boolean, /** 0..4 */ val level: Int, val name: String? = null)
 
+/** Android only reveals SSIDs when Location itself is switched on, not just permitted. */
+fun Context.isLocationOn(): Boolean =
+    getSystemService(android.location.LocationManager::class.java)?.isLocationEnabled == true
+
 fun Context.hasLocationPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
@@ -76,10 +80,12 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
             context.unregisterReceiver(receiver)
         }
     }
-    // Root fallback for the name (panel only).
-    LaunchedEffect(resolveNameWithRoot, state.connected, state.name == null) {
+    // Root fallback for the name (panel only). Location permission is preferred: give its callback a
+    // moment to deliver the SSID first, and never touch root when it already has.
+    LaunchedEffect(resolveNameWithRoot, state.connected, state.name == null, epoch) {
         if (resolveNameWithRoot && state.connected && state.name == null) {
-            RootRadios.wifiName()?.let { state = state.copy(name = it) }
+            if (context.hasLocationPermission()) kotlinx.coroutines.delay(700)
+            if (state.name == null) RootRadios.wifiName()?.let { state = state.copy(name = it) }
         }
     }
     return state

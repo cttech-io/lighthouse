@@ -104,6 +104,7 @@ class LibraryRepository(
                     sizeBytes = 0,
                     modifiedAt = pkg?.lastUpdateTime ?: 0,
                     addedAt = pkg?.firstInstallTime ?: now,
+                    isGame = AppClassifier.isGameLike(info),
                 )
             }
         dao.replaceGames(PlatformCatalog.ANDROID, GameKind.APP, apps)

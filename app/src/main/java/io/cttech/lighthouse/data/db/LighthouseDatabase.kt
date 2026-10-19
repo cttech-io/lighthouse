@@ -8,8 +8,11 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [SourceEntity::class, GameEntity::class, FavouriteEntity::class, PlayEntity::class],
-    version = 2,
-    autoMigrations = [AutoMigration(from = 1, to = 2)], // v2: plays table
+    version = 3,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2), // v2: plays table
+        AutoMigration(from = 2, to = 3), // v3: games.isGame
+    ],
 )
 abstract class LighthouseDatabase : RoomDatabase() {
     abstract fun library(): LibraryDao

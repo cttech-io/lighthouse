@@ -18,8 +18,12 @@ object Root {
     private val lock = Mutex()
     private var su: String? = null
 
+    /** User switch (Settings): when false every root call fails as if the device weren't rooted. */
+    @Volatile var enabled: Boolean = true
+
     /** True if a working su was found and granted. Cached after the first check. */
     suspend fun available(): Boolean = lock.withLock {
+        if (!enabled) return@withLock false
         if (su == null) {
             // Generous timeout: the first call waits on the user answering Magisk's prompt.
             su = withContext(Dispatchers.IO) { candidates.firstOrNull { exec(it, "id", timeoutSec = 30)?.contains("uid=0") == true } }

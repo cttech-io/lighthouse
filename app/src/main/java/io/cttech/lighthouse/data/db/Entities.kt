@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -31,6 +32,8 @@ data class GameEntity(
     val modifiedAt: Long,
     /** When it arrived on the device: file modified time (ROMs) or first install time (apps). */
     val addedAt: Long,
+    /** Counts towards "Continue playing": ROMs, game apps, streaming clients, emulators. Utilities don't. */
+    @ColumnInfo(defaultValue = "1") val isGame: Boolean = true,
 ) {
     val key: String get() = gameKey(platformId, locator)
 }

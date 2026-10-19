@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -65,10 +67,15 @@ internal fun HomeDashboard(
     refocus: Boolean,
 ) {
     val requester = remember { FocusRequester() }
+    // No memory (fresh start or Home button) = top-left: first item of the top row.
     val target = rows.flatMap { it.items }.let { all -> all.firstOrNull { it.key == rememberedKey } ?: all.firstOrNull() }
+    val listState = rememberLazyListState()
+    val token = LocalRefocusToken.current
+    LaunchedEffect(token, rememberedKey == null) { if (rememberedKey == null) listState.scrollToItem(0) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
