@@ -35,6 +35,7 @@ class LibraryRepository(
     private val app: Application,
     private val dao: LibraryDao,
     private val storage: StorageAccess,
+    private val afterScan: suspend (roots: List<File>) -> Unit = {},
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
@@ -42,6 +43,9 @@ class LibraryRepository(
     private val watcher = storage.createWatcher { platformId -> scheduleRescan(platformId) }
 
     val games: Flow<List<GameEntity>> = dao.observeGames()
+    /** gameKey -> cover file path. */
+    val coverPaths: Flow<Map<String, String>> =
+        dao.observeCovers().map { list -> list.filter { it.path.isNotEmpty() }.associate { it.gameKey to it.path } } // "none" = removed
     val favourites: Flow<List<String>> = dao.observeFavourites().map { list -> list.map { it.gameKey } }
     val plays: Flow<List<PlayEntity>> = dao.observePlays()
 
@@ -63,6 +67,7 @@ class LibraryRepository(
                     scanAllRomsLocked()
                 }
                 _scanInfo.value = ScanInfo(volumes = volumeSpace(), lastScanAt = System.currentTimeMillis())
+                runCatching { afterScan(storageRoots()) }.onFailure { Log.w(TAG, "afterScan failed", it) }
                 Log.i(TAG, "refreshAll in ${System.currentTimeMillis() - started} ms")
             }
         }

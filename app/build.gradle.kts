@@ -90,6 +90,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network) // cover-picker thumbnails
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
 }

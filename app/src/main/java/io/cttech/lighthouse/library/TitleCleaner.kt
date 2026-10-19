@@ -25,7 +25,9 @@ object TitleCleaner {
 
     /** Key for sorting and de-duplicating: lower case, leading article dropped, punctuation stripped. */
     fun sortKey(title: String): String =
-        title.lowercase()
+        // Strip accents so "Pokémon" (SteamGridDB) and "Pokemon" (No-Intro file names) compare equal.
+        java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+            .lowercase()
             .removePrefix("the ").removePrefix("a ").removePrefix("an ")
             .replace(Regex("""[^\p{L}\p{N} ]"""), "")
             .replace(spaces, " ")

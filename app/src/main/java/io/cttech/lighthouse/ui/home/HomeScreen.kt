@@ -98,7 +98,12 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val (btEpoch, bumpBt) = rememberBtEpoch()
     val requestBt = rememberBluetoothPermissionRequest(onResult = bumpBt)
     val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
-    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null
+    val coverJob by vm.coverJob.collectAsStateWithLifecycle()
+    val settingsInfo by vm.settingsInfo.collectAsStateWithLifecycle()
+    val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
+    val pickerFor by vm.pickerFor.collectAsStateWithLifecycle()
+    var menuOpen by remember { mutableStateOf(false) } // Settings page
+    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null
 
     // As the home app, Back must never leave Lighthouse: it only closes a panel.
     BackHandler(enabled = true) { openPanel = null }
@@ -120,6 +125,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
+                if (event.key == Key.ButtonStart) { vm.refreshSettingsInfo(); menuOpen = true; return@onPreviewKeyEvent true }
                 if (rootFocused && event.key in DPadKeys) { refocusToken++; return@onPreviewKeyEvent true }
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
@@ -156,13 +162,14 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     onFocused = { i -> vm.onFocused(shownTab, i) },
                     onLaunch = vm::launch,
                     onToggleFavourite = vm::toggleFavourite,
+                    onOptions = vm::openOptions,
                 )
                 // Re-key on size so removing the focused favourite rebuilds the shelf and restores focus.
                 key(games.size) {
                     when {
                         shownTab is HomeTab.Home -> HomeDashboard(
                             rows = state.homeRows,
-                            statusLine = state.statusLine,
+                            statusLine = state.statusLine, // cover progress shows in the pill instead
                             rememberedKey = state.focusByTab[HomeTab.Home.key]?.gameKey,
                             actions = actions,
                             onFocusedKey = vm::onHomeFocused,
@@ -178,6 +185,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             HintBar(
                 buildList {
                     if (tab !is HomeTab.Home) add("Y" to if (state.layout == HomeLayout.Carousel) "Grid" else "Carousel")
+                    add("☰" to "Settings")
+                    add("⧉" to "Options")
                     add("X" to "Favourite")
                     add("A" to "Play")
                 },
@@ -189,6 +198,29 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 // Back to the icon that opened it, like a console's quick menu.
                 runCatching { panelIcons.getValue(panel).requestFocus() }
             }
+        }
+        CoverJobPill(coverJob, Modifier.align(Alignment.BottomStart).padding(start = 24.dp, bottom = 52.dp))
+        optionsFor?.let { g ->
+            GameOptionsSheet(
+                game = g,
+                isFavourite = g.key in state.favourites,
+                onPlay = { vm.launch(g) },
+                onToggleFavourite = { vm.toggleFavourite(g) },
+                onChangeCover = { vm.openCoverPicker(g) },
+                onRemoveCover = { vm.removeCover(g); refocusToken++ },
+                onClose = { vm.closeOptions(); refocusToken++ },
+            )
+        }
+        pickerFor?.let { g -> CoverPicker(g, vm) { vm.closeCoverPicker(); refocusToken++ } }
+        if (menuOpen) {
+            SettingsScreen(
+                info = settingsInfo,
+                onTestKey = vm::testSteamGridDbKey,
+                onFindCovers = vm::findMissingCovers,
+                onRescan = vm::rescanLibrary,
+                onOpenAppInfo = { vm.openAppInfo(context.packageName) },
+                onClose = { menuOpen = false; refocusToken++ },
+            )
         }
         launchIssue?.let { issue ->
             LaunchIssueDialog(
@@ -216,6 +248,7 @@ internal class CardActions(
     val onFocused: (Int) -> Unit,
     val onLaunch: (Game) -> Unit,
     val onToggleFavourite: (Game) -> Unit,
+    val onOptions: (Game) -> Unit,
 )
 
 @Composable
@@ -265,6 +298,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
                     },
                     onLaunch = { actions.onLaunch(game) },
                     onToggleFavourite = { actions.onToggleFavourite(game) },
+                    onOptions = { actions.onOptions(game) },
                 )
             }
         }
@@ -305,6 +339,7 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
                     onFocused = { focused = i; actions.onFocused(i) },
                     onLaunch = { actions.onLaunch(game) },
                     onToggleFavourite = { actions.onToggleFavourite(game) },
+                    onOptions = { actions.onOptions(game) },
                 )
             }
         }
@@ -358,3 +393,40 @@ private fun HomeTab.accent(): Color = when (this) {
 }
 
 private fun lerpToDark(c: Color, amount: Float) = androidx.compose.ui.graphics.lerp(c, Color(0xFF05060A), amount)
+
+/** "  ·  Finding covers 12/31" while a cover job runs; a short summary once it has finished. */
+private fun io.cttech.lighthouse.covers.CoverJob?.statusSuffix(): String = when {
+    this == null -> ""
+    running -> "  ·  $label $done/$total"
+    else -> "  ·  $label: $found new"
+}
+
+/** Small non-blocking progress pill (bottom-left) while covers download; fades out a few seconds after. */
+@Composable
+private fun CoverJobPill(job: io.cttech.lighthouse.covers.CoverJob?, modifier: Modifier) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(job) {
+        visible = job != null
+        if (job != null && !job.running) { kotlinx.coroutines.delay(4_000); visible = false }
+    }
+    androidx.compose.animation.AnimatedVisibility(visible && job != null, modifier, enter = fadeIn(), exit = fadeOut()) {
+        val j = job ?: return@AnimatedVisibility
+        Column(
+            Modifier
+                .background(Color(0xE6151A26), androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .width(260.dp),
+        ) {
+            Text(
+                if (j.running) "${j.label} · ${j.done}/${j.total}" else "${j.label}: ${j.found} new",
+                color = Color.White, fontSize = 14.sp,
+            )
+            if (j.running && j.total > 0) {
+                Spacer(Modifier.height(6.dp))
+                Box(Modifier.fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.15f), androidx.compose.foundation.shape.RoundedCornerShape(50))) {
+                    Box(Modifier.fillMaxWidth(j.done / j.total.toFloat()).height(4.dp).background(Color(0xFF6FA8FF), androidx.compose.foundation.shape.RoundedCornerShape(50)))
+                }
+            }
+        }
+    }
+}

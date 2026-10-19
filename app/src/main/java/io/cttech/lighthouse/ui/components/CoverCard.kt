@@ -4,8 +4,12 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import java.io.File
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +66,8 @@ fun CoverCard(
     onFocused: () -> Unit,
     onLaunch: () -> Unit,
     onToggleFavourite: () -> Unit,
+    /** Select button or long-press: game options (change cover…). */
+    onOptions: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
@@ -106,33 +112,49 @@ fun CoverCard(
                 when (event.key) {
                     Key.ButtonA -> { onLaunch(); true }
                     Key.ButtonX -> { onToggleFavourite(); true }
+                    Key.ButtonSelect -> { onOptions(); true }
                     else -> false
                 }
             }
             // Handles touch, Enter and D-pad centre.
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onLaunch),
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onLongClick = onOptions,
+                onClick = onLaunch,
+            ),
     ) {
-        val icon = rememberAppIcon(game.packageName)
-        if (icon != null) {
-            Image(icon, contentDescription = null, modifier = Modifier.align(Alignment.Center).padding(bottom = 18.dp).fillMaxSize(0.48f))
-        }
-        Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
-            Text(
-                if (icon != null || game.packageName != null) "" else monogram(game.title),
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Black,
+        if (game.coverPath != null) {
+            // Real artwork: Coil decodes at the card's on-screen size (cheap), from app storage.
+            AsyncImage(
+                model = File(game.coverPath),
+                contentDescription = game.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(CoverShape),
             )
-            Text(
-                game.title,
-                color = Color.White,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Start,
-            )
+        } else {
+            val icon = rememberAppIcon(game.packageName)
+            if (icon != null) {
+                Image(icon, contentDescription = null, modifier = Modifier.align(Alignment.Center).padding(bottom = 18.dp).fillMaxSize(0.48f))
+            }
+            Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+                Text(
+                    if (icon != null || game.packageName != null) "" else monogram(game.title),
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Black,
+                )
+                Text(
+                    game.title,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Start,
+                )
+            }
         }
         if (isFavourite) {
             Text("♥", color = Color(0xFFFF6A8A), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))

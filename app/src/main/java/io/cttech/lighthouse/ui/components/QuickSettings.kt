@@ -198,7 +198,6 @@ private fun WifiPanel(first: FocusRequester) {
         }
     }
     PillButton("Wi-Fi settings") { context.openFirst(Settings.ACTION_WIFI_SETTINGS) }
-    RootExtrasToggle { epoch++ }
 }
 
 @Composable
@@ -330,16 +329,6 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
             Spacer(Modifier.height(4.dp))
             Text("◀ ▶ to adjust", color = Muted, fontSize = 12.sp)
         }
-    }
-}
-
-/** Temporary home for the root switch until the Settings screen (M6). Off = test the non-root experience. */
-@Composable
-private fun RootExtrasToggle(onChanged: () -> Unit) {
-    val settings = LocalAppSettings.current
-    PillButton("Root extras: ${if (settings.rootExtrasEnabled) "on" else "off"}") {
-        settings.setRootExtras(!settings.rootExtrasEnabled)
-        onChanged()
     }
 }
 

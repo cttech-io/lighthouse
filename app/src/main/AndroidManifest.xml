@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Cover art only (SteamGridDB, libretro thumbnails), and only when the user asks. No analytics. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Quick settings: read-only Wi-Fi/network state, Bluetooth device list (asked at runtime). -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

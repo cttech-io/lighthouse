@@ -28,11 +28,21 @@ class AppSettings(context: Context) {
         prefs.edit().putBoolean(KEY_ROOT, enabled).apply()
     }
 
+    /** The user's own SteamGridDB API key (cover art). Empty = SteamGridDB not used. */
+    var steamGridDbKey by mutableStateOf(prefs.getString(KEY_SGDB, "").orEmpty())
+        private set
+
+    fun updateSteamGridDbKey(key: String) {
+        steamGridDbKey = key
+        prefs.edit().putString(KEY_SGDB, key).apply()
+    }
+
     init { Root.enabled = rootExtrasEnabled }
 
     private companion object {
         const val KEY_HAPTICS = "haptics_enabled"
         const val KEY_ROOT = "root_extras_enabled"
+        const val KEY_SGDB = "steamgriddb_api_key"
     }
 }
 

@@ -48,6 +48,15 @@ data class PlayEntity(
     val launchCount: Int,
 )
 
+/** Cover art for a game, keyed like favourites so rescans keep it. [source]: manual, steamgriddb, libretro. */
+@Entity(tableName = "covers")
+data class CoverEntity(
+    @PrimaryKey val gameKey: String,
+    val path: String,
+    val source: String,
+    val updatedAt: Long,
+)
+
 @Entity(tableName = "favourites")
 data class FavouriteEntity(
     @PrimaryKey val gameKey: String,

@@ -12,6 +12,8 @@ data class Game(
     /** Set for Android apps: shows the app icon and launches the package. */
     val packageName: String? = null,
     val path: String? = null,
+    /** Normalised 600×900 cover in app storage, if one has been found. */
+    val coverPath: String? = null,
 )
 
 /** A home tab: either a real platform or a virtual view such as Favourites. */

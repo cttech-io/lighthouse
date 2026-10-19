@@ -21,6 +21,9 @@ class TitleCleanerTest {
 
     @Test fun hackWithParens() = check("Pokemon Ultra Violet (1.22) LSA (Fire Red Hack).gba", "Pokemon Ultra Violet LSA")
 
+    @Test fun sortKeyIgnoresAccents() =
+        assertEquals(TitleCleaner.sortKey("Pokemon: Emerald Version"), TitleCleaner.sortKey("Pokémon Emerald Version"))
+
     @Test fun sortKeyDropsArticleAndPunctuation() =
         assertEquals("simpsons hit run", TitleCleaner.sortKey("The Simpsons: Hit & Run"))
 }

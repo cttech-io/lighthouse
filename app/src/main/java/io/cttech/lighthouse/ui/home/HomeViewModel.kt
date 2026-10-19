@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.io.File
@@ -101,14 +102,77 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openAppInfo(pkg: String) = launcher.openAppInfo(pkg)
 
+    // --- Covers (Start menu) ----------------------------------------------------------------------
+    private val coverService = (app as LighthouseApp).covers
+    val coverJob = coverService.job
+    /** Facts shown on the Settings page. */
+    data class SettingsInfo(val network: Boolean = true, val storageAccess: Boolean = true, val rootAvailable: Boolean = false)
+    private val _settingsInfo = MutableStateFlow(SettingsInfo())
+    val settingsInfo: StateFlow<SettingsInfo> = _settingsInfo
+
+    fun refreshSettingsInfo() {
+        viewModelScope.launch {
+            _settingsInfo.value = SettingsInfo(
+                network = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { coverService.hasNetwork() },
+                storageAccess = repo.hasStorageAccess(),
+                rootAvailable = io.cttech.lighthouse.system.Root.available(),
+            )
+        }
+    }
+
+    /** Checks a SteamGridDB key with one search call. */
+    suspend fun testSteamGridDbKey(key: String): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        io.cttech.lighthouse.covers.SteamGridDb(key).isValid()
+    }
+
+    // --- Game options + cover picker ----------------------------------------------------------------
+    private val _optionsFor = MutableStateFlow<Game?>(null)
+    /** Game whose options sheet is open (Select / long-press). */
+    val optionsFor: StateFlow<Game?> = _optionsFor
+    private val _pickerFor = MutableStateFlow<Game?>(null)
+    /** Game whose cover picker is open. */
+    val pickerFor: StateFlow<Game?> = _pickerFor
+
+    fun openOptions(game: Game) { _optionsFor.value = game }
+    fun closeOptions() { _optionsFor.value = null }
+    fun openCoverPicker(game: Game) { _optionsFor.value = null; _pickerFor.value = game }
+    fun closeCoverPicker() { _pickerFor.value = null }
+
+    fun hasSteamGridDbKey(): Boolean = coverService.steamGridDb() != null
+    fun steamAppIdFor(game: Game): Int? = game.path?.let(coverService::steamAppIdFor)
+
+    suspend fun searchCovers(term: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        coverService.steamGridDb()?.search(term).orEmpty()
+    }
+
+    suspend fun coverGrids(gameId: Int? = null, steamAppId: Int? = null) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        coverService.steamGridDb()?.grids(gameId, steamAppId).orEmpty()
+    }
+
+    suspend fun applyCover(game: Game, url: String): Boolean = coverService.applyPicked(game.key, url = url).also { if (it) closeCoverPicker() }
+
+    suspend fun applyCoverImage(game: Game, uri: android.net.Uri): Boolean {
+        val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { getApplication<Application>().contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+        } ?: return false
+        return coverService.applyPicked(game.key, bytes = bytes).also { if (it) closeCoverPicker() }
+    }
+
+    fun removeCover(game: Game) { viewModelScope.launch { coverService.removeCover(game.key) }; _optionsFor.value = null; _pickerFor.value = null }
+
+    fun findMissingCovers() { viewModelScope.launch { coverService.findMissing() } }
+    fun rescanLibrary() = repo.refreshAll()
+
     fun openApp(pkg: String) {
         getApplication<Application>().packageManager.getLaunchIntentForPackage(pkg)
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { getApplication<Application>().startActivity(it) }
     }
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
-    val state: StateFlow<HomeState> = combine(repo.games, repo.favourites, repo.plays, repo.scanInfo, prefs) { games, favKeys, plays, scan, p ->
-        val ui = games.map { it.toUi() }
+    private val gamesAndCovers = combine(repo.games, repo.coverPaths) { g, c -> g to c }
+
+    val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (games, covers), favKeys, plays, scan, p ->
+        val ui = games.map { it.toUi().copy(coverPath = covers[it.key]) }
         val byPlatform = ui.groupBy { it.platformId }
         val byKey = ui.associateBy { it.key }
         val platformTabs = PlatformCatalog.all
@@ -142,7 +206,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             showAccessPrompt = !p.hasAccess && !p.accessDismissed && repo.storageAccessIntent() != null,
             loaded = true,
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState())
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default) // build state off the main thread
+        .stateIn(viewModelScope, SharingStarted.Eagerly, HomeState())
 
     /** Called from Activity.onResume: re-check permission (it may have just been granted) and rescan. */
     fun onResume() {

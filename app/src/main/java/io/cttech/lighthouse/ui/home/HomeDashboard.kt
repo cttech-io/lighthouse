@@ -117,6 +117,7 @@ internal fun HomeDashboard(
                                 onFocused = { onFocusedKey(position) },
                                 onLaunch = { actions.onLaunch(item.game) },
                                 onToggleFavourite = { actions.onToggleFavourite(item.game) },
+                                onOptions = { actions.onOptions(item.game) },
                             )
                             is HomeItem.PlatformItem -> PlatformTile(item, focusMod, { onFocusedKey(position) }) { onOpenPlatform(item.tabIndex) }
                         }

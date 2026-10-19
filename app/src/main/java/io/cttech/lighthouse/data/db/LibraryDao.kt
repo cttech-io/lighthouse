@@ -52,6 +52,25 @@ interface LibraryDao {
     @Query("INSERT INTO plays (gameKey, lastPlayedAt, launchCount) VALUES (:key, :at, 1) ON CONFLICT(gameKey) DO UPDATE SET lastPlayedAt = :at, launchCount = launchCount + 1")
     suspend fun recordLaunch(key: String, at: Long)
 
+    @Query("SELECT * FROM covers")
+    fun observeCovers(): Flow<List<CoverEntity>>
+
+    @Query("SELECT * FROM covers")
+    suspend fun covers(): List<CoverEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putCover(cover: CoverEntity)
+
+    /** One write (one UI refresh) for a whole batch of covers. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putCovers(covers: List<CoverEntity>)
+
+    @Query("DELETE FROM covers WHERE gameKey = :key")
+    suspend fun deleteCover(key: String)
+
+    @Query("SELECT * FROM games")
+    suspend fun allGames(): List<GameEntity>
+
     @Query("SELECT * FROM sources ORDER BY id")
     suspend fun sources(): List<SourceEntity>
 
