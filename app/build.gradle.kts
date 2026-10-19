@@ -41,6 +41,14 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        // Release-optimised but debug-signed: use this to judge smoothness (debug builds are much slower).
+        create("profile") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".profile"
+            versionNameSuffix = "-profile"
+            matchingFallbacks += "release"
+        }
     }
 
     buildFeatures {

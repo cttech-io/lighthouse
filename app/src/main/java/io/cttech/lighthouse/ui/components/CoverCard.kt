@@ -1,11 +1,9 @@
 package io.cttech.lighthouse.ui.components
 
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -22,7 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -66,15 +69,29 @@ fun CoverCard(
         spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "coverScale",
     )
-    val ring by animateDpAsState(if (focused) 3.dp else 0.dp, label = "coverRing")
+    val ring = animateFloatAsState(if (focused) 1f else 0f, label = "coverRing") // read in draw phase
+    val brush = remember(game.id, accent) { placeholderBrush(game, accent) }
 
     Box(
         modifier
             .aspectRatio(2f / 3f)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .shadow(if (focused) 18.dp else 4.dp, CoverShape, ambientColor = accent, spotColor = accent)
-            .background(placeholderBrush(game, accent), CoverShape)
-            .border(ring, Color.White.copy(alpha = 0.92f), CoverShape)
+            .then(if (focused) Modifier.shadow(16.dp, CoverShape, ambientColor = accent, spotColor = accent) else Modifier)
+            .background(brush, CoverShape)
+            .drawWithContent {
+                drawContent()
+                val a = ring.value
+                if (a > 0f) {
+                    val w = 3.dp.toPx()
+                    drawRoundRect(
+                        Color.White.copy(alpha = 0.92f * a),
+                        topLeft = Offset(w / 2, w / 2),
+                        size = Size(size.width - w, size.height - w),
+                        cornerRadius = CornerRadius(10.dp.toPx()),
+                        style = Stroke(w),
+                    )
+                }
+            }
             .onFocusChanged {
                 if (it.isFocused && !focused) {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)

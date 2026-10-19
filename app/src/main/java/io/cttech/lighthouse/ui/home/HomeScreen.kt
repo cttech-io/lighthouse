@@ -9,7 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +44,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -65,6 +68,9 @@ import io.cttech.lighthouse.ui.components.TopBar
 import kotlinx.coroutines.launch
 
 private val NeutralAccent = Color(0xFF8A93A6)
+private val CarouselSlot = 150.dp
+private val CarouselExtra = 70.dp            // focused card is 220dp wide
+private const val CarouselGrowth = 70f / 150f
 
 @Composable
 fun HomeScreen(vm: HomeViewModel = viewModel()) {
@@ -72,12 +78,13 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val context = LocalContext.current
     val tab = state.currentTab
     val accent = tab.accent()
-    val bgTop by animateColorAsState(lerpToDark(accent, 0.82f), tween(450), label = "bgTop")
+    // Read only in the draw phase, so the colour animation never recomposes the screen.
+    val bgTop = animateColorAsState(lerpToDark(accent, 0.82f), tween(450), label = "bgTop")
 
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(bgTop, Color(0xFF040507))))
+            .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.key) {
@@ -160,16 +167,28 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
             contentPadding = PaddingValues(start = 40.dp, end = 600.dp, top = 16.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.Top,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(CarouselSlot * 1.5f * (1f + CarouselGrowth) + 32.dp),
         ) {
             itemsIndexed(games, key = { _, g -> g.id }) { i, game ->
-                val width by animateDpAsState(if (i == focused) 220.dp else 150.dp, tween(220), label = "carouselWidth")
+                // Growth is drawn, not laid out: the focused card scales from its top-left corner and the
+                // cards after it slide right by the extra width. No re-measuring while the row scrolls.
+                val grow by animateFloatAsState(if (i == focused) 1f else 0f, tween(200), label = "grow")
+                val shift by animateFloatAsState(if (i > focused) 1f else 0f, tween(200), label = "shift")
                 CoverCard(
                     game = game,
                     accent = actions.accent,
                     isFavourite = game.id in actions.favourites,
-                    focusedScale = 1f, // carousel grows the focused card via width instead
-                    modifier = Modifier.width(width).then(if (i == initialFocus) Modifier.focusRequester(requester) else Modifier),
+                    focusedScale = 1f,
+                    modifier = Modifier
+                        .width(CarouselSlot)
+                        .graphicsLayer {
+                            val s = 1f + CarouselGrowth * grow
+                            scaleX = s
+                            scaleY = s
+                            transformOrigin = TransformOrigin(0f, 0f)
+                            translationX = CarouselExtra.toPx() * shift
+                        }
+                        .then(if (i == initialFocus) Modifier.focusRequester(requester) else Modifier),
                     onFocused = {
                         focused = i
                         actions.onFocused(i)
