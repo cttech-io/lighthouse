@@ -86,6 +86,18 @@ interface LibraryDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSources(sources: List<SourceEntity>)
 
+    @Query("SELECT * FROM sources ORDER BY platformId, path")
+    fun observeSources(): Flow<List<SourceEntity>>
+
+    @Update
+    suspend fun updateSource(source: SourceEntity)
+
+    @Query("DELETE FROM sources WHERE id = :id")
+    suspend fun deleteSource(id: Long)
+
+    @Query("SELECT * FROM sources WHERE path = :path")
+    suspend fun sourceByPath(path: String): SourceEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addFavourite(f: FavouriteEntity)
 

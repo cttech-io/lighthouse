@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,13 +43,45 @@ class LibraryRepository(
     private val pendingRescans = ConcurrentHashMap<String, Job>()
     private val watcher = storage.createWatcher { platformId -> scheduleRescan(platformId) }
 
-    val games: Flow<List<GameEntity>> = dao.observeGames()
+    val games: Flow<List<GameEntity>> = dao.observeGames().onEach { list -> lastGames = list.associateBy { it.key } }
     /** gameKey -> cover file path. */
     val coverPaths: Flow<Map<String, String>> =
         dao.observeCovers().map { list -> list.filter { it.path.isNotEmpty() }.associate { it.gameKey to it.path } } // "none" = removed
     val favourites: Flow<List<String>> = dao.observeFavourites().map { list -> list.map { it.gameKey } }
     val plays: Flow<List<PlayEntity>> = dao.observePlays()
     val hidden: Flow<List<String>> = dao.observeHidden()
+    /** Every known ROM folder, including ones the user switched off ([SourceEntity.ignored]). */
+    val sources: Flow<List<SourceEntity>> = dao.observeSources()
+
+    /** Adds a folder by hand (Settings → Library or setup). Re-adding a removed folder switches it back on. */
+    fun addFolder(path: String, platformId: String) = editSources {
+        val existing = dao.sourceByPath(path)
+        if (existing != null) dao.updateSource(existing.copy(platformId = platformId, ignored = false))
+        else dao.insertSources(listOf(SourceEntity(platformId = platformId, path = path, autoDetected = false)))
+    }
+
+    /** Auto-detected folders are only switched off (so detection doesn't bring them back); added ones are deleted. */
+    fun removeFolder(source: SourceEntity) = editSources {
+        if (source.autoDetected) dao.updateSource(source.copy(ignored = true)) else dao.deleteSource(source.id)
+    }
+
+    fun setFolderPlatform(source: SourceEntity, platformId: String) = editSources {
+        dao.updateSource(source.copy(platformId = platformId, ignored = false))
+    }
+
+    private fun editSources(edit: suspend () -> Unit) {
+        scope.launch {
+            lock.withLock {
+                edit()
+                if (storage.hasAccess(app)) scanAllRomsLocked()
+            }
+        }
+    }
+
+    @Volatile private var lastGames: Map<String, GameEntity> = emptyMap()
+
+    /** Latest stored entity for [key] (from the last emission the UI saw). */
+    fun gameEntity(key: String): GameEntity? = lastGames[key]
 
     fun setHidden(key: String, hidden: Boolean) {
         scope.launch { if (hidden) dao.hide(io.cttech.lighthouse.data.db.HiddenEntity(key, System.currentTimeMillis())) else dao.unhide(key) }
@@ -134,10 +167,15 @@ class LibraryRepository(
     }
 
     private suspend fun scanAllRomsLocked() {
-        val byPlatform = dao.sources().groupBy { it.platformId }
-        for ((platformId, sources) in byPlatform) scanPlatformLocked(platformId, sources)
+        val byPlatform = activeSources().groupBy { it.platformId }
+        // Every ROM platform, even without folders: a platform whose last folder was removed must empty out.
+        for (def in PlatformCatalog.all) {
+            if (def.id != PlatformCatalog.ANDROID) scanPlatformLocked(def.id, byPlatform[def.id].orEmpty())
+        }
         watcher.watch(byPlatform.mapValues { (_, s) -> s.map { File(it.path) } })
     }
+
+    private suspend fun activeSources() = dao.sources().filter { !it.ignored }
 
     private suspend fun scanPlatformLocked(platformId: String, sources: List<SourceEntity>) {
         val def = PlatformCatalog.byId(platformId) ?: return
@@ -159,7 +197,7 @@ class LibraryRepository(
         pendingRescans[platformId] = scope.launch {
             delay(1_500)
             lock.withLock {
-                val sources = dao.sources()
+                val sources = activeSources()
                 scanPlatformLocked(platformId, sources.filter { it.platformId == platformId })
                 watcher.watch(sources.groupBy { it.platformId }.mapValues { (_, s) -> s.map { File(it.path) } })
                 Log.i(TAG, "rescanned $platformId after file change")

@@ -14,6 +14,8 @@ data class Game(
     val path: String? = null,
     /** Normalised 600×900 cover in app storage, if one has been found. */
     val coverPath: String? = null,
+    /** Counts towards Continue playing (automatic guess, or the user's override). */
+    val isGame: Boolean = true,
 )
 
 /** A home tab: either a real platform or a virtual view such as Favourites. */

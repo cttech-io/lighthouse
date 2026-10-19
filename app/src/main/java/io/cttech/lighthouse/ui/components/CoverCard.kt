@@ -70,11 +70,10 @@ fun CoverCard(
     onOptions: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
-    val haptics = LocalHapticFeedback.current
+    val tick = io.cttech.lighthouse.ui.components.rememberNavTick()
     val corner = Lh.theme.coverCorner
     val CoverShape = remember(corner) { RoundedCornerShape(corner) }
     val ringColor = Lh.colors.focus
-    val hapticsOn = io.cttech.lighthouse.system.LocalAppSettings.current.hapticsEnabled
     val scale by animateFloatAsState(
         if (focused) focusedScale else 1f,
         spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
@@ -105,7 +104,7 @@ fun CoverCard(
             }
             .onFocusChanged {
                 if (it.isFocused && !focused) {
-                    if (hapticsOn) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    tick()
                     onFocused()
                 }
                 focused = it.isFocused

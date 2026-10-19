@@ -198,6 +198,7 @@ fun GameOptionsSheet(
     onToggleFavourite: () -> Unit,
     onChangeCover: () -> Unit,
     onRemoveCover: () -> Unit,
+    onToggleCountsAsGame: () -> Unit,
     onHide: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -227,8 +228,42 @@ fun GameOptionsSheet(
             PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites") { onToggleFavourite(); onClose() }
             PillButton("Change cover", onClick = onChangeCover)
             if (game.coverPath != null) PillButton("Remove cover", onClick = onRemoveCover)
+            // Apps only: ROMs are always games. Decides whether it appears in Continue playing.
+            if (game.packageName != null) PillButton(if (game.isGame) "Counts as a game: yes" else "Counts as a game: no", onClick = onToggleCountsAsGame)
             PillButton("Hide from Lighthouse", onClick = onHide)
         }
     }
     FocusOnAppear(first, game.key)
+}
+
+/** After a scan: games arrived without local artwork. Ask once before going online (Settings → Covers). */
+@Composable
+fun CoverOfferDialog(count: Int, hasKey: Boolean, onFind: () -> Unit, onAlways: () -> Unit, onNotNow: () -> Unit) {
+    val first = remember { FocusRequester() }
+    Box(
+        Modifier
+            .fillMaxSize()
+            .trapFocus()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .onPreviewKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onNotNow(); true } else false },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.width(520.dp).background(Lh.colors.surface, RoundedCornerShape(18.dp)).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(if (count == 1) "1 game has no cover" else "$count games have no cover", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "None of your own images matched. Look for covers online?" +
+                    if (hasKey) " (SteamGridDB, then libretro box art.)" else " (libretro box art; add a SteamGridDB key in Settings → Covers for more.)",
+                color = Lh.colors.textMuted, fontSize = 15.sp, lineHeight = 20.sp,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PillButton("Find covers", Modifier.focusRequester(first), onClick = onFind)
+                PillButton("Always, don't ask", onClick = onAlways)
+                PillButton("Not now", onClick = onNotNow)
+            }
+        }
+    }
+    FocusOnAppear(first, Unit)
 }

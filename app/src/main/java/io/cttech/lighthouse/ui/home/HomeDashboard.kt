@@ -133,8 +133,7 @@ internal fun HomeDashboard(
 @Composable
 private fun PlatformTile(item: HomeItem.PlatformItem, modifier: Modifier, onFocused: () -> Unit, onOpen: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
-    val haptics = LocalHapticFeedback.current
-    val hapticsOn = LocalAppSettings.current.hapticsEnabled
+    val tick = io.cttech.lighthouse.ui.components.rememberNavTick()
     val scale by animateFloatAsState(if (focused) 1.07f else 1f, label = "platformScale")
     val accent = item.platform.accent
     Box(
@@ -146,7 +145,7 @@ private fun PlatformTile(item: HomeItem.PlatformItem, modifier: Modifier, onFocu
             .then(if (focused) Modifier.background(Color.White.copy(alpha = 0.08f)) else Modifier)
             .onFocusChanged {
                 if (it.isFocused && !focused) {
-                    if (hapticsOn) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    tick()
                     onFocused()
                 }
                 focused = it.isFocused

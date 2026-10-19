@@ -74,7 +74,8 @@ private data class UiPrefs(
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LighthouseApp).repository
-    private val launcher = GameLauncher(app)
+    private val settings = (app as LighthouseApp).settings
+    private val launcher = GameLauncher(app) { platformId -> settings.emulatorChoice[platformId] }
 
     private val _launchIssue = MutableStateFlow<LaunchResult?>(null)
     /** A launch that didn't start (missing emulator, permission, core…), shown as a dialog with a fix. */
@@ -181,17 +182,21 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
-    /** Games minus hidden ones, with covers attached; hidden items are kept aside for Settings. */
-    private val gamesAndCovers = combine(repo.games, repo.coverPaths, repo.hidden) { g, c, h -> Triple(g, c, h.toSet()) }
+    private data class LibrarySnapshot(val games: List<GameEntity>, val covers: Map<String, String>, val hidden: Set<String>)
+
+    /** Games with covers and hidden keys; re-emits when tab/emulator/"counts as game" settings change. */
+    private val gamesAndCovers = combine(repo.games, repo.coverPaths, repo.hidden, settings.changes) { g, c, h, _ -> LibrarySnapshot(g, c, h.toSet()) }
 
     val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (allGames, covers, hiddenKeys), favKeys, plays, scan, p ->
-        val games = allGames.filter { it.key !in hiddenKeys }
-        val hiddenUi = allGames.filter { it.key in hiddenKeys }.map { it.toUi() }
-        val ui = games.map { it.toUi().copy(coverPath = covers[it.key]) }
+        val hiddenTabs = settings.hiddenTabs
+        // Hidden items, and everything on a hidden platform, stay out of the shelves (the app drawer still has apps).
+        val games = allGames.filter { it.key !in hiddenKeys && it.platformId !in hiddenTabs }
+        val hiddenUi = allGames.filter { it.key in hiddenKeys }.map { it.toUi(settings.gameOverrides) }
+        val ui = games.map { it.toUi(settings.gameOverrides).copy(coverPath = covers[it.key]) }
         val byPlatform = ui.groupBy { it.platformId }
         val byKey = ui.associateBy { it.key }
-        val platformTabs = PlatformCatalog.all
-            .filter { it.id == PlatformCatalog.ANDROID || byPlatform[it.id].orEmpty().isNotEmpty() }
+        val platformTabs = orderedPlatforms()
+            .filter { it.id !in hiddenTabs && (it.id == PlatformCatalog.ANDROID || byPlatform[it.id].orEmpty().isNotEmpty()) }
             .map { HomeTab.PlatformTab(it) }
         val tabs = listOf(HomeTab.Home) + platformTabs
         val gamesByTab = buildMap {
@@ -203,7 +208,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             byPlatform = byPlatform,
             favKeys = favKeys,
             // Only things you play: ROMs and game-like apps (not Bitwarden & co.).
-            recentlyPlayed = plays.map { it.gameKey }.filter { key -> games.firstOrNull { it.key == key }?.isGame == true },
+            recentlyPlayed = plays.map { it.gameKey }.filter { key -> byKey[key]?.isGame == true },
             recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
                 .sortedByDescending { it.addedAt }.map { it.key },
         )
@@ -240,9 +245,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     /** Fires when the Home button is pressed while Lighthouse is already the foreground home app. */
     val homePresses: kotlinx.coroutines.flow.SharedFlow<Unit> = _homePresses
 
-    /** Home button: back to the HOME tab, top-left item, like a console's home button. */
+    /** Home button: back to the HOME tab, top-left item (or where you were, per Settings → Controls). */
     fun onHomePressed() {
-        prefs.update { it.copy(selectedKey = HomeTab.Home.key, tabDirection = -1, focusByTab = it.focusByTab - HomeTab.Home.key) }
+        val keepPlace = settings.homeButton == io.cttech.lighthouse.system.HomeButtonAction.LastPosition
+        prefs.update {
+            it.copy(selectedKey = HomeTab.Home.key, tabDirection = -1, focusByTab = if (keepPlace) it.focusByTab else it.focusByTab - HomeTab.Home.key)
+        }
         _homePresses.tryEmit(Unit)
     }
 
@@ -277,6 +285,87 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun unhide(game: Game) = repo.setHidden(game.key, false)
 
     fun recordLaunch(game: Game) = repo.recordLaunch(game.key)
+
+    /** Flips whether [game] counts as a game; back to automatic when it matches the guess. */
+    fun toggleCountsAsGame(game: Game) {
+        val entity = repo.gameEntity(game.key)
+        val next = !game.isGame
+        settings.updateGameOverride(game.key, if (entity != null && entity.isGame == next) null else next)
+        _optionsFor.value = _optionsFor.value?.takeIf { it.key == game.key }?.copy(isGame = next)
+    }
+
+    // --- Library / platforms / emulators (Settings + setup) -------------------------------------------
+
+    /** Catalogue platforms in the user's tab order (custom labels applied). */
+    private fun orderedPlatforms(): List<io.cttech.lighthouse.library.PlatformDef> {
+        val order = settings.tabOrder
+        return PlatformCatalog.all
+            .sortedBy { def -> order.indexOf(def.id).let { if (it < 0) order.size + PlatformCatalog.order(def.id) else it } }
+            .map { def -> settings.tabLabels[def.id]?.let { def.copy(tabLabel = it) } ?: def }
+    }
+
+    data class PlatformRow(val def: io.cttech.lighthouse.library.PlatformDef, val defaultLabel: String, val count: Int, val hidden: Boolean)
+    data class FolderRow(val source: io.cttech.lighthouse.data.db.SourceEntity, val platformLabel: String, val count: Int)
+    data class AppRow(val game: Game, val automatic: Boolean)
+    data class LibraryInfo(
+        val platforms: List<PlatformRow> = emptyList(),
+        val folders: List<FolderRow> = emptyList(),
+        val apps: List<AppRow> = emptyList(),
+        val scanning: Boolean = false,
+    )
+
+    val libraryInfo: StateFlow<LibraryInfo> = combine(repo.games, repo.sources, settings.changes) { games, sources, _ ->
+        val active = sources.filter { !it.ignored }
+        val counts = games.groupingBy { it.platformId }.eachCount()
+        val platforms = orderedPlatforms()
+            .filter { def -> def.id == PlatformCatalog.ANDROID || (counts[def.id] ?: 0) > 0 || active.any { it.platformId == def.id } }
+            .map { def -> PlatformRow(def, PlatformCatalog.byId(def.id)?.tabLabel ?: def.tabLabel, counts[def.id] ?: 0, def.id in settings.hiddenTabs) }
+        val folders = sources.sortedWith(compareBy({ it.ignored }, { it.path })).map { src ->
+            FolderRow(src, settings.tabLabels[src.platformId] ?: PlatformCatalog.byId(src.platformId)?.tabLabel ?: src.platformId,
+                if (src.ignored) 0 else games.count { it.platformId == src.platformId && it.locator.startsWith(src.path + "/") })
+        }
+        val apps = games.filter { it.kind == GameKind.APP }.sortedBy { it.sortTitle }
+            .map { AppRow(it.toUi(settings.gameOverrides), automatic = it.key !in settings.gameOverrides) }
+        LibraryInfo(platforms, folders, apps)
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(viewModelScope, SharingStarted.Eagerly, LibraryInfo())
+
+    fun movePlatform(id: String, delta: Int) {
+        val ids = libraryInfo.value.platforms.map { it.def.id }.toMutableList()
+        val i = ids.indexOf(id).takeIf { it >= 0 } ?: return
+        val j = (i + delta).coerceIn(0, ids.lastIndex)
+        if (i == j) return
+        ids.add(j, ids.removeAt(i))
+        settings.updateTabOrder(ids)
+    }
+
+    fun setPlatformHidden(id: String, hidden: Boolean) = settings.setTabHidden(id, hidden)
+    fun renamePlatform(id: String, label: String) = settings.updateTabLabel(id, label.takeIf { it.isNotBlank() && it != PlatformCatalog.byId(id)?.tabLabel })
+
+    fun addFolder(path: String, platformId: String) = repo.addFolder(path, platformId)
+    fun removeFolder(source: io.cttech.lighthouse.data.db.SourceEntity) = repo.removeFolder(source)
+    fun setFolderPlatform(source: io.cttech.lighthouse.data.db.SourceEntity, platformId: String) = repo.setFolderPlatform(source, platformId)
+    fun guessPlatform(path: String): String? = io.cttech.lighthouse.library.FolderDetector.guessPlatform(File(path))
+    fun storageRoots(): List<File> = repo.storageRoots()
+
+    data class PlatformEmulators(val platformId: String, val label: String, val options: List<io.cttech.lighthouse.launch.EmulatorStatus>, val activeId: String?)
+
+    /** Emulator status for every ROM platform that has games or folders. Checks cores with root, so it suspends. */
+    suspend fun emulatorStatus(): List<PlatformEmulators> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        libraryInfo.value.platforms.filter { it.def.id != PlatformCatalog.ANDROID }.map { row ->
+            PlatformEmulators(row.def.id, row.def.tabLabel, launcher.status(row.def.id), launcher.activeProfile(row.def.id)?.first?.id)
+        }
+    }
+
+    fun chooseEmulator(platformId: String, profileId: String) = settings.updateEmulator(platformId, profileId)
+    suspend fun grantStorage(pkg: String): Boolean = launcher.grantStorageWithRoot(pkg)
+
+    // --- Cover offer ---------------------------------------------------------------------------------
+    val coverOffer = coverService.offer
+    fun answerCoverOffer(fetch: Boolean, always: Boolean = false) {
+        if (always) settings.updateCoverAuto(io.cttech.lighthouse.system.CoverAutoMode.Always)
+        viewModelScope.launch { coverService.answerOffer(fetch) }
+    }
+    fun redownloadAllCovers() { viewModelScope.launch { coverService.redownloadAll() } }
 
     /** Home remembers the focused item by key, across all its rows. */
     fun onHomeFocused(itemKey: String) = prefs.update {
@@ -327,8 +416,8 @@ private fun statusLine(games: List<GameEntity>, scan: ScanInfo): String {
     return parts.joinToString("  ·  ")
 }
 
-private fun GameEntity.toUi(): Game = when (kind) {
-    GameKind.APP -> Game(key = key, platformId = platformId, title = title, subtitle = "Android app", packageName = locator)
+private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap()): Game = when (kind) {
+    GameKind.APP -> Game(key = key, platformId = platformId, title = title, subtitle = "Android app", packageName = locator, isGame = overrides[key] ?: isGame)
     GameKind.ROM -> Game(
         key = key,
         platformId = platformId,

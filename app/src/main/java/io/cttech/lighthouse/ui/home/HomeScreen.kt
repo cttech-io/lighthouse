@@ -101,19 +101,25 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val requestBt = rememberBluetoothPermissionRequest(onResult = bumpBt)
     val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
     val coverJob by vm.coverJob.collectAsStateWithLifecycle()
-    val settingsInfo by vm.settingsInfo.collectAsStateWithLifecycle()
-    val themes by vm.themes.collectAsStateWithLifecycle()
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
     val pickerFor by vm.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
-    val overlay = state.showAccessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen
+    val settings = io.cttech.lighthouse.system.LocalAppSettings.current
+    var setupOpen by remember { mutableStateOf(!settings.setupDone) } // first-run setup (or "Run setup again")
+    val coverOffer by vm.coverOffer.collectAsStateWithLifecycle()
+    val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
+    val busy = accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || setupOpen
+    val showCoverOffer = coverOffer.isNotEmpty() && !busy
+    val overlay = busy || showCoverOffer
 
     var rootFocused by remember { mutableStateOf(false) }
     var refocusToken by remember { mutableIntStateOf(0) }
     // As the home app, Back must never leave Lighthouse: it only closes a panel.
     BackHandler(enabled = true) {
         when {
+            setupOpen -> return@BackHandler // setup has its own Back handling
+            showCoverOffer -> vm.answerCoverOffer(fetch = false)
             pickerFor != null -> vm.closeCoverPicker()
             optionsFor != null -> vm.closeOptions()
             drawerOpen -> drawerOpen = false
@@ -193,11 +199,11 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                             actions = actions,
                             onFocusedKey = vm::onHomeFocused,
                             onOpenPlatform = vm::selectTab,
-                            refocus = state.showAccessPrompt, // quick-settings panels hand focus back to their icon instead
+                            refocus = accessPrompt, // quick-settings panels hand focus back to their icon instead
                         )
-                        games.isEmpty() -> EmptyShelf(shownTab, refocus = state.showAccessPrompt)
-                        layout == HomeLayout.Carousel -> CarouselShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
-                        else -> GridShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
+                        games.isEmpty() -> EmptyShelf(shownTab, refocus = accessPrompt)
+                        layout == HomeLayout.Carousel -> CarouselShelf(games, state.focusIndexFor(shownTab), actions, refocus = accessPrompt)
+                        else -> GridShelf(games, state.focusIndexFor(shownTab), actions, refocus = accessPrompt)
                     }
                 }
             }
@@ -235,6 +241,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onToggleFavourite = { vm.toggleFavourite(g) },
                 onChangeCover = { vm.openCoverPicker(g) },
                 onRemoveCover = { vm.removeCover(g); refocusToken++ },
+                onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
                 onHide = {
                     vm.hide(g); refocusToken++
                     Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
@@ -245,17 +252,30 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         pickerFor?.let { g -> CoverPicker(g, vm) { vm.closeCoverPicker(); refocusToken++ } }
         if (drawerOpen) AppDrawer { drawerOpen = false; refocusToken++ }
         if (menuOpen) {
-            SettingsScreen(
-                info = settingsInfo,
-                themes = themes,
+            io.cttech.lighthouse.ui.settings.SettingsScreen(
+                vm = vm,
                 hidden = state.hidden,
                 onUnhide = vm::unhide,
-                onTestKey = vm::testSteamGridDbKey,
-                onFindCovers = vm::findMissingCovers,
-                onRescan = vm::rescanLibrary,
-                onOpenAppInfo = { vm.openAppInfo(context.packageName) },
+                onRunSetup = { menuOpen = false; setupOpen = true },
                 onClose = { menuOpen = false; refocusToken++ },
             )
+        }
+        if (showCoverOffer) {
+            CoverOfferDialog(
+                count = coverOffer.size,
+                hasKey = settings.steamGridDbKey.isNotBlank(),
+                onFind = { vm.answerCoverOffer(fetch = true); refocusToken++ },
+                onAlways = { vm.answerCoverOffer(fetch = true, always = true); refocusToken++ },
+                onNotNow = { vm.answerCoverOffer(fetch = false); refocusToken++ },
+            )
+        }
+        if (setupOpen) {
+            io.cttech.lighthouse.ui.settings.SetupWizard(vm) {
+                settings.updateSetupDone(true)
+                setupOpen = false
+                vm.rescanLibrary() // also offers covers for anything still without one
+                refocusToken++
+            }
         }
         launchIssue?.let { issue ->
             LaunchIssueDialog(
@@ -266,7 +286,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onOpenApp = vm::openApp,
             )
         }
-        if (state.showAccessPrompt) {
+        if (accessPrompt) {
             AccessPrompt(
                 onGrant = { vm.storageAccessIntent()?.let { runCatching { context.startActivity(it) } } },
                 onDismiss = vm::dismissAccessPrompt,

@@ -25,8 +25,38 @@ sealed interface LaunchResult {
     data class Failed(val message: String) : LaunchResult
 }
 
-class GameLauncher(private val context: Context) {
+/** One emulator for a platform as Settings shows it: installed?, can it read ROMs?, is its core there? */
+data class EmulatorStatus(
+    val profile: LaunchProfile,
+    /** Installed package, or null when not installed. */
+    val pkg: String?,
+    val storageOk: Boolean,
+    /** true/false when checkable (root), null when it can't be checked. */
+    val corePresent: Boolean?,
+)
+
+/** [preferredProfile]: platform id -> the profile id the user chose in Settings, if any. */
+class GameLauncher(private val context: Context, private val preferredProfile: (String) -> String? = { null }) {
     private val pm = context.packageManager
+
+    /** Installed profile used for [platformId]: the user's choice if installed, else the first installed one. */
+    fun activeProfile(platformId: String): Pair<LaunchProfile, String>? {
+        val installed = LaunchProfiles.forPlatform(context, platformId)
+            .mapNotNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
+        val chosen = preferredProfile(platformId)
+        return installed.firstOrNull { it.first.id == chosen } ?: installed.firstOrNull()
+    }
+
+    /** Every known emulator for [platformId], installed or not, for Settings → Emulators. */
+    suspend fun status(platformId: String): List<EmulatorStatus> =
+        LaunchProfiles.forPlatform(context, platformId).map { p ->
+            val pkg = p.packages.firstOrNull(::isInstalled)
+            val core = if (pkg != null && p.core != null) {
+                Root.run("if [ -f '${p.core.replace("{package}", pkg)}' ]; then echo present; else echo absent; fi")
+                    ?.let { it.contains("present") }
+            } else if (p.core == null) true else null
+            EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
+        }
 
     /** Android apps launch directly; ROMs and shortcuts go through the platform's launch profile. */
     suspend fun launch(game: Game): LaunchResult {
@@ -35,9 +65,8 @@ class GameLauncher(private val context: Context) {
             return start(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         val path = game.path ?: return LaunchResult.Failed("No file for ${game.title}")
-        val profiles = LaunchProfiles.forPlatform(context, game.platformId)
-        val (profile, pkg) = profiles.firstNotNullOfOrNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
-            ?: return LaunchResult.EmulatorMissing(profiles.map { it.label })
+        val (profile, pkg) = activeProfile(game.platformId)
+            ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { it.label })
 
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)
         profile.core?.let { c ->

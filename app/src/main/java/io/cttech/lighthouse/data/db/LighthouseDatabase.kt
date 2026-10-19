@@ -8,12 +8,13 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [SourceEntity::class, GameEntity::class, FavouriteEntity::class, PlayEntity::class, CoverEntity::class, HiddenEntity::class],
-    version = 5,
+    version = 6,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), // v2: plays table
         AutoMigration(from = 2, to = 3), // v3: games.isGame
         AutoMigration(from = 3, to = 4), // v4: covers table
         AutoMigration(from = 4, to = 5), // v5: hidden table
+        AutoMigration(from = 5, to = 6), // v6: sources.ignored
     ],
 )
 abstract class LighthouseDatabase : RoomDatabase() {

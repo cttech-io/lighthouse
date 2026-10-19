@@ -5,13 +5,17 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** A folder Lighthouse scans for one platform. */
+/**
+ * A folder Lighthouse scans for one platform. [ignored]: the user removed an auto-detected folder; the row
+ * stays so detection doesn't add it back.
+ */
 @Entity(tableName = "sources", indices = [Index(value = ["path"], unique = true)])
 data class SourceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val platformId: String,
     val path: String,
     val autoDetected: Boolean,
+    @ColumnInfo(defaultValue = "0") val ignored: Boolean = false,
 )
 
 enum class GameKind { ROM, APP }

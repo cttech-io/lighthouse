@@ -30,6 +30,42 @@ class CoverService(
     private val _job = MutableStateFlow<CoverJob?>(null)
     val job: StateFlow<CoverJob?> = _job
 
+    private val _offer = MutableStateFlow<List<String>>(emptyList())
+    /** Games (keys) that arrived without local artwork and that the user hasn't been asked about yet. */
+    val offer: StateFlow<List<String>> = _offer
+
+    /**
+     * After each scan (and after local covers were applied): games still without any cover are offered for an
+     * online search once (Ask), fetched straight away (Always), or left alone (Never). Each game is only
+     * offered or tried once; "Find missing covers" in Settings retries everything.
+     */
+    suspend fun checkNewGames() = withContext(Dispatchers.IO) {
+        if (settings.coverAuto == io.cttech.lighthouse.system.CoverAutoMode.Never) { _offer.value = emptyList(); return@withContext }
+        val have = dao.covers().map { it.gameKey }.toSet()
+        val offered = settings.coverOffered()
+        val fresh = dao.allGames().map { it.key }.filter { it !in have && it !in offered }
+        if (fresh.isEmpty() || _job.value?.running == true || !hasNetwork()) { _offer.value = emptyList(); return@withContext }
+        when (settings.coverAuto) {
+            io.cttech.lighthouse.system.CoverAutoMode.Always -> { settings.markCoverOffered(fresh); findMissing(fresh.toSet()) }
+            else -> _offer.value = fresh
+        }
+    }
+
+    /** The user answered the offer: [fetch] runs the search for those games; either way they're not asked again. */
+    suspend fun answerOffer(fetch: Boolean) {
+        val keys = _offer.value
+        _offer.value = emptyList()
+        settings.markCoverOffered(keys)
+        if (fetch) findMissing(keys.toSet())
+    }
+
+    /** Drops every downloaded cover (SteamGridDB, libretro) and searches again. Your own and picked covers stay. */
+    suspend fun redownloadAll() = withContext(Dispatchers.IO) {
+        val downloaded = dao.covers().filter { it.source == SOURCE_SGDB || it.source == SOURCE_LIBRETRO }
+        downloaded.forEach { c -> c.path.takeIf { it.isNotEmpty() }?.let { File(it).delete() }; dao.deleteCover(c.gameKey) }
+        findMissing()
+    }
+
     /** Offline and cheap: picks up sidecar / drop-folder images. Replaces only other manual covers. */
     suspend fun applyManual(roots: List<File>) = withContext(Dispatchers.IO) {
         val covers = dao.covers().associateBy { it.gameKey }
@@ -56,13 +92,13 @@ class CoverService(
      * Online: fills in games that have no cover yet. Downloads 3 at a time and writes to the database in
      * batches (each write refreshes HOME, so per-cover writes made the UI stutter).
      */
-    suspend fun findMissing() = withContext(Dispatchers.IO) {
+    suspend fun findMissing(only: Set<String>? = null) = withContext(Dispatchers.IO) {
         if (!hasNetwork()) {
             _job.value = CoverJob("Covers: Lighthouse has no network access", 0, 0, 0, false)
             return@withContext
         }
         val have = dao.covers().map { it.gameKey }.toSet()
-        val todo = dao.allGames().filter { it.key !in have }
+        val todo = dao.allGames().filter { it.key !in have && (only == null || it.key in only) }
         val sgdb = settings.steamGridDbKey.takeIf { it.isNotBlank() }?.let(::SteamGridDb)
         val done = java.util.concurrent.atomic.AtomicInteger()
         val found = java.util.concurrent.atomic.AtomicInteger()

@@ -21,8 +21,11 @@ class LighthouseApp : Application() {
     val covers: CoverService by lazy { CoverService(this, db.library(), CoverStore(this), settings, cacheDir) }
 
     val repository: LibraryRepository by lazy {
-        // After every scan, pick up the user's own cover images (offline, cheap).
-        LibraryRepository(this, db.library(), FlavorStorage, afterScan = { roots -> covers.applyManual(roots) })
+        // After every scan, pick up the user's own cover images (offline, cheap), then offer to fetch the rest.
+        LibraryRepository(this, db.library(), FlavorStorage, afterScan = { roots ->
+            covers.applyManual(roots)
+            if (settings.setupDone) covers.checkNewGames() // setup has its own covers step
+        })
     }
 
     override fun onCreate() {
