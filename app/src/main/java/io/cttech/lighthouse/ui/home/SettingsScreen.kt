@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import android.content.Intent
 import android.net.Uri
@@ -80,6 +81,7 @@ fun SettingsScreen(
     Box(
         Modifier
             .fillMaxSize()
+            .trapFocus() // D-pad can't wander behind the pop-up
             .background(Lh.colors.background.copy(alpha = 0.96f))
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && e.key in setOf(Key.ButtonB, Key.Escape, Key.ButtonStart)) { onClose(); true } else false

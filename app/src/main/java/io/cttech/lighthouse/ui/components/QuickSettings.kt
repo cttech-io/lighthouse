@@ -132,6 +132,7 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
     Box(
         Modifier
             .fillMaxSize()
+            .trapFocus() // D-pad can't wander behind the pop-up
             .background(Color.Black.copy(alpha = 0.35f))
             .clickable(indication = null, interactionSource = null, onClick = onClose)
             .onPreviewKeyEvent { e ->

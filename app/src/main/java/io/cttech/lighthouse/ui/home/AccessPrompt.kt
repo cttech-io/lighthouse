@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,7 +42,7 @@ import androidx.compose.ui.unit.sp
 fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
     val grant = remember { FocusRequester() }
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f)),
+        Modifier.fillMaxSize().trapFocus().background(Color.Black.copy(alpha = 0.78f)),
         contentAlignment = Alignment.Center,
     ) {
         Column(

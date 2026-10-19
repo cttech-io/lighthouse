@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -117,6 +118,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
+            .trapFocus() // D-pad can't wander behind the pop-up
             .background(Lh.colors.background.copy(alpha = 0.96f))
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false
@@ -202,6 +204,7 @@ fun GameOptionsSheet(
     Box(
         Modifier
             .fillMaxSize()
+            .trapFocus() // D-pad can't wander behind the pop-up
             .background(Color.Black.copy(alpha = 0.6f))
             .clickable(indication = null, interactionSource = null, onClick = onClose) // tap outside closes
             .onPreviewKeyEvent { e ->

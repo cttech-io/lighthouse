@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +51,7 @@ fun LaunchIssueDialog(
     Box(
         Modifier
             .fillMaxSize()
+            .trapFocus() // D-pad can't wander behind the pop-up
             .background(Color.Black.copy(alpha = 0.72f))
             .clickable(indication = null, interactionSource = null, onClick = onDismiss) // tap outside closes
             .onPreviewKeyEvent { e ->

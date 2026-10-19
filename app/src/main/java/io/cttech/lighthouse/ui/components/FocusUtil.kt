@@ -3,7 +3,9 @@ package io.cttech.lighthouse.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 
 /**
  * Moves focus into a pop-up once its first control exists. A single requestFocus() on the first frame can
@@ -19,3 +21,13 @@ fun FocusOnAppear(requester: FocusRequester, vararg keys: Any?) {
         }
     }
 }
+
+/**
+ * Keeps D-pad focus inside a pop-up while it's open. Without this, moving past an edge (e.g. right of the
+ * last theme card) searched the whole screen and landed on the top bar behind the pop-up, where the
+ * pop-up's key handlers no longer see presses. Apply to the pop-up's outermost container.
+ */
+fun androidx.compose.ui.Modifier.trapFocus(): androidx.compose.ui.Modifier =
+    this
+        .then(androidx.compose.ui.Modifier.focusProperties { onExit = { cancelFocusChange() } })
+        .then(androidx.compose.ui.Modifier.focusGroup())
