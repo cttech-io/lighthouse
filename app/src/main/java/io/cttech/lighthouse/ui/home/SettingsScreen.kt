@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.BuildConfig
 import io.cttech.lighthouse.system.LocalAppSettings
+import io.cttech.lighthouse.ui.components.ControllerTextField
 import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
@@ -110,7 +111,13 @@ fun SettingsScreen(
 
             Section("Covers")
             Text("SteamGridDB API key", color = Color.White, fontSize = 16.sp)
-            ApiKeyField(settings.steamGridDbKey, Modifier, settings::updateSteamGridDbKey)
+            ControllerTextField(
+                value = settings.steamGridDbKey,
+                onValueChange = { settings.updateSteamGridDbKey(it.trim()) },
+                placeholder = "Not set: press A to enter",
+                secret = true,
+                monospace = true,
+            )
             KeyTest(settings.steamGridDbKey, onTestKey)
             Note("Free from steamgriddb.com → sign in → Preferences → API. Without a key, Lighthouse uses libretro box art only.")
             PillButton("Open SteamGridDB in browser") {
@@ -145,41 +152,6 @@ fun SettingsScreen(
         }
     }
     FocusOnAppear(first, Unit)
-}
-
-/** Single-line key entry. A (or a tap) opens the keyboard; the value is masked unless the field is focused. */
-@Composable
-private fun ApiKeyField(value: String, modifier: Modifier, onChange: (String) -> Unit) {
-    var focused by remember { mutableStateOf(false) }
-    var text by remember(value) { mutableStateOf(value) }
-    val keyboard = LocalSoftwareKeyboardController.current
-    BasicTextField(
-        value = text,
-        onValueChange = { text = it.trim(); onChange(text) },
-        singleLine = true,
-        textStyle = TextStyle(color = Color.White, fontSize = 16.sp, fontFamily = FontFamily.Monospace),
-        cursorBrush = SolidColor(Color.White),
-        visualTransformation = if (focused) VisualTransformation.None else PasswordVisualTransformation(),
-        // Keyboard only on A / tap, never just because focus landed here.
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false, showKeyboardOnFocus = false),
-        keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
-        modifier = modifier
-            .fillMaxWidth()
-            .onFocusChanged { focused = it.isFocused }
-            .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { keyboard?.show(); true } else false },
-        decorationBox = { inner ->
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
-                    .border(if (focused) 2.dp else 0.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-            ) {
-                if (text.isEmpty()) Text(if (focused) "Paste or type your key" else "Not set: press A to enter", color = Lh.colors.textMuted.copy(alpha = 0.7f), fontSize = 16.sp)
-                inner()
-            }
-        },
-    )
 }
 
 @Composable

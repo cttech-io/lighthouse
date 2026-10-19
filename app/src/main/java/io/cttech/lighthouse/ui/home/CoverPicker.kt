@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import io.cttech.lighthouse.covers.SteamGridDb
 import io.cttech.lighthouse.model.Game
+import io.cttech.lighthouse.ui.components.ControllerTextField
 import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
@@ -124,28 +125,13 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
         Column(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Choose cover: ${game.title}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                var focused by remember { mutableStateOf(false) }
-                BasicTextField(
+                ControllerTextField(
                     value = query,
                     onValueChange = { query = it },
-                    singleLine = true,
-                    textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
-                    cursorBrush = SolidColor(Color.White),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, showKeyboardOnFocus = false),
-                    keyboardActions = KeyboardActions(onSearch = { search() }),
-                    modifier = Modifier
-                        .width(520.dp)
-                        .focusRequester(searchBox)
-                        .onFocusChanged { focused = it.isFocused }
-                        .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { keyboard?.show(); true } else false },
-                    decorationBox = { inner ->
-                        Box(
-                            Modifier
-                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
-                                .border(if (focused) 2.dp else 0.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                        ) { inner() }
-                    },
+                    placeholder = "Search SteamGridDB",
+                    modifier = Modifier.width(520.dp).focusRequester(searchBox),
+                    imeAction = ImeAction.Search,
+                    onSubmit = ::search,
                 )
                 PillButton("Search", onClick = ::search)
             }
