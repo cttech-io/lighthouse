@@ -67,8 +67,10 @@ internal fun HomeDashboard(
     refocus: Boolean,
 ) {
     val requester = remember { FocusRequester() }
-    // No memory (fresh start or Home button) = top-left: first item of the top row.
-    val target = rows.flatMap { it.items }.let { all -> all.firstOrNull { it.key == rememberedKey } ?: all.firstOrNull() }
+    // The same game can sit in several rows (e.g. Favourites and Recently added), so Home positions are
+    // "row|item". No memory (fresh start or Home button) = top-left: first item of the top row.
+    val positions = rows.flatMap { row -> row.items.map { homePosition(row, it) } }
+    val target = positions.firstOrNull { it == rememberedKey } ?: positions.firstOrNull()
     val listState = rememberLazyListState()
     val token = LocalRefocusToken.current
     LaunchedEffect(token, rememberedKey == null) { if (rememberedKey == null) listState.scrollToItem(0) }
@@ -103,7 +105,8 @@ internal fun HomeDashboard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     items(row.items, key = { it.key }) { item ->
-                        val focusMod = if (item.key == target?.key) Modifier.focusRequester(requester) else Modifier
+                        val position = homePosition(row, item)
+                        val focusMod = if (position == target) Modifier.focusRequester(requester) else Modifier
                         when (item) {
                             is HomeItem.GameItem -> CoverCard(
                                 game = item.game,
@@ -111,11 +114,11 @@ internal fun HomeDashboard(
                                 isFavourite = item.game.key in actions.favourites,
                                 modifier = focusMod.width(if (row.hero) 150.dp else 112.dp),
                                 focusedScale = 1.07f,
-                                onFocused = { onFocusedKey(item.key) },
+                                onFocused = { onFocusedKey(position) },
                                 onLaunch = { actions.onLaunch(item.game) },
                                 onToggleFavourite = { actions.onToggleFavourite(item.game) },
                             )
-                            is HomeItem.PlatformItem -> PlatformTile(item, focusMod, { onFocusedKey(item.key) }) { onOpenPlatform(item.tabIndex) }
+                            is HomeItem.PlatformItem -> PlatformTile(item, focusMod, { onFocusedKey(position) }) { onOpenPlatform(item.tabIndex) }
                         }
                     }
                 }
@@ -161,3 +164,6 @@ private fun PlatformTile(item: HomeItem.PlatformItem, modifier: Modifier, onFocu
         }
     }
 }
+
+/** Unique position of an item on Home: its row plus its key (a game may appear in more than one row). */
+private fun homePosition(row: HomeRow, item: HomeItem) = "${row.id}|${item.key}"
