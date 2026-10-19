@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +75,7 @@ private const val CarouselGrowth = 70f / 150f
 
 @Composable
 fun HomeScreen(vm: HomeViewModel = viewModel()) {
+    if (!vm.state.collectAsStateWithLifecycle().value.loaded) return
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tab = state.currentTab
@@ -81,9 +83,12 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     // Read only in the draw phase, so the colour animation never recomposes the screen.
     val bgTop = animateColorAsState(lerpToDark(accent, 0.82f), tween(450), label = "bgTop")
 
+    val rootFocus = remember { FocusRequester() }
     Box(
         Modifier
             .fillMaxSize()
+            .focusRequester(rootFocus)
+            .focusable() // last-resort focus target: D-pad from here moves into the shelf
             .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -96,7 +101,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            TopBar(state.tabs, state.selectedTab)
+            TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab)
             AnimatedContent(
                 targetState = tab to state.layout,
                 transitionSpec = {
@@ -118,15 +123,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     accent = shownTab.accent(),
                     favourites = state.favourites,
                     onFocused = { i -> vm.onFocused(shownTab, i) },
-                    onLaunch = { g -> Toast.makeText(context, "Launch: ${g.title} (milestone 3)", Toast.LENGTH_SHORT).show() },
+                    onLaunch = { g -> launch(context, g) },
                     onToggleFavourite = vm::toggleFavourite,
                 )
                 // Re-key on size so removing the focused favourite rebuilds the shelf and restores focus.
                 key(games.size) {
                     when {
-                        games.isEmpty() -> EmptyShelf(shownTab)
-                        layout == HomeLayout.Carousel -> CarouselShelf(games, state.focusIndexFor(shownTab), actions)
-                        else -> GridShelf(games, state.focusIndexFor(shownTab), actions)
+                        games.isEmpty() -> EmptyShelf(shownTab, refocus = state.showAccessPrompt)
+                        layout == HomeLayout.Carousel -> CarouselShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
+                        else -> GridShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
                     }
                 }
             }
@@ -138,6 +143,22 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 ),
             )
         }
+        if (state.showAccessPrompt) {
+            AccessPrompt(
+                onGrant = { vm.storageAccessIntent()?.let { runCatching { context.startActivity(it) } } },
+                onDismiss = vm::dismissAccessPrompt,
+            )
+        }
+    }
+}
+
+private fun launch(context: android.content.Context, game: Game) {
+    val pkg = game.packageName
+    if (pkg != null) {
+        val intent = context.packageManager.getLaunchIntentForPackage(pkg)
+        if (intent != null) context.startActivity(intent) else Toast.makeText(context, "Can't open ${game.title}", Toast.LENGTH_SHORT).show()
+    } else {
+        Toast.makeText(context, "Launching games arrives in milestone 3", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -150,7 +171,7 @@ private class CardActions(
 )
 
 @Composable
-private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardActions) {
+private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardActions, refocus: Boolean) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialFocus)
     val scope = rememberCoroutineScope()
     val requester = remember { FocusRequester() }
@@ -169,7 +190,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth().height(CarouselSlot * 1.5f * (1f + CarouselGrowth) + 32.dp),
         ) {
-            itemsIndexed(games, key = { _, g -> g.id }) { i, game ->
+            itemsIndexed(games, key = { _, g -> g.key }) { i, game ->
                 // Growth is drawn, not laid out: the focused card scales from its top-left corner and the
                 // cards after it slide right by the extra width. No re-measuring while the row scrolls.
                 val grow by animateFloatAsState(if (i == focused) 1f else 0f, tween(200), label = "grow")
@@ -177,7 +198,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
                 CoverCard(
                     game = game,
                     accent = actions.accent,
-                    isFavourite = game.id in actions.favourites,
+                    isFavourite = game.key in actions.favourites,
                     focusedScale = 1f,
                     modifier = Modifier
                         .width(CarouselSlot)
@@ -200,11 +221,11 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
             }
         }
     }
-    RestoreFocus(requester)
+    RestoreFocus(requester, refocus)
 }
 
 @Composable
-private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions) {
+private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions, refocus: Boolean) {
     val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = initialFocus)
     val requester = remember { FocusRequester() }
     var focused by remember { mutableIntStateOf(initialFocus) }
@@ -227,11 +248,11 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            itemsIndexed(games, key = { _, g -> g.id }) { i, game ->
+            itemsIndexed(games, key = { _, g -> g.key }) { i, game ->
                 CoverCard(
                     game = game,
                     accent = actions.accent,
-                    isFavourite = game.id in actions.favourites,
+                    isFavourite = game.key in actions.favourites,
                     modifier = if (i == initialFocus) Modifier.focusRequester(requester) else Modifier,
                     onFocused = { focused = i; actions.onFocused(i) },
                     onLaunch = { actions.onLaunch(game) },
@@ -240,28 +261,34 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
             }
         }
     }
-    RestoreFocus(requester)
+    RestoreFocus(requester, refocus)
 }
 
-/** Puts focus back on the remembered item once the shelf has been laid out. */
+/**
+ * Puts focus on the remembered item once the shelf is laid out, and again whenever an overlay
+ * (e.g. the access prompt) goes away — otherwise focus is left nowhere and the controller does nothing.
+ */
 @Composable
-private fun RestoreFocus(requester: FocusRequester) {
-    LaunchedEffect(requester) {
+private fun RestoreFocus(requester: FocusRequester, overlayShowing: Boolean) {
+    LaunchedEffect(requester, overlayShowing) {
+        if (overlayShowing) return@LaunchedEffect
         withFrameNanos { }
         runCatching { requester.requestFocus() }
     }
 }
 
 @Composable
-private fun EmptyShelf(tab: HomeTab) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {
+    // Focusable so the controller always has somewhere to be (L1/R1 only reach focused content).
+    val requester = remember { FocusRequester() }
+    Box(Modifier.fillMaxSize().focusRequester(requester).focusable(), contentAlignment = Alignment.Center) {
         Text(
             if (tab is HomeTab.Favourites) "No favourites yet. Press X on a game to add it." else "Nothing here yet.",
             color = Color(0xFFB7C1D6),
             fontSize = 18.sp,
         )
     }
-    Spacer(Modifier.height(1.dp))
+    RestoreFocus(requester, refocus)
 }
 
 private fun Game.detailLine(): String = listOfNotNull(subtitle, year?.toString()).joinToString(" · ").ifEmpty { " " }

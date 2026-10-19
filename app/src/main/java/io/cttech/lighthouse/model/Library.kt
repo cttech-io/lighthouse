@@ -1,20 +1,17 @@
 package io.cttech.lighthouse.model
 
-import androidx.compose.ui.graphics.Color
+import io.cttech.lighthouse.library.PlatformDef
 
-/** A system shown as a tab, e.g. "Switch". [accent] tints the placeholder background until themes land. */
-data class Platform(
-    val id: String,
-    val tabLabel: String,
-    val accent: Color,
-)
-
+/** UI model for a launchable tile. [key] is stable across rescans and used for favourites and list keys. */
 data class Game(
-    val id: String,
+    val key: String,
     val platformId: String,
     val title: String,
-    val year: Int? = null,
     val subtitle: String? = null,
+    val year: Int? = null,
+    /** Set for Android apps: shows the app icon and launches the package. */
+    val packageName: String? = null,
+    val path: String? = null,
 )
 
 /** A home tab: either a real platform or a virtual view such as Favourites. */
@@ -27,7 +24,7 @@ sealed interface HomeTab {
         override val label = "Favs"
     }
 
-    data class PlatformTab(val platform: Platform) : HomeTab {
+    data class PlatformTab(val platform: PlatformDef) : HomeTab {
         override val key = "platform:${platform.id}"
         override val label = platform.tabLabel
     }

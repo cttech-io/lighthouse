@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -29,7 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,21 +49,30 @@ import java.time.format.DateTimeFormatter
 private val Dim = Color(0xFF9AA6BD)
 
 @Composable
-fun TopBar(tabs: List<HomeTab>, selected: Int, modifier: Modifier = Modifier) {
+fun TopBar(tabs: List<HomeTab>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit = {}) {
     Row(
         modifier.fillMaxWidth().height(52.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ButtonGlyph("L1")
         Spacer(Modifier.width(10.dp))
-        tabs.forEachIndexed { i, tab ->
-            val active = i == selected
-            val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
-            val fg by animateColorAsState(if (active) Color.White else Dim, label = "tabFg")
-            Box(
-                Modifier.background(bg, RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Text(tab.label.uppercase(), color = fg, fontSize = 15.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.6.sp)
+        val listState = rememberLazyListState()
+        LaunchedEffect(selected) { listState.animateScrollToItem((selected - 1).coerceAtLeast(0)) }
+        LazyRow(state = listState, modifier = Modifier.weight(1f, fill = false), userScrollEnabled = false) {
+            itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
+                val active = i == selected
+                val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
+                val fg by animateColorAsState(if (active) Color.White else Dim, label = "tabFg")
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(bg)
+                        // Tap to switch tabs. Not focusable: the controller uses L1/R1.
+                        .pointerInput(i) { detectTapGestures { onSelect(i) } }
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                ) {
+                    Text(tab.label.uppercase(), color = fg, fontSize = 15.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.6.sp, maxLines = 1)
+                }
             }
         }
         Spacer(Modifier.width(10.dp))

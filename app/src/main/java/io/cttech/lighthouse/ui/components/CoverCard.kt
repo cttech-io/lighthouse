@@ -3,6 +3,7 @@ package io.cttech.lighthouse.ui.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -70,7 +71,7 @@ fun CoverCard(
         label = "coverScale",
     )
     val ring = animateFloatAsState(if (focused) 1f else 0f, label = "coverRing") // read in draw phase
-    val brush = remember(game.id, accent) { placeholderBrush(game, accent) }
+    val brush = remember(game.key, accent) { placeholderBrush(game, accent) }
 
     Box(
         modifier
@@ -110,9 +111,13 @@ fun CoverCard(
             // Handles touch, Enter and D-pad centre.
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onLaunch),
     ) {
+        val icon = rememberAppIcon(game.packageName)
+        if (icon != null) {
+            Image(icon, contentDescription = null, modifier = Modifier.align(Alignment.Center).padding(bottom = 18.dp).fillMaxSize(0.48f))
+        }
         Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
             Text(
-                monogram(game.title),
+                if (icon != null || game.packageName != null) "" else monogram(game.title),
                 color = Color.White.copy(alpha = 0.9f),
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Black,
