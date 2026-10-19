@@ -203,6 +203,8 @@ data class BatteryState(
     val level: Int,
     val charging: Boolean,
     val full: Boolean,
+    /** On a charger (Android reports "full", not "charging", at 100% while still plugged in). */
+    val plugged: Boolean,
     /** Android's own estimate while charging, else null. */
     val chargeTimeRemainingMs: Long?,
     val temperatureC: Float?,
@@ -214,7 +216,7 @@ data class BatteryState(
 @Composable
 fun rememberBatteryState(): BatteryState {
     val context = LocalContext.current
-    var state by remember { mutableStateOf(BatteryState(-1, false, false, null, null, "Unknown", false)) }
+    var state by remember { mutableStateOf(BatteryState(-1, false, false, false, null, null, "Unknown", false)) }
     DisposableEffect(context) {
         val bm = context.getSystemService(android.os.BatteryManager::class.java)
         val pm = context.getSystemService(android.os.PowerManager::class.java)
@@ -231,6 +233,7 @@ fun rememberBatteryState(): BatteryState {
                 level = if (raw >= 0) raw * 100 / scale else -1,
                 charging = charging,
                 full = full,
+                plugged = i.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) != 0,
                 chargeTimeRemainingMs = if (charging) bm.computeChargeTimeRemaining().takeIf { it > 0 } else null,
                 temperatureC = if (temp != Int.MIN_VALUE) temp / 10f else null,
                 health = when (i.getIntExtra(android.os.BatteryManager.EXTRA_HEALTH, -1)) {

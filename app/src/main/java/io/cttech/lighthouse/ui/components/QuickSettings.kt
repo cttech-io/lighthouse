@@ -97,7 +97,7 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
         if (battery.level >= 0) {
             StatusButton(requesters.getValue(QuickPanel.Battery), { onOpen(QuickPanel.Battery) }, wide = true) { tint ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    BatteryGlyph(battery.level, battery.charging, battery.powerSave, tint)
+                    BatteryGlyph(battery.level, battery.plugged, battery.powerSave, tint)
                     Text("${battery.level}%", color = tint, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 }
             }
@@ -255,6 +255,7 @@ private fun BatteryPanel(first: FocusRequester) {
     PanelTitle("Battery")
     StatusLine(
         "${b.level}% · " + when {
+            b.full && b.plugged -> "Fully charged · plugged in"
             b.full -> "Fully charged"
             b.charging -> b.chargeTimeRemainingMs?.let { "Charging · ${formatDuration(it)} to full" } ?: "Charging"
             else -> "On battery"

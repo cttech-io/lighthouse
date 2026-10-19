@@ -58,29 +58,56 @@ fun BluetoothGlyph(enabled: Boolean, connected: Boolean, tint: Color, size: Dp =
     }
 }
 
-/** Battery outline filled to [level]; bolt while charging; amber when saver is on, red when low. */
+/**
+ * Battery: outline with a clear gap around the fill (so it reads cleanly at 100%), terminal nub,
+ * green fill + dark bolt while plugged in, amber with battery saver, red when low.
+ */
 @Composable
-fun BatteryGlyph(level: Int, charging: Boolean, powerSave: Boolean, tint: Color, size: Dp = 22.dp) {
-    Canvas(Modifier.size(size)) {
-        val body = androidx.compose.ui.geometry.Rect(u(2f), u(7f), u(20f), u(17f))
-        drawRoundRect(tint, topLeft = body.topLeft, size = body.size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(2.5f)), style = stroke(1.8f))
-        drawRoundRect(tint, topLeft = Offset(u(20.8f), u(10f)), size = Size(u(1.8f), u(4f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(0.8f)))
-        val frac = (level.coerceIn(0, 100)) / 100f
+fun BatteryGlyph(level: Int, plugged: Boolean, powerSave: Boolean, tint: Color) {
+    Canvas(Modifier.size(width = 30.dp, height = 22.dp)) {
+        val stroke = 1.6.dp.toPx()
+        val gap = 1.4.dp.toPx()
+        val nubW = 2.2.dp.toPx()
+        val left = stroke / 2
+        val right = size.width - nubW - 1.dp.toPx()
+        val top = size.height * 0.22f
+        val bottom = size.height * 0.78f
+        val radius = androidx.compose.ui.geometry.CornerRadius(3.5.dp.toPx())
+        drawRoundRect(tint, Offset(left, top), Size(right - left, bottom - top), radius, style = Stroke(stroke))
+        val nubH = (bottom - top) * 0.42f
+        drawRoundRect(tint, Offset(right + 1.dp.toPx(), (size.height - nubH) / 2), Size(nubW, nubH), androidx.compose.ui.geometry.CornerRadius(1.dp.toPx()))
+
+        val inset = stroke / 2 + gap
+        val innerLeft = left + inset
+        val innerTop = top + inset
+        val innerW = (right - left) - inset * 2
+        val innerH = (bottom - top) - inset * 2
         val fill = when {
+            plugged -> Color(0xFF34C759)
             powerSave -> Color(0xFFFFB300)
-            level in 0..15 && !charging -> Color(0xFFFF5252)
+            level in 0..15 -> Color(0xFFFF5252)
             else -> tint
         }
+        val frac = level.coerceIn(0, 100) / 100f
         if (frac > 0f) {
-            drawRoundRect(fill, topLeft = Offset(u(3.8f), u(8.8f)), size = Size((u(16.4f)) * frac, u(6.4f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(u(1.2f)))
+            drawRoundRect(fill, Offset(innerLeft, innerTop), Size(innerW * frac, innerH), androidx.compose.ui.geometry.CornerRadius(1.6.dp.toPx()))
         }
-        if (charging) {
+        if (plugged) {
+            // Bolt centred in the body, slightly taller than the fill so it reads at a glance.
+            val cx = left + (right - left) / 2
+            val cy = size.height / 2
+            val bh = (bottom - top) * 0.92f
+            val bw = bh * 0.55f
             val bolt = Path().apply {
-                moveTo(u(12.5f), u(5f)); lineTo(u(8f), u(12.8f)); lineTo(u(11.2f), u(12.8f))
-                lineTo(u(10f), u(19f)); lineTo(u(14.5f), u(11.2f)); lineTo(u(11.3f), u(11.2f)); close()
+                moveTo(cx + bw * 0.15f, cy - bh / 2)
+                lineTo(cx - bw / 2, cy + bh * 0.06f)
+                lineTo(cx - bw * 0.02f, cy + bh * 0.06f)
+                lineTo(cx - bw * 0.15f, cy + bh / 2)
+                lineTo(cx + bw / 2, cy - bh * 0.06f)
+                lineTo(cx + bw * 0.02f, cy - bh * 0.06f)
+                close()
             }
-            drawPath(bolt, Color.Black.copy(alpha = 0.55f), style = stroke(2.2f))
-            drawPath(bolt, Color(0xFFFFD166))
+            drawPath(bolt, Color(0xFF0B0E14))
         }
     }
 }
