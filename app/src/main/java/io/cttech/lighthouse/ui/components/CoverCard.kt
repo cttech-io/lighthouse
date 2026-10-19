@@ -65,6 +65,7 @@ fun CoverCard(
 ) {
     var focused by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
+    val hapticsOn = io.cttech.lighthouse.system.LocalAppSettings.current.hapticsEnabled
     val scale by animateFloatAsState(
         if (focused) focusedScale else 1f,
         spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
@@ -95,7 +96,7 @@ fun CoverCard(
             }
             .onFocusChanged {
                 if (it.isFocused && !focused) {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    if (hapticsOn) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     onFocused()
                 }
                 focused = it.isFocused

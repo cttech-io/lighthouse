@@ -1,5 +1,6 @@
 package io.cttech.lighthouse
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,6 +9,8 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.runtime.CompositionLocalProvider
+import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.home.HomeScreen
 import io.cttech.lighthouse.ui.home.HomeViewModel
 
@@ -18,7 +21,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         hideSystemBars()
-        setContent { HomeScreen(home) }
+        val settings = (application as LighthouseApp).settings
+        setContent {
+            CompositionLocalProvider(LocalAppSettings provides settings) { HomeScreen(home) }
+        }
+    }
+
+    /** singleTask: pressing Home while Lighthouse is the home app delivers a new HOME intent here. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) home.onHomePressed()
     }
 
     override fun onResume() {

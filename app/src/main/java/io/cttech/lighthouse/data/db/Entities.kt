@@ -29,12 +29,21 @@ data class GameEntity(
     val sortTitle: String,
     val sizeBytes: Long,
     val modifiedAt: Long,
+    /** When it arrived on the device: file modified time (ROMs) or first install time (apps). */
     val addedAt: Long,
 ) {
     val key: String get() = gameKey(platformId, locator)
 }
 
 fun gameKey(platformId: String, locator: String) = "$platformId|$locator"
+
+/** Launch history, keyed like favourites. Drives "Continue playing" (and play-time tracking later). */
+@Entity(tableName = "plays")
+data class PlayEntity(
+    @PrimaryKey val gameKey: String,
+    val lastPlayedAt: Long,
+    val launchCount: Int,
+)
 
 @Entity(tableName = "favourites")
 data class FavouriteEntity(

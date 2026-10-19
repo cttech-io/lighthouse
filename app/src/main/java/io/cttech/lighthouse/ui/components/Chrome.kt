@@ -49,7 +49,13 @@ import java.time.format.DateTimeFormatter
 private val Dim = Color(0xFF9AA6BD)
 
 @Composable
-fun TopBar(tabs: List<HomeTab>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit = {}) {
+fun TopBar(
+    tabs: List<HomeTab>,
+    selected: Int,
+    modifier: Modifier = Modifier,
+    onSelect: (Int) -> Unit = {},
+    status: @Composable () -> Unit = {},
+) {
     Row(
         modifier.fillMaxWidth().height(52.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -78,6 +84,8 @@ fun TopBar(tabs: List<HomeTab>, selected: Int, modifier: Modifier = Modifier, on
         Spacer(Modifier.width(10.dp))
         ButtonGlyph("R1")
         Spacer(Modifier.weight(1f))
+        status()
+        Spacer(Modifier.width(12.dp))
         Clock()
         Spacer(Modifier.width(16.dp))
         Battery()

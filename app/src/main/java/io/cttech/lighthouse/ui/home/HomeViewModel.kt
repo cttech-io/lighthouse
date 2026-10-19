@@ -8,6 +8,9 @@ import io.cttech.lighthouse.LighthouseApp
 import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.library.PlatformCatalog
+import io.cttech.lighthouse.library.ScanInfo
+import io.cttech.lighthouse.model.HomeItem
+import io.cttech.lighthouse.model.HomeRow
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.model.HomeTab
@@ -21,7 +24,10 @@ import java.io.File
 import java.util.Locale
 
 data class HomeState(
-    val tabs: List<HomeTab> = listOf(HomeTab.Favourites),
+    val tabs: List<HomeTab> = listOf(HomeTab.Home),
+    val homeRows: List<HomeRow> = emptyList(),
+    /** e.g. "31 games · 14 apps · SD 87 GB free · Internal 52 GB free · scanned 14:05" */
+    val statusLine: String = "",
     val selectedTab: Int = 0,
     val layout: HomeLayout = HomeLayout.Carousel,
     val favourites: Set<String> = emptySet(),
@@ -64,22 +70,32 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LighthouseApp).repository
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
-    val state: StateFlow<HomeState> = combine(repo.games, repo.favourites, prefs) { games, favKeys, p ->
+    val state: StateFlow<HomeState> = combine(repo.games, repo.favourites, repo.plays, repo.scanInfo, prefs) { games, favKeys, plays, scan, p ->
         val ui = games.map { it.toUi() }
         val byPlatform = ui.groupBy { it.platformId }
         val byKey = ui.associateBy { it.key }
         val platformTabs = PlatformCatalog.all
             .filter { it.id == PlatformCatalog.ANDROID || byPlatform[it.id].orEmpty().isNotEmpty() }
             .map { HomeTab.PlatformTab(it) }
-        val tabs = listOf(HomeTab.Favourites) + platformTabs
+        val tabs = listOf(HomeTab.Home) + platformTabs
         val gamesByTab = buildMap {
-            put(HomeTab.Favourites.key, favKeys.mapNotNull { byKey[it] })
             platformTabs.forEach { put(it.key, byPlatform[it.platform.id].orEmpty()) }
         }
+        val homeRows = buildHomeRows(
+            tabs = tabs,
+            byKey = byKey,
+            byPlatform = byPlatform,
+            favKeys = favKeys,
+            recentlyPlayed = plays.map { it.gameKey },
+            recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
+                .sortedByDescending { it.addedAt }.map { it.key },
+        )
         HomeState(
             tabs = tabs,
-            selectedTab = (p.selectedKey ?: tabs.firstOrNull { gamesByTab[it.key].orEmpty().isNotEmpty() }?.key)
-                .let { key -> tabs.indexOfFirst { it.key == key } }.coerceAtLeast(0),
+            homeRows = homeRows,
+            statusLine = statusLine(games, scan),
+            // Home always has something (at least the Platforms row), so it is the natural starting tab.
+            selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
             layout = p.layout,
             favourites = favKeys.toSet(),
             focusByTab = p.focusByTab,
@@ -99,6 +115,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun storageAccessIntent(): Intent? = repo.storageAccessIntent()
 
     fun dismissAccessPrompt() = prefs.update { it.copy(accessDismissed = true) }
+
+    private val _homePresses = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Fires when the Home button is pressed while Lighthouse is already the foreground home app. */
+    val homePresses: kotlinx.coroutines.flow.SharedFlow<Unit> = _homePresses
+
+    /** Home button: back to the HOME tab, like a console's home button. */
+    fun onHomePressed() {
+        prefs.update { it.copy(selectedKey = HomeTab.Home.key, tabDirection = -1) }
+        _homePresses.tryEmit(Unit)
+    }
 
     /** Moves one tab left/right, wrapping around like a console shelf. */
     fun moveTab(delta: Int) {
@@ -126,6 +152,56 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFavourite(game: Game) = repo.toggleFavourite(game.key)
+
+    fun recordLaunch(game: Game) = repo.recordLaunch(game.key)
+
+    /** Home remembers the focused item by key, across all its rows. */
+    fun onHomeFocused(itemKey: String) = prefs.update {
+        val mem = FocusMemory(itemKey, 0)
+        if (it.focusByTab[HomeTab.Home.key] == mem) it else it.copy(focusByTab = it.focusByTab + (HomeTab.Home.key to mem))
+    }
+}
+
+private const val RECENT_WINDOW_MS = 30L * 24 * 60 * 60 * 1000
+
+/**
+ * Game-streaming clients grouped into the Streaming row (Sunshine host apps join this in v0.3).
+ * Not PC emulators: DroidDeck, GameNative and GameHub run games locally and have their own tabs.
+ */
+private val STREAMING_PACKAGES = listOf("com.limelight", "com.valvesoftware.steamlink")
+
+private fun buildHomeRows(
+    tabs: List<HomeTab>,
+    byKey: Map<String, Game>,
+    byPlatform: Map<String, List<Game>>,
+    favKeys: List<String>,
+    recentlyPlayed: List<String>,
+    recentlyAdded: List<String>,
+): List<HomeRow> {
+    fun games(keys: List<String>, limit: Int) = keys.mapNotNull { byKey[it] }.take(limit).map { HomeItem.GameItem(it) }
+    val streaming = STREAMING_PACKAGES.mapNotNull { pkg -> byKey["${PlatformCatalog.ANDROID}|$pkg"] }.map { HomeItem.GameItem(it) }
+    val platforms = tabs.mapIndexedNotNull { i, t ->
+        (t as? HomeTab.PlatformTab)?.let { HomeItem.PlatformItem(i, it.platform, byPlatform[it.platform.id].orEmpty().size) }
+    }
+    return listOf(
+        HomeRow("continue", "Continue playing", games(recentlyPlayed, 10), hero = true),
+        HomeRow("favourites", "Favourites", games(favKeys, 30)),
+        HomeRow("recent", "Recently added", games(recentlyAdded, 15)),
+        HomeRow("streaming", "Streaming", streaming),
+        HomeRow("platforms", "Platforms", platforms),
+    ).filter { it.items.isNotEmpty() }
+}
+
+private fun statusLine(games: List<GameEntity>, scan: ScanInfo): String {
+    val roms = games.count { it.kind == GameKind.ROM }
+    val apps = games.count { it.kind == GameKind.APP }
+    val parts = mutableListOf("$roms ${if (roms == 1) "game" else "games"}", "$apps apps")
+    scan.volumes.forEach { parts += "${it.label} ${formatSize(it.freeBytes)} free" }
+    if (scan.lastScanAt > 0) {
+        parts += "scanned " + java.time.Instant.ofEpochMilli(scan.lastScanAt).atZone(java.time.ZoneId.systemDefault())
+            .toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+    }
+    return parts.joinToString("  ·  ")
 }
 
 private fun GameEntity.toUi(): Game = when (kind) {

@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -64,6 +66,11 @@ import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.model.HomeTab
 import io.cttech.lighthouse.ui.components.CoverCard
+import io.cttech.lighthouse.ui.components.QuickPanel
+import io.cttech.lighthouse.ui.components.QuickSettingsIcons
+import io.cttech.lighthouse.ui.components.QuickSettingsPanel
+import io.cttech.lighthouse.ui.components.rememberBluetoothPermissionRequest
+import io.cttech.lighthouse.ui.components.rememberBtEpoch
 import io.cttech.lighthouse.ui.components.HintBar
 import io.cttech.lighthouse.ui.components.TopBar
 import kotlinx.coroutines.launch
@@ -84,6 +91,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val bgTop = animateColorAsState(lerpToDark(accent, 0.82f), tween(450), label = "bgTop")
 
     val rootFocus = remember { FocusRequester() }
+    var openPanel by remember { mutableStateOf<QuickPanel?>(null) }
+    val panelIcons = remember { QuickPanel.entries.associateWith { FocusRequester() } }
+    val (btEpoch, bumpBt) = rememberBtEpoch()
+    val requestBt = rememberBluetoothPermissionRequest(onResult = bumpBt)
+    val overlay = state.showAccessPrompt || openPanel != null
+
+    // As the home app, Back must never leave Lighthouse: it only closes a panel.
+    BackHandler(enabled = true) { openPanel = null }
+    LaunchedEffect(vm) { vm.homePresses.collect { openPanel = null } }
     Box(
         Modifier
             .fillMaxSize()
@@ -91,17 +107,19 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             .focusable() // last-resort focus target: D-pad from here moves into the shelf
             .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, Color(0xFF040507)))) }
             .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
                     Key.ButtonR1 -> { vm.moveTab(+1); true }
-                    Key.ButtonY -> { vm.toggleLayout(); true }
+                    Key.ButtonY -> { if (tab !is HomeTab.Home) vm.toggleLayout(); true }
                     else -> false
                 }
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab)
+            TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab) {
+                QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
+            }
             AnimatedContent(
                 targetState = tab to state.layout,
                 transitionSpec = {
@@ -123,12 +141,21 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     accent = shownTab.accent(),
                     favourites = state.favourites,
                     onFocused = { i -> vm.onFocused(shownTab, i) },
-                    onLaunch = { g -> launch(context, g) },
+                    onLaunch = { g -> if (launch(context, g)) vm.recordLaunch(g) },
                     onToggleFavourite = vm::toggleFavourite,
                 )
                 // Re-key on size so removing the focused favourite rebuilds the shelf and restores focus.
                 key(games.size) {
                     when {
+                        shownTab is HomeTab.Home -> HomeDashboard(
+                            rows = state.homeRows,
+                            statusLine = state.statusLine,
+                            rememberedKey = state.focusByTab[HomeTab.Home.key]?.gameKey,
+                            actions = actions,
+                            onFocusedKey = vm::onHomeFocused,
+                            onOpenPlatform = vm::selectTab,
+                            refocus = state.showAccessPrompt, // quick-settings panels hand focus back to their icon instead
+                        )
                         games.isEmpty() -> EmptyShelf(shownTab, refocus = state.showAccessPrompt)
                         layout == HomeLayout.Carousel -> CarouselShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
                         else -> GridShelf(games, state.focusIndexFor(shownTab), actions, refocus = state.showAccessPrompt)
@@ -136,12 +163,19 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 }
             }
             HintBar(
-                listOf(
-                    "Y" to if (state.layout == HomeLayout.Carousel) "Grid" else "Carousel",
-                    "X" to "Favourite",
-                    "A" to "Play",
-                ),
+                buildList {
+                    if (tab !is HomeTab.Home) add("Y" to if (state.layout == HomeLayout.Carousel) "Grid" else "Carousel")
+                    add("X" to "Favourite")
+                    add("A" to "Play")
+                },
             )
+        }
+        openPanel?.let { panel ->
+            QuickSettingsPanel(panel, btEpoch, onBtPermission = requestBt) {
+                openPanel = null
+                // Back to the icon that opened it, like a console's quick menu.
+                runCatching { panelIcons.getValue(panel).requestFocus() }
+            }
         }
         if (state.showAccessPrompt) {
             AccessPrompt(
@@ -152,17 +186,20 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     }
 }
 
-private fun launch(context: android.content.Context, game: Game) {
+/** Returns true if something was actually started (so it counts towards Continue playing). */
+private fun launch(context: android.content.Context, game: Game): Boolean {
     val pkg = game.packageName
     if (pkg != null) {
         val intent = context.packageManager.getLaunchIntentForPackage(pkg)
-        if (intent != null) context.startActivity(intent) else Toast.makeText(context, "Can't open ${game.title}", Toast.LENGTH_SHORT).show()
+        if (intent != null) { context.startActivity(intent); return true }
+        Toast.makeText(context, "Can't open ${game.title}", Toast.LENGTH_SHORT).show()
     } else {
         Toast.makeText(context, "Launching games arrives in milestone 3", Toast.LENGTH_SHORT).show()
     }
+    return false
 }
 
-private class CardActions(
+internal class CardActions(
     val accent: Color,
     val favourites: Set<String>,
     val onFocused: (Int) -> Unit,
@@ -269,7 +306,7 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
  * (e.g. the access prompt) goes away — otherwise focus is left nowhere and the controller does nothing.
  */
 @Composable
-private fun RestoreFocus(requester: FocusRequester, overlayShowing: Boolean) {
+internal fun RestoreFocus(requester: FocusRequester, overlayShowing: Boolean) {
     LaunchedEffect(requester, overlayShowing) {
         if (overlayShowing) return@LaunchedEffect
         withFrameNanos { }
@@ -283,7 +320,7 @@ private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {
     val requester = remember { FocusRequester() }
     Box(Modifier.fillMaxSize().focusRequester(requester).focusable(), contentAlignment = Alignment.Center) {
         Text(
-            if (tab is HomeTab.Favourites) "No favourites yet. Press X on a game to add it." else "Nothing here yet.",
+            if (tab is HomeTab.Home) "No favourites yet. Press X on a game to add it." else "Nothing here yet.",
             color = Color(0xFFB7C1D6),
             fontSize = 18.sp,
         )
@@ -294,7 +331,7 @@ private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {
 private fun Game.detailLine(): String = listOfNotNull(subtitle, year?.toString()).joinToString(" · ").ifEmpty { " " }
 
 private fun HomeTab.accent(): Color = when (this) {
-    HomeTab.Favourites -> NeutralAccent
+    HomeTab.Home -> NeutralAccent
     is HomeTab.PlatformTab -> platform.accent
 }
 

@@ -19,9 +19,10 @@ sealed interface HomeTab {
     val key: String
     val label: String
 
-    data object Favourites : HomeTab {
-        override val key = "favs"
-        override val label = "Favs"
+    /** The dashboard: continue playing, favourites, recently added, streaming, platforms. */
+    data object Home : HomeTab {
+        override val key = "home"
+        override val label = "Home"
     }
 
     data class PlatformTab(val platform: PlatformDef) : HomeTab {
@@ -31,3 +32,19 @@ sealed interface HomeTab {
 }
 
 enum class HomeLayout { Carousel, Grid }
+
+/** One row on the Home dashboard. [hero] rows use larger covers. */
+data class HomeRow(val id: String, val title: String, val items: List<HomeItem>, val hero: Boolean = false)
+
+sealed interface HomeItem {
+    val key: String
+
+    data class GameItem(val game: Game) : HomeItem {
+        override val key get() = game.key
+    }
+
+    /** Shortcut to a platform tab, with its game count. */
+    data class PlatformItem(val tabIndex: Int, val platform: PlatformDef, val count: Int) : HomeItem {
+        override val key get() = "platform:${platform.id}"
+    }
+}

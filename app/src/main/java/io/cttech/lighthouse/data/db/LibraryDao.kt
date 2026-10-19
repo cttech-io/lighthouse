@@ -37,7 +37,7 @@ interface LibraryDao {
         val added = scanned.filter { it.locator !in existing }
         val changed = scanned.mapNotNull { s ->
             val old = existing[s.locator] ?: return@mapNotNull null
-            val merged = s.copy(id = old.id, addedAt = old.addedAt)
+            val merged = s.copy(id = old.id) // addedAt comes from the file/app itself, so it's stable
             if (merged != old) merged else null
         }
         // Only write when something changed: every write re-emits the observed queries.
@@ -45,6 +45,12 @@ interface LibraryDao {
         if (added.isNotEmpty()) insertGames(added)
         if (changed.isNotEmpty()) updateGames(changed)
     }
+
+    @Query("SELECT * FROM plays ORDER BY lastPlayedAt DESC")
+    fun observePlays(): Flow<List<PlayEntity>>
+
+    @Query("INSERT INTO plays (gameKey, lastPlayedAt, launchCount) VALUES (:key, :at, 1) ON CONFLICT(gameKey) DO UPDATE SET lastPlayedAt = :at, launchCount = launchCount + 1")
+    suspend fun recordLaunch(key: String, at: Long)
 
     @Query("SELECT * FROM sources ORDER BY id")
     suspend fun sources(): List<SourceEntity>

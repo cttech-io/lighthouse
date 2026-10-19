@@ -15,6 +15,7 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.0.1"
+        resValue("string", "app_name", "Lighthouse")
     }
 
     // Two distribution flavours share all code; only storage access differs.
@@ -37,6 +38,8 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            // Distinguishable in the "Default home app" list next to the optimised build.
+            resValue("string", "app_name", "Lighthouse Debug")
         }
         release {
             isMinifyEnabled = true
@@ -56,6 +59,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 
     compileOptions {

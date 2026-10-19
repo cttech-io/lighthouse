@@ -9,8 +9,11 @@ import androidx.core.content.ContextCompat
 import io.cttech.lighthouse.data.db.LighthouseDatabase
 import io.cttech.lighthouse.library.LibraryRepository
 import io.cttech.lighthouse.storage.FlavorStorage
+import io.cttech.lighthouse.system.AppSettings
 
 class LighthouseApp : Application() {
+    val settings: AppSettings by lazy { AppSettings(this) }
+
     val repository: LibraryRepository by lazy {
         LibraryRepository(this, LighthouseDatabase.create(this).library(), FlavorStorage)
     }

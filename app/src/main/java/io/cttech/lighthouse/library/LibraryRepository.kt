@@ -12,6 +12,7 @@ import io.cttech.lighthouse.data.db.FavouriteEntity
 import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.data.db.LibraryDao
+import io.cttech.lighthouse.data.db.PlayEntity
 import io.cttech.lighthouse.data.db.SourceEntity
 import io.cttech.lighthouse.storage.StorageAccess
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -40,6 +43,11 @@ class LibraryRepository(
 
     val games: Flow<List<GameEntity>> = dao.observeGames()
     val favourites: Flow<List<String>> = dao.observeFavourites().map { list -> list.map { it.gameKey } }
+    val plays: Flow<List<PlayEntity>> = dao.observePlays()
+
+    private val _scanInfo = MutableStateFlow(ScanInfo())
+    /** Free space per volume and when the library was last refreshed, for Home's status strip. */
+    val scanInfo: StateFlow<ScanInfo> = _scanInfo
 
     fun hasStorageAccess(): Boolean = storage.hasAccess(app)
     fun storageAccessIntent(): Intent? = storage.accessIntent(app)
@@ -54,6 +62,7 @@ class LibraryRepository(
                     detectSourcesLocked()
                     scanAllRomsLocked()
                 }
+                _scanInfo.value = ScanInfo(volumes = volumeSpace(), lastScanAt = System.currentTimeMillis())
                 Log.i(TAG, "refreshAll in ${System.currentTimeMillis() - started} ms")
             }
         }
@@ -61,6 +70,10 @@ class LibraryRepository(
 
     fun refreshApps() {
         scope.launch { lock.withLock { refreshAppsLocked() } }
+    }
+
+    fun recordLaunch(key: String) {
+        scope.launch { dao.recordLaunch(key, System.currentTimeMillis()) }
     }
 
     fun toggleFavourite(key: String) {
@@ -81,6 +94,7 @@ class LibraryRepository(
             .filter { it.packageName.isUserFacingApp(it) }
             .map { info ->
                 val title = pm.getApplicationLabel(info).toString()
+                val pkg = runCatching { pm.getPackageInfo(info.packageName, 0) }.getOrNull()
                 GameEntity(
                     platformId = PlatformCatalog.ANDROID,
                     kind = GameKind.APP,
@@ -88,8 +102,8 @@ class LibraryRepository(
                     title = title,
                     sortTitle = TitleCleaner.sortKey(title),
                     sizeBytes = 0,
-                    modifiedAt = runCatching { pm.getPackageInfo(info.packageName, 0).lastUpdateTime }.getOrDefault(0),
-                    addedAt = now,
+                    modifiedAt = pkg?.lastUpdateTime ?: 0,
+                    addedAt = pkg?.firstInstallTime ?: now,
                 )
             }
         dao.replaceGames(PlatformCatalog.ANDROID, GameKind.APP, apps)
@@ -116,14 +130,13 @@ class LibraryRepository(
 
     private suspend fun scanPlatformLocked(platformId: String, sources: List<SourceEntity>) {
         val def = PlatformCatalog.byId(platformId) ?: return
-        val now = System.currentTimeMillis()
         val roms = RomScanner.scan(def, sources.map { File(it.path) }.filter { it.isDirectory })
         dao.replaceGames(
             platformId, GameKind.ROM,
             roms.map {
                 GameEntity(
                     platformId = platformId, kind = GameKind.ROM, locator = it.path, title = it.title,
-                    sortTitle = it.sortKey, sizeBytes = it.sizeBytes, modifiedAt = it.modifiedAt, addedAt = now,
+                    sortTitle = it.sortKey, sizeBytes = it.sizeBytes, modifiedAt = it.modifiedAt, addedAt = it.modifiedAt,
                 )
             },
         )
@@ -143,6 +156,14 @@ class LibraryRepository(
         }
     }
 
+    private fun volumeSpace(): List<VolumeSpace> =
+        app.getSystemService(StorageManager::class.java).storageVolumes
+            .filter { it.state == android.os.Environment.MEDIA_MOUNTED }
+            .mapNotNull { v ->
+                val dir = v.directory ?: return@mapNotNull null
+                VolumeSpace(if (v.isPrimary) "Internal" else if (v.isRemovable) "SD" else v.getDescription(app), dir.freeSpace)
+            }
+
     private fun storageRoots(): List<File> =
         app.getSystemService(StorageManager::class.java).storageVolumes
             .filter { it.state == android.os.Environment.MEDIA_MOUNTED }
@@ -159,3 +180,6 @@ class LibraryRepository(
 
     private companion object { const val TAG = "LighthouseLibrary" }
 }
+
+data class VolumeSpace(val label: String, val freeBytes: Long)
+data class ScanInfo(val volumes: List<VolumeSpace> = emptyList(), val lastScanAt: Long = 0)
