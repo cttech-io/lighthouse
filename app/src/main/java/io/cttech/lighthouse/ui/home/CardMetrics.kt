@@ -43,7 +43,9 @@ internal data class CardMetrics(
             // Grid and dashboard: scale with the shorter of width/height relative to the Portal.
             val scale = minOf(height.value / 504f, width.value / 1067f).coerceIn(0.6f, 1.4f)
             val factor = when (size) { CardSize.Small -> 0.8f; CardSize.Medium -> 1f; CardSize.Large -> 1.25f }
-            val gridMin = (150f * factor * scale.coerceAtMost(1f)).coerceAtMost((height.value - 60f) / 1.5f * 0.95f)
+            // Grid: on the Portal, Small = 8 columns, Medium = 6, Large = 5; never so tall that under ~1.5 rows show.
+            val gridFactor = when (size) { CardSize.Small -> 0.72f; CardSize.Medium -> 1f; CardSize.Large -> 1.1f }
+            val gridMin = (150f * gridFactor * scale.coerceAtMost(1f)).coerceAtMost((height.value - 40f) * 0.7f / 1.5f)
             return CardMetrics(
                 carouselSlot = slot.dp,
                 carouselExtra = (focused - slot).dp,

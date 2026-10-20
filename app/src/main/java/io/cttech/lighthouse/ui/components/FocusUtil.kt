@@ -49,12 +49,15 @@ fun androidx.compose.ui.Modifier.trapFocus(): androidx.compose.ui.Modifier =
 @Composable
 fun androidx.compose.ui.Modifier.refocusWhenLost(fallback: () -> FocusRequester): androidx.compose.ui.Modifier {
     var lost by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val hasFocus = androidx.compose.runtime.remember { booleanArrayOf(false) }
     LaunchedEffect(lost) {
         if (lost == 0) return@LaunchedEffect
         repeat(60) {
             withFrameNanos { }
+            // Someone else (e.g. a closing pop-up returning focus to its opener) got there first: leave it.
+            if (hasFocus[0]) return@LaunchedEffect
             if (runCatching { fallback().requestFocus() }.isSuccess) return@LaunchedEffect
         }
     }
-    return this.then(androidx.compose.ui.Modifier.onFocusChanged { if (!it.hasFocus) lost++ })
+    return this.then(androidx.compose.ui.Modifier.onFocusChanged { hasFocus[0] = it.hasFocus; if (!it.hasFocus) lost++ })
 }
