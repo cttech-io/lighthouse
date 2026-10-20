@@ -1,5 +1,10 @@
 package io.cttech.lighthouse.ui.components
 
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.BlendMode
@@ -63,12 +68,14 @@ fun TopBar(
     status: @Composable () -> Unit = {},
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        // Wide screens (the Portal is ~1067dp) get bigger tabs; small 4:3/square screens keep the compact size.
+        // Wide screens (the Portal is ~1067dp) get bigger tabs; small 4:3/square screens (RG405M ~430dp,
+        // RG Cube ~480dp) get compact status icons and tighter spacing so the tabs keep room.
         val big = maxWidth >= 900.dp
+        val compact = maxWidth < 640.dp
         val tabFont = if (big) 16.sp else 15.sp
         val tabPad = if (big) 14.dp else 12.dp
         Row(
-            Modifier.fillMaxWidth().height(if (big) 58.dp else 52.dp).padding(horizontal = 24.dp),
+            Modifier.fillMaxWidth().height(if (big) 58.dp else 52.dp).padding(horizontal = if (compact) 12.dp else 24.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -82,20 +89,7 @@ fun TopBar(
                     state = listState,
                     userScrollEnabled = false,
                     // Tabs that don't fit fade out at the edge (instead of being cut mid-word), hinting at more.
-                    modifier = Modifier.weight(1f, fill = false)
-                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                        .drawWithContent {
-                            drawContent()
-                            val fade = 48.dp.toPx()
-                            if (listState.canScrollForward) drawRect(
-                                Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
-                                blendMode = BlendMode.DstIn,
-                            )
-                            if (listState.canScrollBackward) drawRect(
-                                Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
-                                blendMode = BlendMode.DstIn,
-                            )
-                        },
+                    modifier = Modifier.weight(1f, fill = false).fadingEdges(listState),
                 ) {
                     itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
                         val active = i == selected
@@ -117,11 +111,13 @@ fun TopBar(
                 ButtonGlyph("R1")
             }
             // Always a clear gap between R1 and the status icons, however many tabs there are.
-            Spacer(Modifier.width(if (big) 40.dp else 24.dp))
+            Spacer(Modifier.width(if (big) 40.dp else if (compact) 12.dp else 24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                status() // Wi-Fi · Bluetooth · Volume · Battery
-                Spacer(Modifier.width(14.dp))
-                Clock()
+                CompositionLocalProvider(LocalCompactChrome provides compact) {
+                    status() // Wi-Fi · Bluetooth · Volume · Battery
+                }
+                Spacer(Modifier.width(if (compact) 8.dp else 14.dp))
+                Clock(if (compact) 13.sp else 15.sp)
             }
         }
     }
@@ -129,25 +125,60 @@ fun TopBar(
 
 @Composable
 fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, onTap: (button: String) -> Unit = {}) {
-    Row(
-        modifier.fillMaxWidth().height(44.dp).padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End,
-    ) {
-        hints.forEach { (button, label) ->
-            // Tappable for touch users (not focusable: the controller uses the real buttons).
-            Row(
-                Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(button) } }.padding(horizontal = 4.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ButtonGlyph(button, round = true)
-                Spacer(Modifier.width(6.dp))
-                Text(label, color = Color.White, fontSize = 14.sp)
+    // Right-aligned, one line. On narrow screens hints are dropped from the left: the important ones
+    // (Play, Favourite…) are listed last, so they're the ones that stay.
+    Layout(
+        modifier = modifier.fillMaxWidth().height(44.dp).padding(horizontal = 16.dp),
+        content = {
+            hints.forEach { (button, label) ->
+                // Tappable for touch users (not focusable: the controller uses the real buttons).
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(button) } }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ButtonGlyph(button, round = true)
+                    Spacer(Modifier.width(6.dp))
+                    Text(label, color = Color.White, fontSize = 14.sp, maxLines = 1, softWrap = false)
+                }
             }
-            Spacer(Modifier.width(12.dp))
+        },
+    ) { measurables, constraints ->
+        val gap = 6.dp.roundToPx()
+        val placeables = measurables.map { it.measure(Constraints()) }
+        var used = 0
+        val shown = placeables.indices.reversed().takeWhile { i ->
+            val w = placeables[i].width + if (used > 0) gap else 0
+            (used + w <= constraints.maxWidth).also { if (it) used += w }
+        }.reversed()
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            var x = constraints.maxWidth - used
+            shown.forEach { i ->
+                val p = placeables[i]
+                p.placeRelative(x, (constraints.maxHeight - p.height) / 2)
+                x += p.width + gap
+            }
         }
     }
 }
+
+/** Fades a horizontally scrolling row out at whichever edges have more content (tabs that don't fit). */
+fun Modifier.fadingEdges(state: androidx.compose.foundation.lazy.LazyListState, width: Dp = 48.dp): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fade = width.toPx()
+        if (state.canScrollForward) drawRect(
+            Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+            blendMode = BlendMode.DstIn,
+        )
+        if (state.canScrollBackward) drawRect(
+            Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
+            blendMode = BlendMode.DstIn,
+        )
+    }
+
+/** True inside the top bar on small screens: status icons drop the battery percentage and shrink. */
+val LocalCompactChrome = compositionLocalOf { false }
 
 @Composable
 fun ButtonGlyph(label: String, round: Boolean = false) {
@@ -163,7 +194,7 @@ fun ButtonGlyph(label: String, round: Boolean = false) {
 }
 
 @Composable
-private fun Clock() {
+private fun Clock(size: androidx.compose.ui.unit.TextUnit) {
     val fmt = remember { DateTimeFormatter.ofPattern("HH:mm") }
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
@@ -172,6 +203,6 @@ private fun Clock() {
             delay((60 - now.second) * 1000L)
         }
     }
-    Text(now.format(fmt), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+    Text(now.format(fmt), color = Color.White, fontSize = size, fontWeight = FontWeight.Medium)
 }
 

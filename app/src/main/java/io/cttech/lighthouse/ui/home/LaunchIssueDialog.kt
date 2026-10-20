@@ -1,5 +1,8 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.popupWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
@@ -61,10 +64,11 @@ fun LaunchIssueDialog(
     ) {
         Column(
             Modifier
-                .width(600.dp)
+                .popupWidth(600.dp)
                 .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {}
-                .padding(30.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val (title, body) = when (issue) {

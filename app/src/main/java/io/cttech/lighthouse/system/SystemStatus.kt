@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.system
 
+import androidx.annotation.RequiresApi
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -60,18 +61,17 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
         fun publish() { state = WifiState(wifi.isWifiEnabled, connected, if (connected) level else 0, if (connected && source != WifiNameSource.Off) name else null) }
 
         // With location permission (Android 12+), ask for location info so WifiInfo carries the SSID.
-        val callback = object : ConnectivityManager.NetworkCallback(
-            if (Build.VERSION.SDK_INT >= 31 && useLocation && context.hasLocationPermission()) FLAG_INCLUDE_LOCATION_INFO else 0,
-        ) {
-            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+        val callback = WifiCallback(
+            includeLocation = Build.VERSION.SDK_INT >= 31 && useLocation && context.hasLocationPermission(),
+            onCapabilities = { caps ->
                 connected = true
                 val info = caps.transportInfo as? WifiInfo
                 level = info?.rssi?.let { wifi.calculateSignalLevel(it).coerceIn(0, 4) } ?: 3
                 name = info?.ssid?.cleanSsid() ?: name
                 publish()
-            }
-            override fun onLost(network: Network) { connected = false; name = null; publish() }
-        }
+            },
+            onLost = { connected = false; name = null; publish() },
+        )
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) = publish()
         }
@@ -106,8 +106,10 @@ data class BluetoothState(
     val connectedDevices: List<String>?,
 )
 
+/** Android 11 has no BLUETOOTH_CONNECT (it always reads as denied); the install-time BLUETOOTH permission applies. */
 fun Context.hasBluetoothPermission(): Boolean =
-    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+    Build.VERSION.SDK_INT < 31 ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
 /** Live Bluetooth state. On/off needs no permission; device names need BLUETOOTH_CONNECT. [permissionEpoch] forces a re-read after granting. */
 @Composable
@@ -265,4 +267,31 @@ fun rememberBatteryState(): BatteryState {
         onDispose { context.unregisterReceiver(receiver) }
     }
     return state
+}
+
+/**
+ * NetworkCallback(flags) only exists on Android 12+; calling it on Android 11 crashes even with flags = 0
+ * (NoSuchMethodError at startup), so older versions use the plain constructor.
+ */
+private class WifiCallback : ConnectivityManager.NetworkCallback {
+    private val onCapabilities: (NetworkCapabilities) -> Unit
+    private val onLostCb: () -> Unit
+
+    @RequiresApi(31)
+    private constructor(flags: Int, onCapabilities: (NetworkCapabilities) -> Unit, onLost: () -> Unit) : super(flags) {
+        this.onCapabilities = onCapabilities; this.onLostCb = onLost
+    }
+
+    private constructor(onCapabilities: (NetworkCapabilities) -> Unit, onLost: () -> Unit) : super() {
+        this.onCapabilities = onCapabilities; this.onLostCb = onLost
+    }
+
+    override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) = onCapabilities(caps)
+    override fun onLost(network: Network) = onLostCb()
+
+    companion object {
+        operator fun invoke(includeLocation: Boolean, onCapabilities: (NetworkCapabilities) -> Unit, onLost: () -> Unit) =
+            if (includeLocation && Build.VERSION.SDK_INT >= 31) WifiCallback(FLAG_INCLUDE_LOCATION_INFO, onCapabilities, onLost)
+            else WifiCallback(onCapabilities, onLost)
+    }
 }

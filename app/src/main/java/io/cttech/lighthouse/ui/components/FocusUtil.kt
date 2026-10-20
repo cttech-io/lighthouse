@@ -1,5 +1,9 @@
 package io.cttech.lighthouse.ui.components
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
@@ -64,3 +68,10 @@ fun androidx.compose.ui.Modifier.refocusWhenLost(fallback: () -> FocusRequester)
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { lost++; onPauseOrDispose { } }
     return this.then(androidx.compose.ui.Modifier.onFocusChanged { hasFocus[0] = it.hasFocus; if (!it.hasFocus) lost++ })
 }
+
+/**
+ * Width for pop-ups and panels: [max] on big screens, never wider than the screen minus a margin
+ * (small handhelds are ~430–640dp wide). Use in place of a fixed width.
+ */
+fun androidx.compose.ui.Modifier.popupWidth(max: androidx.compose.ui.unit.Dp, margin: androidx.compose.ui.unit.Dp = 16.dp): androidx.compose.ui.Modifier =
+    this.padding(horizontal = margin).widthIn(max = max).fillMaxWidth()

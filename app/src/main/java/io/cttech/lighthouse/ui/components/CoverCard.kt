@@ -139,14 +139,23 @@ fun CoverCard(
             if (icon != null) {
                 Image(icon, contentDescription = null, modifier = Modifier.align(Alignment.Center).padding(bottom = 18.dp).fillMaxSize(0.48f))
             }
-            Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+            // Small cards (side cards on 4:3 handhelds are ~60dp wide) only fit the initials, smaller and centred.
+            val tiny = maxWidth < 90.dp
+            Column(
+                Modifier.fillMaxSize().padding(if (tiny) 4.dp else 10.dp),
+                verticalArrangement = if (tiny) androidx.compose.foundation.layout.Arrangement.Center else androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                horizontalAlignment = if (tiny) Alignment.CenterHorizontally else Alignment.Start,
+            ) {
                 Text(
                     if (icon != null || game.packageName != null) "" else monogram(game.title),
                     color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 30.sp,
+                    fontSize = if (tiny) 22.sp else 30.sp,
                     fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    softWrap = false,
                 )
-                Text(
+                if (!tiny) Text(
                     game.title,
                     color = Color.White,
                     fontSize = 12.sp,
@@ -156,6 +165,7 @@ fun CoverCard(
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Start,
                 )
+            }
             }
         }
         if (isFavourite) {

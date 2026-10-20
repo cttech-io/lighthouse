@@ -1,5 +1,7 @@
 package io.cttech.lighthouse.ui.components
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import io.cttech.lighthouse.theme.Lh
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
@@ -81,7 +83,8 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
     val bt = rememberBluetoothState(btEpoch)
     val (vol, _) = rememberVolume()
     val battery = rememberBatteryState()
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+    val compact = LocalCompactChrome.current
+    Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp), verticalAlignment = Alignment.CenterVertically) {
         StatusButton(requesters.getValue(QuickPanel.Wifi), { onOpen(QuickPanel.Wifi) }) { tint ->
             WifiGlyph(wifi.enabled, wifi.connected, wifi.level, tint)
         }
@@ -97,7 +100,7 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
             StatusButton(requesters.getValue(QuickPanel.Battery), { onOpen(QuickPanel.Battery) }, wide = true) { tint ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     BatteryGlyph(battery.level, battery.plugged, battery.powerSave, tint)
-                    Text("${battery.level}%", color = tint, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    if (!compact) Text("${battery.level}%", color = tint, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -109,7 +112,7 @@ private fun StatusButton(requester: FocusRequester, onClick: () -> Unit, wide: B
     var focused by remember { mutableStateOf(false) }
     Box(
         Modifier
-            .then(if (wide) Modifier.height(36.dp).padding(horizontal = 0.dp) else Modifier.size(36.dp))
+            .then(if (wide) Modifier.height(36.dp).padding(horizontal = 0.dp) else Modifier.size(if (LocalCompactChrome.current) 30.dp else 36.dp))
             .clip(if (wide) RoundedCornerShape(50) else CircleShape)
             .then(if (wide) Modifier.background(Color.Transparent).padding(horizontal = 0.dp) else Modifier)
             .background(if (focused) Color.White else Color.Transparent)
@@ -142,10 +145,11 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
     ) {
         Column(
             Modifier
-                .padding(top = 56.dp, end = 20.dp)
-                .width(380.dp)
+                .padding(top = 56.dp, end = 4.dp, bottom = 8.dp)
+                .popupWidth(380.dp)
                 .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {} // swallow taps inside
+                .verticalScroll(rememberScrollState())
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {

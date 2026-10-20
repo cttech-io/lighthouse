@@ -1,5 +1,11 @@
 package io.cttech.lighthouse.ui.settings
 
+import io.cttech.lighthouse.ui.components.fadingEdges
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -100,25 +106,35 @@ fun SettingsScreen(
                 .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false },
         ) {
             Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Settings", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(20.dp))
-                    ButtonGlyph("L1")
-                    Spacer(Modifier.width(8.dp))
-                    SettingsTab.entries.forEachIndexed { i, t ->
-                        val active = i == tabIndex
-                        val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "settingsTabBg")
-                        Box(
-                            Modifier.clip(RoundedCornerShape(50)).background(bg)
-                                .pointerInput(i) { detectTapGestures { tabIndex = i } }
-                                .padding(horizontal = 11.dp, vertical = 6.dp),
-                        ) {
-                            Text(t.label.uppercase(), color = if (active) Color.White else Lh.colors.textMuted, fontSize = 13.sp,
-                                fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1)
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val narrow = maxWidth < 760.dp
+                    Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = if (narrow) 12.dp else 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // Small screens: the tabs need the room more than the title does.
+                        if (!narrow) {
+                            Text("Settings", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(20.dp))
                         }
+                        ButtonGlyph("L1")
+                        Spacer(Modifier.width(8.dp))
+                        val tabsState = rememberLazyListState()
+                        LaunchedEffect(tabIndex) { tabsState.animateScrollToItem((tabIndex - 1).coerceAtLeast(0)) }
+                        LazyRow(state = tabsState, userScrollEnabled = false, modifier = Modifier.weight(1f, fill = false).fadingEdges(tabsState, 32.dp)) {
+                            itemsIndexed(SettingsTab.entries) { i, t ->
+                                val active = i == tabIndex
+                                val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "settingsTabBg")
+                                Box(
+                                    Modifier.clip(RoundedCornerShape(50)).background(bg)
+                                        .pointerInput(i) { detectTapGestures { tabIndex = i } }
+                                        .padding(horizontal = 11.dp, vertical = 6.dp),
+                                ) {
+                                    Text(t.label.uppercase(), color = if (active) Color.White else Lh.colors.textMuted, fontSize = 13.sp,
+                                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1)
+                                }
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        ButtonGlyph("R1")
                     }
-                    Spacer(Modifier.width(8.dp))
-                    ButtonGlyph("R1")
                 }
                 key(tab) {
                     val first = remember { FocusRequester() }
@@ -128,7 +144,8 @@ fun SettingsScreen(
                         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Column(Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Up to 760dp wide, centred; narrower screens keep a margin on both sides.
+                        Column(Modifier.padding(horizontal = 16.dp).widthIn(max = 760.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             when (tab) {
                                 SettingsTab.Library -> {
                                     StorageSection(vm, info.storageAccess, firstMod)

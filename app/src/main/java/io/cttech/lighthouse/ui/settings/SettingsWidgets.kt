@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.settings
 
+import io.cttech.lighthouse.ui.components.popupWidth
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -149,7 +150,7 @@ internal fun <T> OptionPicker(
     ) {
         Column(
             Modifier
-                .width(460.dp)
+                .popupWidth(460.dp)
                 .heightIn(max = 520.dp)
                 .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {}

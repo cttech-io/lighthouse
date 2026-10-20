@@ -1,5 +1,9 @@
 package io.cttech.lighthouse.ui.home
 
+import androidx.compose.foundation.layout.widthIn
+import io.cttech.lighthouse.ui.components.popupWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -131,7 +135,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                     value = query,
                     onValueChange = { query = it },
                     placeholder = "Search SteamGridDB",
-                    modifier = Modifier.width(520.dp).focusRequester(searchBox),
+                    modifier = Modifier.widthIn(max = 520.dp).weight(1f, fill = false).focusRequester(searchBox),
                     imeAction = ImeAction.Search,
                     onSubmit = ::search,
                 )
@@ -216,9 +220,11 @@ fun GameOptionsSheet(
     ) {
         Column(
             Modifier
-                .width(420.dp)
+                .popupWidth(420.dp)
+                .padding(vertical = 12.dp)
                 .background(Lh.colors.surface, RoundedCornerShape(18.dp))
                 .clickable(indication = null, interactionSource = null) {} // taps inside don't close
+                .verticalScroll(rememberScrollState()) // small screens: focus scrolls it to the last button
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -249,7 +255,7 @@ fun CoverOfferDialog(count: Int, hasKey: Boolean, onFind: () -> Unit, onAlways: 
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.width(520.dp).background(Lh.colors.surface, RoundedCornerShape(18.dp)).padding(24.dp),
+            Modifier.popupWidth(520.dp).background(Lh.colors.surface, RoundedCornerShape(18.dp)).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(if (count == 1) "1 game has no cover" else "$count games have no cover", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)

@@ -1,5 +1,8 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.ui.components.popupWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.theme.Lh
 import androidx.compose.foundation.background
@@ -47,9 +50,10 @@ fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
     ) {
         Column(
             Modifier
-                .width(560.dp)
+                .popupWidth(560.dp)
                 .background(Lh.colors.surface, RoundedCornerShape(18.dp))
-                .padding(32.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
         ) {
             Text("Find your games", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))

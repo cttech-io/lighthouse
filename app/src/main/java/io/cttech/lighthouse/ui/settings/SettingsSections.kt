@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.settings
 
+import androidx.compose.foundation.layout.widthIn
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -432,7 +433,7 @@ private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (receiver != null) QrCode(receiver.url, Modifier.size(220.dp))
-            Column(Modifier.width(380.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.widthIn(max = 380.dp).weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 when {
                     started == null -> Note("Starting…")

@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.settings
 
+import io.cttech.lighthouse.ui.components.popupWidth
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -70,7 +71,7 @@ internal fun FolderBrowser(roots: List<File>, onPick: (File) -> Unit, onClose: (
             .onPreviewKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { up(); true } else false },
         contentAlignment = Alignment.TopCenter,
     ) {
-        Column(Modifier.width(760.dp).padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.popupWidth(760.dp).padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Choose a ROM folder", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(dir?.absolutePath ?: "Storage", color = Lh.colors.textMuted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.StartEllipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

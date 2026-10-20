@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import androidx.compose.foundation.layout.widthIn
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -92,7 +93,7 @@ fun AppDrawer(onClose: () -> Unit) {
                     value = query,
                     onValueChange = { query = it },
                     placeholder = "Search apps",
-                    modifier = Modifier.width(420.dp),
+                    modifier = Modifier.widthIn(max = 420.dp).weight(1f, fill = false),
                 )
                 Text("${shown.size} apps", color = Lh.colors.textMuted, fontSize = 14.sp)
             }

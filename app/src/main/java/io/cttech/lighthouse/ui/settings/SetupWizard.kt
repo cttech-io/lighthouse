@@ -1,5 +1,9 @@
 package io.cttech.lighthouse.ui.settings
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,14 +81,21 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                 .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { back(); true } else false },
         ) {
             Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Lighthouse setup", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(20.dp))
-                    Steps.forEachIndexed { i, s ->
-                        Text(
-                            "${i + 1}. $s", fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp),
-                            color = if (i == step) Color.White else Lh.colors.textMuted.copy(alpha = if (i < step) 0.9f else 0.5f),
-                            fontWeight = if (i == step) FontWeight.Bold else FontWeight.Medium,
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    // All six steps fit from ~980dp; smaller screens show "Step 2 of 6 · Your games".
+                    val all = maxWidth >= 980.dp
+                    Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = if (all) 24.dp else 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Lighthouse setup", color = Color.White, fontSize = if (all) 20.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Spacer(Modifier.width(if (all) 20.dp else 14.dp))
+                        if (all) Steps.forEachIndexed { i, s ->
+                            Text(
+                                "${i + 1}. $s", fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp),
+                                color = if (i == step) Color.White else Lh.colors.textMuted.copy(alpha = if (i < step) 0.9f else 0.5f),
+                                fontWeight = if (i == step) FontWeight.Bold else FontWeight.Medium,
+                            )
+                        } else Text(
+                            "Step ${step + 1} of ${Steps.size} · ${Steps[step]}", fontSize = 13.sp, color = Lh.colors.textMuted,
+                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -96,7 +107,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Column(Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.padding(horizontal = 16.dp).widthIn(max = 760.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             when (step) {
                                 0 -> {
                                     Text("Welcome to Lighthouse", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
@@ -138,8 +149,14 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                             }
                             if (step > 0) {
                                 Spacer(Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    PillButton(if (step == last) "Finish" else "Next") { next() }
+                                val nextButton = remember { FocusRequester() }
+                                // Entering the buttons from above lands on Next/Finish; Compose's geometry search
+                                // picked Back (nearer the middle of the full-width row above).
+                                Row(
+                                    Modifier.focusProperties { onEnter = { nextButton.requestFocus() } }.focusGroup(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    PillButton(if (step == last) "Finish" else "Next", Modifier.focusRequester(nextButton)) { next() }
                                     PillButton("Back") { back() }
                                 }
                             }
