@@ -13,8 +13,8 @@ android {
         applicationId = "io.cttech.lighthouse"
         minSdk = 30
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.1.1"
+        versionCode = 4
+        versionName = "0.1.2"
         resValue("string", "app_name", "Lighthouse")
     }
 
