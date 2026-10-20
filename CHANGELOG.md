@@ -1,0 +1,37 @@
+# Changelog
+
+## 0.1.2 (2026-10-20)
+
+**Fixed**
+- Android 11 crashed at startup. Bluetooth device names on Android 11 also work now.
+- Start pressed whatever was highlighted when nothing used it (for example, it opened the highlighted app in the app drawer). It now does nothing there.
+- The first controller press after a restart or update was lost.
+- Setup: pressing Down to reach the buttons landed on Back instead of Next.
+
+**Small screens** (4:3 and square handhelds, from 640×480)
+- The top bar keeps room for tabs: smaller status icons, and no battery percentage on narrow screens.
+- Button hints stay on one line; the least important drop off first.
+- Settings and setup keep side margins; the Settings tabs scroll; setup shows "Step 2 of 6".
+- Pop-ups fit the screen and scroll when they're taller than it.
+
+## 0.1.1 (2026-10-20)
+
+**New**
+- **PC game apps:** DroidDeck and GameNative games appear on their own tabs, kept in sync by each app's folder sync. GameNative's Epic, GOG, Amazon and custom games launch with the right store.
+- **Moonlight:** your PCs' games on a Moonlight tab and an "On your PC" HOME row, with box art; A starts the stream directly (root needed to read the game list).
+- **Shortcuts:** "Create shortcut" / "Add to home screen" from any app goes to a Shortcuts tab.
+- **HOME sections:** reorder or hide each HOME row (Settings → Appearance); Favourites now comes first. The library stats line is optional, and off by default.
+- The Home button returns to HOME from Settings, the app drawer and any pop-up.
+
+**Improved**
+- A bigger tab bar that uses the free space, with faded edges when tabs don't fit.
+- Focus fixes: the first press after touching the screen works, and Down from the SteamGridDB key field goes to the right button.
+
+## 0.1 (2026-10-20)
+
+First tagged version, used daily on an AYN Odin 2 Portal.
+- **Library:** Switch, PS2, GBA, GBC, N64 and Android, found automatically and watched for changes.
+- **Launching:** through per-emulator profiles (Eden, ARMSX2, RetroArch, DroidDeck, GameNative), with clear fixes when something's missing.
+- **Covers:** your own images, libretro box art, SteamGridDB, and a cover picker.
+- **Interface:** HOME dashboard, carousel and grid shelves, quick settings, app drawer, and four themes plus user themes.
+- **Setup and Settings:** a first-run setup wizard and full controller-driven Settings, and Lighthouse can be the default Home app.

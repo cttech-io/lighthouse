@@ -5,7 +5,7 @@ import org.junit.Test
 
 class MoonlightSourceTest {
     @Test fun parsesSunshineAppList() {
-        // As cached by Moonlight on the Portal (Sunshine on Gaming PC).
+        // As Moonlight caches it for a Sunshine host.
         val xml = """<?xml version="1.0" encoding="utf-8"?>
 <root status_code="200"><App><IsHdrSupported>1</IsHdrSupported><AppTitle>Desktop</AppTitle><ID>881448767</ID></App><App><IsHdrSupported>0</IsHdrSupported><AppTitle>Steam Big Picture</AppTitle><ID>1093255277</ID></App></root>"""
         assertEquals(

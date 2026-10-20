@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lighthouse compatibility driver for Gaming PC's headless Android emulators.
+# Lighthouse compatibility driver for headless Android emulators (Linux + KVM).
 #   compat.sh boot <api> <port>          create (once) and boot an emulator, install Lighthouse + test games
 #   compat.sh profile <port> <W> <H> <dpi>   switch the screen to a device profile and restart Lighthouse
 #   compat.sh keys <port> KEY...         press keys (KEYCODE_ names, short names allowed: A B START DOWN…)

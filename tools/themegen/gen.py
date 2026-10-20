@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Generate Beacon Launcher theme backgrounds (1920x1080 SVG) for the Odin2 Portal.
+"""Generate Lighthouse's bundled theme backgrounds (1920x1080 SVG).
 
-Layout guardrails (Beacon, landscape): tab bar y<80, title ~y100-140, selected
-cover x140-600 / y150-830, carousel x>640 / y300-560, metadata y~920-1000,
-button bar y>1030. Keep detail low-contrast behind those; put interest top-right
-and in the floor area bottom-right.
+Layout guardrails (landscape): top bar y<80, game title ~y100-140, focused
+cover x140-600 / y150-830, other covers x>640 / y300-560, button hints y>1030.
+Keep detail low-contrast behind those; put interest top-right and in the floor
+area bottom-right.
 """
 import os
 import random

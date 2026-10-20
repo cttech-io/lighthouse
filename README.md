@@ -2,67 +2,107 @@
 
 An open-source, controller-first game launcher for Android handhelds.
 
-Lighthouse puts your Android apps and emulated games in one library, with a tab per platform switched by the shoulder buttons. It has a console-style HOME dashboard and built-in quick settings, and **no analytics or tracking**. It works without root; root unlocks a few optional extras.
+Lighthouse puts your emulated games, Android games, PC games and streaming in one library. Each platform gets its own tab, switched with the shoulder buttons, and a console-style HOME page sits in front of them all. It's built to be driven entirely from a controller. It has **no analytics or tracking**, and needs **no root** (root unlocks a few optional extras).
 
-> **Status:** early development, used daily as the Home app on an AYN Odin2 Portal (LineageOS 24). Games are found and shown, but **launching ROMs is the next milestone**; Android apps already launch.
+> **Status:** v0.1.2, early but usable. Developed and used daily as the Home app on an AYN Odin 2 Portal. It's also tested on emulators at the screen sizes of other popular handhelds (Odin 2 / Mini, Retroid Pocket 5 / Mini, Anbernic 4:3 and square). Expect rough edges, and please [report them](../../issues).
 
-## What works today
-- **Library**
-  - Auto-detects platform folders under `Games/`, `ROMs/` or `Emulation/` on every storage volume.
-  - Supported: Switch, PS2, GBA, GBC, N64, and DroidDeck/GameNative `.steam` shortcuts.
-  - Scans recursively, cleans No-Intro names, and skips BIOS, keys, saves, and Switch updates/DLC.
-  - Collapses duplicate copies across storage volumes.
-- **Folder watching:** new or removed ROMs appear or disappear within about 2 seconds (`sideload` flavour).
-- **Android tab:** installed apps with their real icons; A opens them.
-- **HOME dashboard:** status strip, Continue playing (games only), Favourites, Recently added, Streaming, and platform shortcuts.
-- **Platform tabs:**
-  - L1/R1 with wrap-around; tap a tab to switch.
-  - Carousel or grid (Y).
-  - Focus remembered per tab; haptic tick on focus.
-- **Quick settings** in the top bar (Wi-Fi · Bluetooth · Volume · Battery · Clock): built-in panels; with root, Wi-Fi, Bluetooth and battery saver switch silently.
-- **Home app:** can be set as Android's default home screen. Back never exits; the Home button returns to the HOME tab.
+## Features
 
-## Planned
-Launching games through per-emulator launch profiles, covers (SteamGridDB, libretro, manual), a JSON theme engine, first-run setup and settings, play-time tracking, collections, search, and Moonlight host apps. See the milestones in the project plan.
+**Your library, found for you**
+- Detects platform folders under `Games/`, `ROMs/` or `Emulation/` on internal storage and SD cards, and watches them: copy a game in and it appears within seconds.
+- Platforms: **Switch, PS2, GBA, GBC/GB, N64**, plus your **Android games and apps**.
+- Cleans up No-Intro style names, skips BIOS files, keys, saves and Switch updates/DLC, and collapses duplicate copies across storage.
 
-## Build flavours
-| Flavour | Storage | Folder watching | Distribution |
-|---|---|---|---|
-| `sideload` | All files access | Instant (file observers) | GitHub Releases, Obtainium, adb |
-| `play` | Folders you pick | Rescans on resume and periodically | Future Play Store build |
+**PC games and streaming**
+- **DroidDeck** and **GameNative**: both apps keep a folder of one-file-per-game shortcuts in sync, and Lighthouse lists those games on their own tabs and launches them directly (Steam, Epic, GOG, Amazon and custom games).
+- **Moonlight**: the games on your PCs (Sunshine/GameStream) get a Moonlight tab and an "On your PC" HOME row, with box art from your PC. A launches straight into the stream, and Moonlight wakes the PC first if needed. Reading the game list needs root; without root, use Moonlight's own "Create shortcut" on a game.
+- **Shortcuts from any app**: "Create shortcut" / "Add to home screen" lands on a Shortcuts tab.
 
-CI builds both, and fails if the `play` APK ever requests `MANAGE_EXTERNAL_STORAGE`.
+**Launching**
+- One button to play, using per-emulator launch profiles: **Eden** (Switch), **ARMSX2** (PS2), **RetroArch** with mGBA (GBA/GBC) and Mupen64Plus-Next (N64), **DroidDeck**, **GameNative**. You can choose the emulator per platform.
+- Clear fixes when something's missing: emulator not installed, no storage permission, RetroArch core not downloaded.
 
-| Build type | Use |
+**Covers**
+- Your own images first (a picture named like the ROM, or in `Lighthouse/covers/<platform>/`).
+- Then, if you allow it: libretro box art, or SteamGridDB with a free API key. You can send the key from your phone by scanning a QR code.
+- A cover picker for anything you want to change.
+
+**HOME and navigation**
+- HOME page rows: Favourites, Continue playing, Recently added, Streaming, On your PC, Platforms. Reorder or hide any of them.
+- Carousel or grid per tab, and three card sizes that scale with your screen.
+- Quick settings in the top bar (Wi-Fi, Bluetooth, volume, battery saver). With root, Wi-Fi, Bluetooth and battery saver switch silently.
+- Can be your **default Home app**: Back never leaves Lighthouse, and the Home button always returns to HOME.
+- Themes: four built in, or [write your own](docs/THEMES.md) with a `theme.json` and background images.
+
+## Controls
+
+| Button | Action |
 |---|---|
-| `profile` | Release-optimised and debug-signed (ID suffix `.profile`). **Judge smoothness on this one.** |
-| `debug` | Fast to build, slow to run. Labelled "Lighthouse Debug". |
-| `release` | Minified; signing to be set up before public releases. |
+| D-pad / stick | Move |
+| A | Play / select |
+| B | All apps (on a shelf), back (anywhere else) |
+| X | Favourite |
+| Y | Carousel ↔ grid |
+| L1 / R1 | Previous / next tab |
+| Start | Settings |
+| Select (or long-press) | Game options: cover, favourite, hide |
+| Home | Back to HOME |
+
+Settings → Controls has a Nintendo-style layout that swaps A and B everywhere.
+
+## Install
+
+Requires **Android 11 or newer**.
+
+1. Download the latest `lighthouse-<version>.apk` from [Releases](../../releases) and install it, or add this repository to [Obtainium](https://github.com/ImranR98/Obtainium) to get updates automatically.
+2. Open Lighthouse. First-run setup finds your games and emulators, offers covers, and can make Lighthouse your Home app.
+3. Allow **All files access** when asked: that's how Lighthouse reads your ROM folders and notices new games.
+
+## Privacy
+
+Lighthouse has no analytics, accounts, ads or tracking. It only goes online when you ask it to fetch covers (libretro, and SteamGridDB with your own key). "Send from phone" runs a short-lived HTTPS page on your local network, only while that screen is open.
 
 ## Building
+
 Requires JDK 21 and the Android SDK (API 37).
 
 ```bash
-./gradlew testSideloadDebugUnitTest      # scanner / title-cleaning tests
-./gradlew assembleSideloadProfile        # or assemblePlayDebug, assembleSideloadDebug
+./gradlew testSideloadDebugUnitTest      # unit tests
+./gradlew assembleSideloadProfile        # release-optimised, debug-signed (judge smoothness on this)
 scripts/deploy.sh [sideload|play] [profile|debug]   # build, install and launch on a USB device
 ```
 
-`deploy.sh` launches through the HOME intent when Lighthouse is the default home app, so only one instance exists. It never presses buttons, wakes or unlocks the device.
+| Flavour | Storage | Folder watching | Distribution |
+|---|---|---|---|
+| `sideload` | All files access | Instant (file observers) | GitHub Releases, Obtainium |
+| `play` | Folders you pick | Rescans | A possible future Play Store build |
 
-## Project layout
+| Build type | Use |
+|---|---|
+| `debug` | Fast to build, slow to run ("Lighthouse Debug", ID suffix `.debug`) |
+| `profile` | Release-optimised, debug-signed (ID suffix `.profile`) |
+| `release` | Minified and release-signed: what's published |
+
+CI builds both flavours and fails if the `play` APK ever requests `MANAGE_EXTERNAL_STORAGE`. Device-size testing on headless emulators: see [`scripts/compat/`](scripts/compat/).
+
+### Project layout
 ```
 app/src/main/java/io/cttech/lighthouse/
-  library/     PlatformCatalog, FolderDetector, RomScanner, TitleCleaner, AppClassifier, LibraryRepository
-  data/db/     Room entities (sources, games, favourites, plays) + DAO; schemas in app/schemas/
-  storage/     StorageAccess interface (flavour implementations in src/sideload and src/play)
-  system/      Wi-Fi/Bluetooth/volume/battery state, optional Root helper, AppSettings
-  ui/home/     HomeScreen (tabs, carousel, grid), HomeDashboard, HomeViewModel, AccessPrompt
-  ui/components/ CoverCard, top bar, quick-settings panels, status glyphs
-tools/themegen/  SVG generator for the bundled background themes
+  library/       platforms, folder detection, ROM scanning, apps, Moonlight, pinned shortcuts
+  launch/        launch profiles (assets/launch_profiles.json) and the launcher
+  covers/        cover sources (local, libretro, SteamGridDB) and storage
+  data/db/       Room database; schemas in app/schemas/
+  system/        settings, Wi-Fi/Bluetooth/battery, optional root helper
+  ui/            HOME, shelves, settings, setup, pop-ups, theming
+tools/themegen/  generator for the bundled theme backgrounds
 ```
 
+## Contributing
+
+Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). New emulator support is usually just a launch profile in `app/src/main/assets/launch_profiles.json`.
+
 ## Licence
+
 GPL-3.0-or-later. See [LICENSE](LICENSE).
 
-This is an independent project, written from scratch. It is not affiliated with, and contains no code or assets from, any other launcher.
+Lighthouse is an independent project, written from scratch. It isn't affiliated with, and contains no code or assets from, any other launcher. It doesn't include any games, BIOS files or emulators.

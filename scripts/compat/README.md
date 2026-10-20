@@ -1,14 +1,16 @@
 # Device compatibility runs
 
-Headless Android emulators on Gaming PC (CachyOS, KVM): Android SDK in `~/Android/Sdk`,
-working folder `~/lighthouse-compat` (`lighthouse.apk`, `Games/` test ROM names, `shots/`).
+Headless Android emulators on a Linux PC with KVM (any x86-64 distro). Android SDK in
+`~/Android/Sdk` (cmdline-tools, platform-tools, emulator, `system-images;android-{30,33};google_apis;x86_64`),
+working folder `~/lighthouse-compat` holding `lighthouse.apk`, a `Games/` folder of test files named like
+ROMs (contents don't matter), and `shots/` for screenshots. `HOST` below is that PC's SSH name.
 
 ```bash
-scp app/build/outputs/apk/sideload/profile/app-sideload-profile.apk gaming-pc:lighthouse-compat/lighthouse.apk
-scp scripts/compat/*.sh gaming-pc:lighthouse-compat/
-ssh gaming-pc 'cd ~/lighthouse-compat && ./compat.sh boot 33 5560 && ./compat.sh boot 30 5562'
-ssh gaming-pc '~/lighthouse-compat/sweep.sh 5562 p'      # 7 device profiles x 4 screens -> shots/p-*.png
-ssh gaming-pc 'cd ~/lighthouse-compat && ./compat.sh stop 5560 && ./compat.sh stop 5562'
+scp app/build/outputs/apk/sideload/profile/app-sideload-profile.apk $HOST:lighthouse-compat/lighthouse.apk
+scp scripts/compat/*.sh $HOST:lighthouse-compat/
+ssh $HOST 'cd ~/lighthouse-compat && ./compat.sh boot 33 5560 && ./compat.sh boot 30 5562'
+ssh $HOST '~/lighthouse-compat/sweep.sh 5562 p'      # 7 device profiles x 4 screens -> shots/p-*.png
+ssh $HOST 'cd ~/lighthouse-compat && ./compat.sh stop 5560 && ./compat.sh stop 5562'
 ```
 
 Profiles (`sweep.sh`): Odin 2 Portal, Odin 2, Odin 2 Mini, Retroid Pocket Mini, RG406H (960×720),
