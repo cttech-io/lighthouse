@@ -512,6 +512,10 @@ internal fun HomeSectionsSection() {
     val overlay = LocalOverlayHost.current
     SectionTitle("Home sections")
     Note("The first section shown gets the large covers. Empty sections are skipped.")
+    ToggleRow(
+        "Library stats", settings.showHomeStats,
+        note = "A line at the top of HOME: games, apps, free space and when the library was last scanned.",
+    ) { settings.updateShowHomeStats(it) }
     val order = settings.homeSectionOrder
     order.forEachIndexed { i, id ->
         key(id) {

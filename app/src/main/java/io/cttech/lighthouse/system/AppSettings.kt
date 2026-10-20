@@ -156,6 +156,15 @@ class AppSettings(context: Context) {
         prefs.edit().putString(KEY_LAYOUT, l.name).apply()
     }
 
+    /** The stats line at the top of HOME (games, apps, free space, last scan). Off by default. */
+    var showHomeStats by mutableStateOf(prefs.getBoolean(KEY_HOME_STATS, false))
+        private set
+
+    fun updateShowHomeStats(show: Boolean) {
+        showHomeStats = show
+        prefs.edit().putBoolean(KEY_HOME_STATS, show).apply()
+    }
+
     /** HOME dashboard sections in display order; ids not listed (new sections) follow in the default order. */
     var homeSectionOrder by mutableStateOf(
         prefs.getString(KEY_HOME_ORDER, null)?.split(',')?.filter { it.isNotBlank() }.orEmpty().let { saved ->
@@ -273,6 +282,7 @@ class AppSettings(context: Context) {
         const val KEY_LAYOUT = "layout"
         const val KEY_HOME_ORDER = "home_section_order"
         const val KEY_HOME_HIDDEN = "home_sections_hidden"
+        const val KEY_HOME_STATS = "home_stats"
     }
 }
 

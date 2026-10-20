@@ -75,13 +75,14 @@ internal fun HomeDashboard(
     val token = LocalRefocusToken.current
     LaunchedEffect(token, rememberedKey == null) { if (rememberedKey == null) listState.scrollToItem(0) }
 
+    val showStats = io.cttech.lighthouse.system.LocalAppSettings.current.showHomeStats
     LazyColumn(
         Modifier.fillMaxSize(),
         state = listState,
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        item(key = "status") {
+        if (showStats) item(key = "status") {
             Text(
                 statusLine,
                 color = Lh.colors.textMuted.copy(alpha = 0.8f),
