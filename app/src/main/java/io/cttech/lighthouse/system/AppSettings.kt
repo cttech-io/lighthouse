@@ -24,7 +24,7 @@ enum class WifiNameSource { Auto, Location, Root, Off }
 enum class CardSize { Small, Medium, Large }
 
 /** HOME dashboard sections, default order. The first visible one gets the large covers. */
-val HOME_SECTIONS = listOf("favourites", "continue", "recent", "streaming", "platforms")
+val HOME_SECTIONS = listOf("favourites", "continue", "recent", "streaming", "moonlight", "platforms")
 
 /**
  * Small user preferences. Backed by SharedPreferences; exposed as Compose state so the UI reacts instantly,
@@ -159,7 +159,11 @@ class AppSettings(context: Context) {
     /** HOME dashboard sections in display order; ids not listed (new sections) follow in the default order. */
     var homeSectionOrder by mutableStateOf(
         prefs.getString(KEY_HOME_ORDER, null)?.split(',')?.filter { it.isNotBlank() }.orEmpty().let { saved ->
-            saved.filter { it in HOME_SECTIONS } + HOME_SECTIONS.filter { it !in saved }
+            // A section added in an update goes after its default neighbour, not to the end of a saved order.
+            HOME_SECTIONS.filter { it !in saved }.fold(saved.filter { it in HOME_SECTIONS }) { order, id ->
+                val before = HOME_SECTIONS.subList(0, HOME_SECTIONS.indexOf(id)).lastOrNull { it in order }
+                order.toMutableList().apply { add(if (before == null) 0 else indexOf(before) + 1, id) }
+            }
         },
     )
         private set

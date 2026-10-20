@@ -18,7 +18,8 @@ data class SourceEntity(
     @ColumnInfo(defaultValue = "0") val ignored: Boolean = false,
 )
 
-enum class GameKind { ROM, APP }
+/** STREAM: an app on a PC, played through Moonlight ([GameEntity.locator] = "<PC uuid>/<app id>"). */
+enum class GameKind { ROM, APP, STREAM }
 
 /**
  * One launchable thing. [locator] is a file path (ROM) or package name (APP); together with

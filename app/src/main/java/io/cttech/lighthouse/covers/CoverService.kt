@@ -51,6 +51,15 @@ class CoverService(
         }
     }
 
+    /** Moonlight games get the box art Moonlight already has from the PC; picks and removals stand. */
+    suspend fun applyMoonlight() = withContext(Dispatchers.IO) {
+        val have = dao.covers().map { it.gameKey }.toSet()
+        dao.allGames().filter { it.platformId == io.cttech.lighthouse.library.PlatformCatalog.MOONLIGHT && it.key !in have }.forEach { g ->
+            val bytes = io.cttech.lighthouse.library.MoonlightSource.boxArt(context, g.locator) ?: return@forEach
+            store.save(g.key, bytes)?.let { dao.putCover(CoverEntity(g.key, it.absolutePath, SOURCE_MOONLIGHT, System.currentTimeMillis())) }
+        }
+    }
+
     /** The user answered the offer: [fetch] runs the search for those games; either way they're not asked again. */
     suspend fun answerOffer(fetch: Boolean) {
         val keys = _offer.value
@@ -174,6 +183,8 @@ class CoverService(
         const val SOURCE_MANUAL = "manual"
         const val SOURCE_SGDB = "steamgriddb"
         const val SOURCE_LIBRETRO = "libretro"
+        /** Box art from the PC, via Moonlight. */
+        const val SOURCE_MOONLIGHT = "moonlight"
         /** Chosen in the cover picker (SteamGridDB or a local image). */
         const val SOURCE_PICKED = "picked"
         /** User removed the cover: show the plain tile, don't auto-fill. */

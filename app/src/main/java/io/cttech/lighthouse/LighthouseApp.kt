@@ -24,6 +24,7 @@ class LighthouseApp : Application() {
         // After every scan, pick up the user's own cover images (offline, cheap), then offer to fetch the rest.
         LibraryRepository(this, db.library(), FlavorStorage, afterScan = { roots ->
             covers.applyManual(roots)
+            covers.applyMoonlight()
             if (settings.setupDone) covers.checkNewGames() // setup has its own covers step
         })
     }

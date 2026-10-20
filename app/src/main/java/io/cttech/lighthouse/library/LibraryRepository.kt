@@ -100,6 +100,7 @@ class LibraryRepository(
             lock.withLock {
                 val started = System.currentTimeMillis()
                 refreshAppsLocked()
+                refreshMoonlightLocked()
                 if (storage.hasAccess(app)) {
                     detectSourcesLocked()
                     scanAllRomsLocked()
@@ -151,6 +152,21 @@ class LibraryRepository(
                 )
             }
         dao.replaceGames(PlatformCatalog.ANDROID, GameKind.APP, apps)
+    }
+
+    /** PC games from Moonlight. Unreadable (no root): keep the last list; Moonlight uninstalled: clear it. */
+    private suspend fun refreshMoonlightLocked() {
+        val apps = if (MoonlightSource.installed(app)) MoonlightSource.read(app) ?: return else emptyList()
+        dao.replaceGames(
+            PlatformCatalog.MOONLIGHT, GameKind.STREAM,
+            apps.map {
+                GameEntity(
+                    platformId = PlatformCatalog.MOONLIGHT, kind = GameKind.STREAM, locator = it.locator, title = it.title,
+                    // addedAt 0: Moonlight rewrites its cache on every refresh, so it isn't an arrival date.
+                    sortTitle = TitleCleaner.sortKey(it.title), sizeBytes = 0, modifiedAt = 0, addedAt = 0,
+                )
+            },
+        )
     }
 
     /** User-installed (or updated system) apps, minus Lighthouse's own builds. */

@@ -20,6 +20,7 @@ object PlatformCatalog {
     const val ANDROID = "android"
     const val DROIDDECK = "droiddeck"
     const val GAMENATIVE = "gamenative"
+    const val MOONLIGHT = "moonlight"
 
     /** GameNative export file extension -> the game_source its launch intent expects. */
     val GAMENATIVE_SOURCES = mapOf("steam" to "STEAM", "epic" to "EPIC", "gog" to "GOG", "amazon" to "AMAZON", "pcgame" to "CUSTOM_GAME")
@@ -63,6 +64,8 @@ object PlatformCatalog {
             extensions = GAMENATIVE_SOURCES.keys,
             folderNames = setOf("gamenative", "gamenative shortcuts"),
         ),
+        // Games on your PCs, read from Moonlight (no folders: see MoonlightSource).
+        PlatformDef(MOONLIGHT, "Moonlight", Color(0xFF8C7BFF)),
     )
 
     private val byId = all.associateBy { it.id }

@@ -1,5 +1,7 @@
 package io.cttech.lighthouse.launch
 
+import io.cttech.lighthouse.library.MoonlightApp
+import io.cttech.lighthouse.library.MoonlightSource
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
@@ -64,6 +66,17 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         game.packageName?.let { pkg ->
             val intent = pm.getLaunchIntentForPackage(pkg) ?: return LaunchResult.Failed("${game.title} can't be opened")
             return start(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        if (game.platformId == PlatformCatalog.MOONLIGHT) {
+            if (!MoonlightSource.installed(context)) return LaunchResult.EmulatorMissing(listOf("Moonlight"))
+            val locator = game.key.substringAfter('|')
+            // The PC name and HDR flag come from the last read; without one, Moonlight looks the PC up by its id.
+            val app = MoonlightSource.app(locator) ?: MoonlightApp(
+                locator.substringBefore('/'), "", locator.substringAfter('/').toIntOrNull() ?: return LaunchResult.Failed("Unknown Moonlight game"),
+                game.title, hdr = false,
+            )
+            Log.i(TAG, "launch ${game.title} via Moonlight on ${app.hostName} (${app.hostUuid}/${app.appId})")
+            return start(MoonlightSource.launchIntent(app))
         }
         val path = game.path ?: return LaunchResult.Failed("No file for ${game.title}")
         val (profile, pkg) = activeProfile(game.platformId)

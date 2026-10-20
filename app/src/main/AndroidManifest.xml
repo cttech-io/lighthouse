@@ -18,6 +18,8 @@
 
     <!-- The Android tab lists launchable apps; declared narrowly instead of QUERY_ALL_PACKAGES (Play-friendly). -->
     <queries>
+        <!-- Moonlight: its PC games' box art (poster provider) and launch shortcut. -->
+        <package android:name="com.limelight" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

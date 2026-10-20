@@ -442,6 +442,10 @@ private fun buildHomeRows(
         "recent" to HomeRow("recent", HOME_SECTION_TITLES.getValue("recent"), games(recentlyAdded, 15)),
         "streaming" to HomeRow("streaming", HOME_SECTION_TITLES.getValue("streaming"), streaming),
         "platforms" to HomeRow("platforms", HOME_SECTION_TITLES.getValue("platforms"), platforms),
+        "moonlight" to HomeRow(
+            "moonlight", HOME_SECTION_TITLES.getValue("moonlight"),
+            byPlatform[PlatformCatalog.MOONLIGHT].orEmpty().sortedBy { it.title.lowercase() }.take(30).map { HomeItem.GameItem(it) },
+        ),
     )
     // The user's order (Settings → Appearance → Home sections); the first one shown gets the large covers.
     return order.filter { it !in hidden }.mapNotNull { rows[it] }.filter { it.items.isNotEmpty() }
@@ -453,6 +457,7 @@ val HOME_SECTION_TITLES = mapOf(
     "continue" to "Continue playing",
     "recent" to "Recently added",
     "streaming" to "Streaming",
+    "moonlight" to "On your PC",
     "platforms" to "Platforms",
 )
 
@@ -476,6 +481,12 @@ private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap()): Game 
         title = title,
         subtitle = "${File(locator).extension.uppercase(Locale.ROOT)} · ${formatSize(sizeBytes)}",
         path = locator,
+    )
+    GameKind.STREAM -> Game(
+        key = key,
+        platformId = platformId,
+        title = title,
+        subtitle = io.cttech.lighthouse.library.MoonlightSource.app(locator)?.hostName?.let { "On $it" } ?: "Moonlight",
     )
 }
 
