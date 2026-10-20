@@ -21,6 +21,7 @@ object PlatformCatalog {
     const val DROIDDECK = "droiddeck"
     const val GAMENATIVE = "gamenative"
     const val MOONLIGHT = "moonlight"
+    const val SHORTCUTS = "shortcuts"
 
     /** GameNative export file extension -> the game_source its launch intent expects. */
     val GAMENATIVE_SOURCES = mapOf("steam" to "STEAM", "epic" to "EPIC", "gog" to "GOG", "amazon" to "AMAZON", "pcgame" to "CUSTOM_GAME")
@@ -66,6 +67,8 @@ object PlatformCatalog {
         ),
         // Games on your PCs, read from Moonlight (no folders: see MoonlightSource).
         PlatformDef(MOONLIGHT, "Moonlight", Color(0xFF8C7BFF)),
+        // "Create shortcut" / "Add to home screen" from any app (see PinnedShortcuts).
+        PlatformDef(SHORTCUTS, "Shortcuts", Color(0xFFFF8A65)),
     )
 
     private val byId = all.associateBy { it.id }

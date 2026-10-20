@@ -60,6 +60,16 @@ class CoverService(
         }
     }
 
+    /** Pinned shortcuts use their own icon as the cover, so they never show a blank tile. */
+    suspend fun applyShortcuts() = withContext(Dispatchers.IO) {
+        val have = dao.covers().map { it.gameKey }.toSet()
+        dao.allGames().filter { it.kind == GameKind.SHORTCUT && it.key !in have }.forEach { g ->
+            val (pkg, id) = g.locator.split('/', limit = 2).takeIf { it.size == 2 } ?: return@forEach
+            val bytes = io.cttech.lighthouse.library.PinnedShortcuts.iconPng(context, pkg, id) ?: return@forEach
+            store.save(g.key, bytes)?.let { dao.putCover(CoverEntity(g.key, it.absolutePath, SOURCE_SHORTCUT, System.currentTimeMillis())) }
+        }
+    }
+
     /** The user answered the offer: [fetch] runs the search for those games; either way they're not asked again. */
     suspend fun answerOffer(fetch: Boolean) {
         val keys = _offer.value
@@ -185,6 +195,8 @@ class CoverService(
         const val SOURCE_LIBRETRO = "libretro"
         /** Box art from the PC, via Moonlight. */
         const val SOURCE_MOONLIGHT = "moonlight"
+        /** A pinned shortcut's own icon. */
+        const val SOURCE_SHORTCUT = "shortcut"
         /** Chosen in the cover picker (SteamGridDB or a local image). */
         const val SOURCE_PICKED = "picked"
         /** User removed the cover: show the plain tile, don't auto-fill. */

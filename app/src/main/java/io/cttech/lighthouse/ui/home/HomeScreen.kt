@@ -262,8 +262,13 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onRemoveCover = { vm.removeCover(g); refocusToken++ },
                 onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
                 onHide = {
-                    vm.hide(g); refocusToken++
-                    Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
+                    if (g.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) {
+                        vm.removeShortcut(g); refocusToken++
+                        Toast.makeText(context, "${g.title} removed", Toast.LENGTH_SHORT).show()
+                    } else {
+                        vm.hide(g); refocusToken++
+                        Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
+                    }
                 },
                 onClose = { vm.closeOptions(); refocusToken++ },
             )

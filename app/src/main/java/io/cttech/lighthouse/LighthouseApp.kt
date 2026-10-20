@@ -25,6 +25,7 @@ class LighthouseApp : Application() {
         LibraryRepository(this, db.library(), FlavorStorage, afterScan = { roots ->
             covers.applyManual(roots)
             covers.applyMoonlight()
+            covers.applyShortcuts()
             if (settings.setupDone) covers.checkNewGames() // setup has its own covers step
         })
     }

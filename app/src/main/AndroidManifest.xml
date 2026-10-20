@@ -53,6 +53,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Accepts "Create shortcut" / "Add to home screen" requests while Lighthouse is the Home app. -->
+        <activity
+            android:name=".PinShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
         <!-- Hands ROMs to emulators as content:// URIs with a per-launch read grant (no file:// exposure). -->
         <provider
             android:name="androidx.core.content.FileProvider"

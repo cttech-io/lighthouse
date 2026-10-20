@@ -154,16 +154,40 @@ class LibraryRepository(
         dao.replaceGames(PlatformCatalog.ANDROID, GameKind.APP, apps)
     }
 
-    /** PC games from Moonlight. Unreadable (no root): keep the last list; Moonlight uninstalled: clear it. */
+    /**
+     * PC games from Moonlight (root read) plus games pinned from Moonlight with "Create shortcut", merged so none is
+     * listed twice; other apps' pinned shortcuts go to the Shortcuts tab. Unreadable (no root, not home app): keep
+     * what was there; Moonlight uninstalled: clear its games.
+     */
     private suspend fun refreshMoonlightLocked() {
-        val apps = if (MoonlightSource.installed(app)) MoonlightSource.read(app) ?: return else emptyList()
+        val pinned = PinnedShortcuts.all(app)
+        val pinnedMoonlight = pinned.orEmpty().mapNotNull(PinnedShortcuts::asMoonlightApp)
+        MoonlightSource.register(pinnedMoonlight)
+        val streams = if (!MoonlightSource.installed(app)) emptyList() else {
+            val read = MoonlightSource.read(app)?.map { it.locator to it.title }
+                ?: dao.games(PlatformCatalog.MOONLIGHT, GameKind.STREAM).map { it.locator to it.title }
+            (read + pinnedMoonlight.map { it.locator to it.title }).distinctBy { it.first }
+        }
         dao.replaceGames(
             PlatformCatalog.MOONLIGHT, GameKind.STREAM,
-            apps.map {
+            streams.map { (locator, title) ->
                 GameEntity(
-                    platformId = PlatformCatalog.MOONLIGHT, kind = GameKind.STREAM, locator = it.locator, title = it.title,
+                    platformId = PlatformCatalog.MOONLIGHT, kind = GameKind.STREAM, locator = locator, title = title,
                     // addedAt 0: Moonlight rewrites its cache on every refresh, so it isn't an arrival date.
-                    sortTitle = TitleCleaner.sortKey(it.title), sizeBytes = 0, modifiedAt = 0, addedAt = 0,
+                    sortTitle = TitleCleaner.sortKey(title), sizeBytes = 0, modifiedAt = 0, addedAt = 0,
+                )
+            },
+        )
+        if (pinned == null) return
+        val now = System.currentTimeMillis()
+        val old = dao.games(PlatformCatalog.SHORTCUTS, GameKind.SHORTCUT).associateBy { it.locator }
+        dao.replaceGames(
+            PlatformCatalog.SHORTCUTS, GameKind.SHORTCUT,
+            pinned.filter { PinnedShortcuts.asMoonlightApp(it) == null }.map {
+                GameEntity(
+                    platformId = PlatformCatalog.SHORTCUTS, kind = GameKind.SHORTCUT, locator = it.locator, title = it.label,
+                    sortTitle = TitleCleaner.sortKey(it.label), sizeBytes = 0, modifiedAt = 0,
+                    addedAt = old[it.locator]?.addedAt ?: now,
                 )
             },
         )

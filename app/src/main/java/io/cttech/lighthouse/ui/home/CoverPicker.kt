@@ -230,7 +230,7 @@ fun GameOptionsSheet(
             if (game.coverPath != null) PillButton("Remove cover", onClick = onRemoveCover)
             // Apps only: ROMs are always games. Decides whether it appears in Continue playing.
             if (game.packageName != null) PillButton(if (game.isGame) "Counts as a game: yes" else "Counts as a game: no", onClick = onToggleCountsAsGame)
-            PillButton("Hide from Lighthouse", onClick = onHide)
+            PillButton(if (game.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) "Remove shortcut" else "Hide from Lighthouse", onClick = onHide)
         }
     }
     FocusOnAppear(first, game.key)

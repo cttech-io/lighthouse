@@ -292,6 +292,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleFavourite(game: Game) = repo.toggleFavourite(game.key)
 
     fun hide(game: Game) { repo.setHidden(game.key, true); _optionsFor.value = null }
+
+    /** Unpins a shortcut another app added (Shortcuts tab); Android forgets it, so it's gone, not hidden. */
+    fun removeShortcut(game: Game) {
+        val (pkg, id) = game.key.substringAfter('|').split('/', limit = 2).takeIf { it.size == 2 } ?: return
+        io.cttech.lighthouse.library.PinnedShortcuts.remove(getApplication(), pkg, id)
+        _optionsFor.value = null
+        repo.refreshAll()
+    }
     fun unhide(game: Game) = repo.setHidden(game.key, false)
 
     fun recordLaunch(game: Game) = repo.recordLaunch(game.key)
@@ -486,8 +494,9 @@ private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap()): Game 
         key = key,
         platformId = platformId,
         title = title,
-        subtitle = io.cttech.lighthouse.library.MoonlightSource.app(locator)?.hostName?.let { "On $it" } ?: "Moonlight",
+        subtitle = io.cttech.lighthouse.library.MoonlightSource.app(locator)?.hostName?.takeIf { it.isNotEmpty() }?.let { "On $it" } ?: "Moonlight",
     )
+    GameKind.SHORTCUT -> Game(key = key, platformId = platformId, title = title, subtitle = "Shortcut", isGame = overrides[key] ?: isGame)
 }
 
 private fun formatSize(bytes: Long): String = when {

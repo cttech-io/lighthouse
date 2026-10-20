@@ -67,6 +67,11 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             val intent = pm.getLaunchIntentForPackage(pkg) ?: return LaunchResult.Failed("${game.title} can't be opened")
             return start(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
+        if (game.platformId == PlatformCatalog.SHORTCUTS) {
+            val (pkg, id) = game.key.substringAfter('|').split('/', limit = 2).takeIf { it.size == 2 } ?: return LaunchResult.Failed("Broken shortcut")
+            return if (io.cttech.lighthouse.library.PinnedShortcuts.launch(context, pkg, id)) LaunchResult.Started
+            else LaunchResult.Failed("${game.title} couldn't be opened. Is Lighthouse still the default Home app?")
+        }
         if (game.platformId == PlatformCatalog.MOONLIGHT) {
             if (!MoonlightSource.installed(context)) return LaunchResult.EmulatorMissing(listOf("Moonlight"))
             val locator = game.key.substringAfter('|')

@@ -32,6 +32,11 @@ object MoonlightSource {
 
     fun app(locator: String): MoonlightApp? = known[locator]
 
+    /** Games known some other way (pinned "Create shortcut"s); a root read's details win. */
+    fun register(apps: List<MoonlightApp>) {
+        known = apps.associateBy { it.locator } + known
+    }
+
     /** Every PC's cached app list; null when it can't be read (no root), so callers keep what they had. */
     suspend fun read(context: Context): List<MoonlightApp>? {
         val raw = Root.run("for f in $DATA/cache/applist/*; do [ -f \"\$f\" ] && echo \"$FILE_MARK\$(basename \"\$f\")\" && cat \"\$f\" && echo; done; echo done")

@@ -18,8 +18,11 @@ data class SourceEntity(
     @ColumnInfo(defaultValue = "0") val ignored: Boolean = false,
 )
 
-/** STREAM: an app on a PC, played through Moonlight ([GameEntity.locator] = "<PC uuid>/<app id>"). */
-enum class GameKind { ROM, APP, STREAM }
+/**
+ * STREAM: an app on a PC, played through Moonlight ([GameEntity.locator] = "<PC uuid>/<app id>").
+ * SHORTCUT: a shortcut another app pinned to Lighthouse ([GameEntity.locator] = "<package>/<shortcut id>").
+ */
+enum class GameKind { ROM, APP, STREAM, SHORTCUT }
 
 /**
  * One launchable thing. [locator] is a file path (ROM) or package name (APP); together with
