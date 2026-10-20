@@ -129,7 +129,19 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         }
         refocusToken++
     }
-    LaunchedEffect(vm) { vm.homePresses.collect { openPanel = null; refocusToken++ } }
+    // Home button: back to the HOME page from anywhere: Settings, the app drawer and every pop-up close.
+    // First-run setup stays (it's how Lighthouse gets set up, and it has its own Skip).
+    LaunchedEffect(vm) {
+        vm.homePresses.collect {
+            openPanel = null
+            menuOpen = false
+            drawerOpen = false
+            vm.closeOptions()
+            vm.closeCoverPicker()
+            vm.dismissLaunchIssue()
+            refocusToken++
+        }
+    }
 
     // Focus safety net. Controller input only reaches Compose when something is focused, so the root takes
     // focus at once; the shelf then claims it. If a D-pad press ever lands on the root itself (shelf not

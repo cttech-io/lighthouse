@@ -222,6 +222,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             recentlyPlayed = plays.map { it.gameKey }.filter { key -> byKey[key]?.isGame == true },
             recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
                 .sortedByDescending { it.addedAt }.map { it.key },
+            order = settings.homeSectionOrder,
+            hidden = settings.hiddenHomeSections,
         )
         HomeState(
             tabs = tabs,
@@ -426,20 +428,33 @@ private fun buildHomeRows(
     favKeys: List<String>,
     recentlyPlayed: List<String>,
     recentlyAdded: List<String>,
+    order: List<String>,
+    hidden: Set<String>,
 ): List<HomeRow> {
     fun games(keys: List<String>, limit: Int) = keys.mapNotNull { byKey[it] }.take(limit).map { HomeItem.GameItem(it) }
     val streaming = STREAMING_PACKAGES.mapNotNull { pkg -> byKey["${PlatformCatalog.ANDROID}|$pkg"] }.map { HomeItem.GameItem(it) }
     val platforms = tabs.mapIndexedNotNull { i, t ->
         (t as? HomeTab.PlatformTab)?.let { HomeItem.PlatformItem(i, it.platform, byPlatform[it.platform.id].orEmpty().size) }
     }
-    return listOf(
-        HomeRow("continue", "Continue playing", games(recentlyPlayed, 10), hero = true),
-        HomeRow("favourites", "Favourites", games(favKeys, 30)),
-        HomeRow("recent", "Recently added", games(recentlyAdded, 15)),
-        HomeRow("streaming", "Streaming", streaming),
-        HomeRow("platforms", "Platforms", platforms),
-    ).filter { it.items.isNotEmpty() }
+    val rows = mapOf(
+        "favourites" to HomeRow("favourites", HOME_SECTION_TITLES.getValue("favourites"), games(favKeys, 30)),
+        "continue" to HomeRow("continue", HOME_SECTION_TITLES.getValue("continue"), games(recentlyPlayed, 10)),
+        "recent" to HomeRow("recent", HOME_SECTION_TITLES.getValue("recent"), games(recentlyAdded, 15)),
+        "streaming" to HomeRow("streaming", HOME_SECTION_TITLES.getValue("streaming"), streaming),
+        "platforms" to HomeRow("platforms", HOME_SECTION_TITLES.getValue("platforms"), platforms),
+    )
+    // The user's order (Settings → Appearance → Home sections); the first one shown gets the large covers.
+    return order.filter { it !in hidden }.mapNotNull { rows[it] }.filter { it.items.isNotEmpty() }
+        .mapIndexed { i, row -> if (i == 0 && row.id != "platforms") row.copy(hero = true) else row }
 }
+
+val HOME_SECTION_TITLES = mapOf(
+    "favourites" to "Favourites",
+    "continue" to "Continue playing",
+    "recent" to "Recently added",
+    "streaming" to "Streaming",
+    "platforms" to "Platforms",
+)
 
 private fun statusLine(games: List<GameEntity>, scan: ScanInfo): String {
     val roms = games.count { it.kind == GameKind.ROM }

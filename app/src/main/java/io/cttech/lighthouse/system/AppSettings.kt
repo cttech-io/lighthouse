@@ -23,6 +23,9 @@ enum class WifiNameSource { Auto, Location, Root, Off }
 
 enum class CardSize { Small, Medium, Large }
 
+/** HOME dashboard sections, default order. The first visible one gets the large covers. */
+val HOME_SECTIONS = listOf("favourites", "continue", "recent", "streaming", "platforms")
+
 /**
  * Small user preferences. Backed by SharedPreferences; exposed as Compose state so the UI reacts instantly,
  * and as [changes] (bumped on every library-affecting write) so view models can rebuild their state.
@@ -153,6 +156,29 @@ class AppSettings(context: Context) {
         prefs.edit().putString(KEY_LAYOUT, l.name).apply()
     }
 
+    /** HOME dashboard sections in display order; ids not listed (new sections) follow in the default order. */
+    var homeSectionOrder by mutableStateOf(
+        prefs.getString(KEY_HOME_ORDER, null)?.split(',')?.filter { it.isNotBlank() }.orEmpty().let { saved ->
+            saved.filter { it in HOME_SECTIONS } + HOME_SECTIONS.filter { it !in saved }
+        },
+    )
+        private set
+
+    fun updateHomeSectionOrder(ids: List<String>) {
+        homeSectionOrder = ids
+        prefs.edit().putString(KEY_HOME_ORDER, ids.joinToString(",")).apply()
+        changed()
+    }
+
+    var hiddenHomeSections by mutableStateOf(prefs.getStringSet(KEY_HOME_HIDDEN, emptySet()).orEmpty().toSet())
+        private set
+
+    fun setHomeSectionHidden(id: String, hidden: Boolean) {
+        hiddenHomeSections = if (hidden) hiddenHomeSections + id else hiddenHomeSections - id
+        prefs.edit().putStringSet(KEY_HOME_HIDDEN, hiddenHomeSections).apply()
+        changed()
+    }
+
     // --- Platforms (tabs) -------------------------------------------------------------------------
 
     /** Platform ids in the user's tab order; platforms not listed keep the catalogue order after these. */
@@ -241,6 +267,8 @@ class AppSettings(context: Context) {
         const val KEY_WIFI_NAME = "wifi_name_source"
         const val KEY_CARD_SIZE = "card_size"
         const val KEY_LAYOUT = "layout"
+        const val KEY_HOME_ORDER = "home_section_order"
+        const val KEY_HOME_HIDDEN = "home_sections_hidden"
     }
 }
 

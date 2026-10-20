@@ -505,6 +505,42 @@ internal fun ShelfSection() {
     ) { settings.updateCardSize(it) }
 }
 
+/** The HOME page's sections: their order and which are shown. A on one: move up/down, hide/show. */
+@Composable
+internal fun HomeSectionsSection() {
+    val settings = LocalAppSettings.current
+    val overlay = LocalOverlayHost.current
+    SectionTitle("Home sections")
+    Note("The first section shown gets the large covers. Empty sections are skipped.")
+    val order = settings.homeSectionOrder
+    order.forEachIndexed { i, id ->
+        key(id) {
+            val r = remember { FocusRequester() }
+            val hidden = id in settings.hiddenHomeSections
+            val title = io.cttech.lighthouse.ui.home.HOME_SECTION_TITLES[id] ?: id
+            fun move(delta: Int) {
+                val j = (i + delta).coerceIn(0, order.lastIndex)
+                if (j != i) settings.updateHomeSectionOrder(order.toMutableList().apply { add(j, removeAt(i)) })
+            }
+            SettingRow("${i + 1}. $title", if (hidden) "Hidden" else "Shown", Modifier.focusRequester(r)) {
+                overlay.show(r) {
+                    OptionPicker(
+                        title = title,
+                        options = listOfNotNull("up".takeIf { i > 0 }, "down".takeIf { i < order.lastIndex }, "toggle"),
+                        selected = null,
+                        label = { when (it) { "up" -> "Move up"; "down" -> "Move down"; else -> if (hidden) "Show on HOME" else "Hide from HOME" } },
+                        onPick = {
+                            overlay.close()
+                            when (it) { "up" -> move(-1); "down" -> move(+1); else -> settings.setHomeSectionHidden(id, !hidden) }
+                        },
+                        onClose = overlay::close,
+                    )
+                }
+            }
+        }
+    }
+}
+
 /** Theme preview: its HOME background (or a swatch of its colours), name, and a ring when focused. */
 @Composable
 private fun ThemeCard(theme: LhTheme, selected: Boolean, modifier: Modifier = Modifier, onSelect: () -> Unit) {

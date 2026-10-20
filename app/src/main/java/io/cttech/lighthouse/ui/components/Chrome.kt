@@ -10,6 +10,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -56,37 +57,49 @@ fun TopBar(
     onSelect: (Int) -> Unit = {},
     status: @Composable () -> Unit = {},
 ) {
-    Row(
-        modifier.fillMaxWidth().height(52.dp).padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ButtonGlyph("L1")
-        Spacer(Modifier.width(10.dp))
-        val listState = rememberLazyListState()
-        LaunchedEffect(selected) { listState.animateScrollToItem((selected - 1).coerceAtLeast(0)) }
-        LazyRow(state = listState, modifier = Modifier.weight(1f, fill = false), userScrollEnabled = false) {
-            itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
-                val active = i == selected
-                val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
-                val fg by animateColorAsState(if (active) Color.White else Lh.colors.textMuted, label = "tabFg")
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(bg)
-                        // Tap to switch tabs. Not focusable: the controller uses L1/R1.
-                        .pointerInput(i) { detectTapGestures { onSelect(i) } }
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                ) {
-                    Text(tab.label.uppercase(), color = fg, fontSize = 15.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.6.sp, maxLines = 1)
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        // Wide screens (the Portal is ~1067dp) get bigger tabs; small 4:3/square screens keep the compact size.
+        val big = maxWidth >= 900.dp
+        val tabFont = if (big) 17.sp else 15.sp
+        val tabPad = if (big) 16.dp else 14.dp
+        Row(
+            Modifier.fillMaxWidth().height(if (big) 58.dp else 52.dp).padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // L1 · tabs · R1 take all the room the status icons leave (a weighted spacer used to claim half of it).
+            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
+                ButtonGlyph("L1")
+                Spacer(Modifier.width(10.dp))
+                val listState = rememberLazyListState()
+                LaunchedEffect(selected) { listState.animateScrollToItem((selected - 1).coerceAtLeast(0)) }
+                LazyRow(state = listState, modifier = Modifier.weight(1f, fill = false), userScrollEnabled = false) {
+                    itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
+                        val active = i == selected
+                        val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
+                        val fg by animateColorAsState(if (active) Color.White else Lh.colors.textMuted, label = "tabFg")
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(bg)
+                                // Tap to switch tabs. Not focusable: the controller uses L1/R1.
+                                .pointerInput(i) { detectTapGestures { onSelect(i) } }
+                                .padding(horizontal = tabPad, vertical = 6.dp),
+                        ) {
+                            Text(tab.label.uppercase(), color = fg, fontSize = tabFont, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.6.sp, maxLines = 1)
+                        }
+                    }
                 }
+                Spacer(Modifier.width(10.dp))
+                ButtonGlyph("R1")
+            }
+            Spacer(Modifier.width(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                status() // Wi-Fi · Bluetooth · Volume · Battery
+                Spacer(Modifier.width(14.dp))
+                Clock()
             }
         }
-        Spacer(Modifier.width(10.dp))
-        ButtonGlyph("R1")
-        Spacer(Modifier.weight(1f))
-        status() // Wi-Fi · Bluetooth · Volume · Battery
-        Spacer(Modifier.width(14.dp))
-        Clock()
     }
 }
 
