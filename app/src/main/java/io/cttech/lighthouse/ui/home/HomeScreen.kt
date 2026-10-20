@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -79,9 +80,6 @@ import io.cttech.lighthouse.ui.components.TopBar
 import kotlinx.coroutines.launch
 
 private val NeutralAccent = Color(0xFF8A93A6)
-private val CarouselSlot = 150.dp
-private val CarouselExtra = 70.dp            // focused card is 220dp wide
-private const val CarouselGrowth = 70f / 150f
 
 @Composable
 fun HomeScreen(vm: HomeViewModel = viewModel()) {
@@ -164,8 +162,11 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab) {
                 QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
             }
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val metrics = remember(settings.cardSize, maxWidth, maxHeight) { CardMetrics.of(settings.cardSize, maxWidth, maxHeight) }
+            CompositionLocalProvider(LocalCardMetrics provides metrics) {
             AnimatedContent(
-                targetState = tab to state.layout,
+                targetState = tab to settings.layout,
                 transitionSpec = {
                     val dir = state.tabDirection
                     val tabChanged = initialState.first.key != targetState.first.key
@@ -177,7 +178,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     }
                 },
                 contentKey = { (t, l) -> t.key + l.name },
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 label = "homeBody",
             ) { (shownTab, layout) ->
                 val games = state.gamesFor(shownTab)
@@ -207,6 +208,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     }
                 }
             }
+            }
+            }
             HintBar(
                 onTap = { b ->
                     when (b) {
@@ -217,7 +220,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 },
                 hints = buildList {
                     add("B" to "Apps")
-                    if (tab !is HomeTab.Home) add("Y" to if (state.layout == HomeLayout.Carousel) "Grid" else "Carousel")
+                    if (tab !is HomeTab.Home) add("Y" to if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
                     add("☰" to "Settings")
                     add("⧉" to "Options")
                     add("X" to "Favourite")
@@ -313,6 +316,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
     val requester = remember { FocusRequester() }
     var focused by remember { mutableIntStateOf(initialFocus) }
     val current = games.getOrNull(focused) ?: games.first()
+    val m = LocalCardMetrics.current
 
     Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
         Column(Modifier.padding(horizontal = 40.dp).height(64.dp)) {
@@ -324,7 +328,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
             contentPadding = PaddingValues(start = 40.dp, end = 600.dp, top = 16.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.Top,
-            modifier = Modifier.fillMaxWidth().height(CarouselSlot * 1.5f * (1f + CarouselGrowth) + 32.dp),
+            modifier = Modifier.fillMaxWidth().height(m.carouselRowHeight),
         ) {
             itemsIndexed(games, key = { _, g -> g.key }) { i, game ->
                 // Growth is drawn, not laid out: the focused card scales from its top-left corner and the
@@ -337,13 +341,13 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
                     isFavourite = game.key in actions.favourites,
                     focusedScale = 1f,
                     modifier = Modifier
-                        .width(CarouselSlot)
+                        .width(m.carouselSlot)
                         .graphicsLayer {
-                            val s = 1f + CarouselGrowth * grow
+                            val s = 1f + m.carouselGrowth * grow
                             scaleX = s
                             scaleY = s
                             transformOrigin = TransformOrigin(0f, 0f)
-                            translationX = CarouselExtra.toPx() * shift
+                            translationX = m.carouselExtra.toPx() * shift
                         }
                         .then(if (i == initialFocus) Modifier.focusRequester(requester) else Modifier),
                     onFocused = {
@@ -379,7 +383,7 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
             modifier = Modifier.padding(horizontal = 32.dp, vertical = 6.dp),
         )
         LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
+            columns = GridCells.Adaptive(LocalCardMetrics.current.gridMin),
             state = gridState,
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),

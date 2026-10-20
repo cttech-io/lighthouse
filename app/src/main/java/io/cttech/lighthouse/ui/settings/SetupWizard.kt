@@ -126,6 +126,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                 4 -> {
                                     Title("Look & buttons")
                                     ThemeSection(themes, firstMod)
+                                    ShelfSection()
                                     ButtonLayoutRow()
                                 }
                                 else -> {

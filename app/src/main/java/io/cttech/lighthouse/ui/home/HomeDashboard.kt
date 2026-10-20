@@ -112,7 +112,7 @@ internal fun HomeDashboard(
                                 game = item.game,
                                 accent = PlatformCatalog.byId(item.game.platformId)?.accent ?: actions.accent,
                                 isFavourite = item.game.key in actions.favourites,
-                                modifier = focusMod.width(if (row.hero) 150.dp else 112.dp),
+                                modifier = focusMod.width(if (row.hero) LocalCardMetrics.current.heroWidth else LocalCardMetrics.current.rowWidth),
                                 focusedScale = 1.07f,
                                 onFocused = { onFocusedKey(position) },
                                 onLaunch = { actions.onLaunch(item.game) },

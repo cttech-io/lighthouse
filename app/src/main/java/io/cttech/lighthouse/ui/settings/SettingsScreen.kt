@@ -139,7 +139,7 @@ fun SettingsScreen(
                                 SettingsTab.Platforms -> PlatformsSection(vm, library, firstMod)
                                 SettingsTab.Emulators -> EmulatorsSection(vm, info.rootAvailable, firstMod)
                                 SettingsTab.Covers -> CoversSection(vm, firstMod)
-                                SettingsTab.Appearance -> ThemeSection(themes, firstMod)
+                                SettingsTab.Appearance -> { ThemeSection(themes, firstMod); ShelfSection() }
                                 SettingsTab.Controls -> ControlsSection(firstMod)
                                 SettingsTab.System -> SystemSection(vm, info, onRunSetup, firstMod)
                                 SettingsTab.About -> AboutSection(firstMod)

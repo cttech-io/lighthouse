@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import io.cttech.lighthouse.model.HomeLayout
 import org.json.JSONObject
 
 enum class HapticStrength { Off, Light, Normal, Strong }
@@ -16,6 +17,11 @@ enum class HomeButtonAction { TopLeft, LastPosition }
 
 /** Games that arrive without local artwork: ask before going online, fetch on its own, or leave them. */
 enum class CoverAutoMode { Ask, Always, Never }
+
+/** Where the Wi-Fi network name comes from: Android's location route, root, either, or never shown. */
+enum class WifiNameSource { Auto, Location, Root, Off }
+
+enum class CardSize { Small, Medium, Large }
 
 /**
  * Small user preferences. Backed by SharedPreferences; exposed as Compose state so the UI reacts instantly,
@@ -84,6 +90,14 @@ class AppSettings(context: Context) {
         prefs.edit().putBoolean(KEY_SETUP_DONE, done).apply()
     }
 
+    var wifiNameSource by mutableStateOf(enumPref(KEY_WIFI_NAME, WifiNameSource.Auto))
+        private set
+
+    fun updateWifiNameSource(source: WifiNameSource) {
+        wifiNameSource = source
+        prefs.edit().putString(KEY_WIFI_NAME, source.name).apply()
+    }
+
     // --- Covers -----------------------------------------------------------------------------------
 
     /** The user's own SteamGridDB API key (cover art). Empty = SteamGridDB not used. */
@@ -120,6 +134,23 @@ class AppSettings(context: Context) {
     fun updateTheme(id: String) {
         themeId = id
         prefs.edit().putString(KEY_THEME, id).apply()
+    }
+
+    var cardSize by mutableStateOf(enumPref(KEY_CARD_SIZE, CardSize.Medium))
+        private set
+
+    fun updateCardSize(size: CardSize) {
+        cardSize = size
+        prefs.edit().putString(KEY_CARD_SIZE, size.name).apply()
+    }
+
+    /** Carousel or grid on platform tabs. Y on a shelf switches it too, and the choice is kept. */
+    var layout by mutableStateOf(enumPref(KEY_LAYOUT, HomeLayout.Carousel))
+        private set
+
+    fun updateLayout(l: HomeLayout) {
+        layout = l
+        prefs.edit().putString(KEY_LAYOUT, l.name).apply()
     }
 
     // --- Platforms (tabs) -------------------------------------------------------------------------
@@ -207,6 +238,9 @@ class AppSettings(context: Context) {
         const val KEY_TAB_LABELS = "tab_labels"
         const val KEY_EMULATORS = "emulator_choice"
         const val KEY_GAME_OVERRIDES = "game_overrides"
+        const val KEY_WIFI_NAME = "wifi_name_source"
+        const val KEY_CARD_SIZE = "card_size"
+        const val KEY_LAYOUT = "layout"
     }
 }
 

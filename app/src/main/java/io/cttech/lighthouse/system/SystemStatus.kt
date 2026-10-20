@@ -47,18 +47,21 @@ fun Context.hasLocationPermission(): Boolean =
 @Composable
 fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): WifiState {
     val context = LocalContext.current
+    val source = LocalAppSettings.current.wifiNameSource
+    val useLocation = source == WifiNameSource.Auto || source == WifiNameSource.Location
+    val useRoot = source == WifiNameSource.Auto || source == WifiNameSource.Root
     var state by remember { mutableStateOf(WifiState(false, false, 0)) }
-    DisposableEffect(context, epoch) {
+    DisposableEffect(context, epoch, source) {
         val wifi = context.getSystemService(WifiManager::class.java)
         val cm = context.getSystemService(ConnectivityManager::class.java)
         var connected = false
         var level = 0
         var name: String? = null
-        fun publish() { state = WifiState(wifi.isWifiEnabled, connected, if (connected) level else 0, if (connected) name else null) }
+        fun publish() { state = WifiState(wifi.isWifiEnabled, connected, if (connected) level else 0, if (connected && source != WifiNameSource.Off) name else null) }
 
         // With location permission (Android 12+), ask for location info so WifiInfo carries the SSID.
         val callback = object : ConnectivityManager.NetworkCallback(
-            if (Build.VERSION.SDK_INT >= 31 && context.hasLocationPermission()) FLAG_INCLUDE_LOCATION_INFO else 0,
+            if (Build.VERSION.SDK_INT >= 31 && useLocation && context.hasLocationPermission()) FLAG_INCLUDE_LOCATION_INFO else 0,
         ) {
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
                 connected = true
@@ -82,9 +85,9 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
     }
     // Root fallback for the name (panel only). Location permission is preferred: give its callback a
     // moment to deliver the SSID first, and never touch root when it already has.
-    LaunchedEffect(resolveNameWithRoot, state.connected, state.name == null, epoch) {
-        if (resolveNameWithRoot && state.connected && state.name == null) {
-            if (context.hasLocationPermission()) kotlinx.coroutines.delay(700)
+    LaunchedEffect(resolveNameWithRoot, state.connected, state.name == null, epoch, source) {
+        if (resolveNameWithRoot && useRoot && state.connected && state.name == null) {
+            if (useLocation && context.hasLocationPermission()) kotlinx.coroutines.delay(700)
             if (state.name == null) RootRadios.wifiName()?.let { state = state.copy(name = it) }
         }
     }

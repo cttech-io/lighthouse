@@ -35,7 +35,6 @@ data class HomeState(
     /** e.g. "31 games · 14 apps · SD 87 GB free · Internal 52 GB free · scanned 14:05" */
     val statusLine: String = "",
     val selectedTab: Int = 0,
-    val layout: HomeLayout = HomeLayout.Carousel,
     val favourites: Set<String> = emptySet(),
     /** Last focused game per tab, so switching tabs (or a rescan) returns you to the same game. */
     val focusByTab: Map<String, FocusMemory> = emptyMap(),
@@ -65,7 +64,6 @@ data class FocusMemory(val gameKey: String, val index: Int)
 private data class UiPrefs(
     /** null until the user picks a tab: then we start on Favs if it has anything, else the first tab with games. */
     val selectedKey: String? = null,
-    val layout: HomeLayout = HomeLayout.Carousel,
     val focusByTab: Map<String, FocusMemory> = emptyMap(),
     val tabDirection: Int = 1,
     val hasAccess: Boolean = true,
@@ -219,7 +217,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             statusLine = statusLine(games, scan),
             // Home always has something (at least the Platforms row), so it is the natural starting tab.
             selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
-            layout = p.layout,
             favourites = favKeys.toSet(),
             focusByTab = p.focusByTab,
             gamesByTab = gamesByTab,
@@ -269,9 +266,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         prefs.update { it.copy(selectedKey = target.key, tabDirection = dir) }
     }
 
-    fun toggleLayout() = prefs.update {
-        it.copy(layout = if (it.layout == HomeLayout.Carousel) HomeLayout.Grid else HomeLayout.Carousel)
-    }
+    fun toggleLayout() = settings.updateLayout(if (settings.layout == HomeLayout.Carousel) HomeLayout.Grid else HomeLayout.Carousel)
 
     fun onFocused(tab: HomeTab, index: Int) {
         val game = state.value.gamesFor(tab).getOrNull(index) ?: return

@@ -184,7 +184,8 @@ private fun WifiPanel(first: FocusRequester) {
     if (wifi.enabled) {
         PillButton("Choose network") { context.openFirst(Settings.Panel.ACTION_WIFI, Settings.ACTION_WIFI_SETTINGS) }
     }
-    if (wifi.connected && wifi.name == null) {
+    val nameSource = io.cttech.lighthouse.system.LocalAppSettings.current.wifiNameSource
+    if (wifi.connected && wifi.name == null && nameSource in setOf(io.cttech.lighthouse.system.WifiNameSource.Auto, io.cttech.lighthouse.system.WifiNameSource.Location)) {
         // Without root, Android only reveals network names with location permission AND Location switched on.
         when {
             !context.hasLocationPermission() -> {

@@ -51,11 +51,20 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.cttech.lighthouse.BuildConfig
 import io.cttech.lighthouse.library.PlatformCatalog
 import io.cttech.lighthouse.model.Game
+import io.cttech.lighthouse.system.CardSize
 import io.cttech.lighthouse.system.CoverAutoMode
+import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.system.HapticStrength
 import io.cttech.lighthouse.system.HomeButtonAction
 import io.cttech.lighthouse.system.HomeRole
+import io.cttech.lighthouse.system.KeyReceiver
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import io.cttech.lighthouse.ui.components.trapFocus
+import io.cttech.lighthouse.ui.components.FocusOnAppear
 import io.cttech.lighthouse.system.LocalAppSettings
+import io.cttech.lighthouse.system.WifiNameSource
 import io.cttech.lighthouse.theme.Lh
 import io.cttech.lighthouse.theme.LhTheme
 import io.cttech.lighthouse.ui.components.ControllerTextField
@@ -319,11 +328,26 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
         secret = true,
         monospace = true,
     )
+    val overlay = LocalOverlayHost.current
+    val phoneButton = remember { FocusRequester() }
+    fun useKey(key: String) {
+        settings.updateSteamGridDbKey(key.trim())
+        keyResult = "Testing…"
+        scope.launch { keyResult = if (vm.testSteamGridDbKey(key.trim())) "✓ Key works" else "✗ Key rejected (or no network)" }
+    }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        PillButton("Send from phone", Modifier.focusRequester(phoneButton)) {
+            overlay.show(phoneButton) { KeyFromPhoneDialog(onKey = { useKey(it); overlay.close() }, onClose = overlay::close) }
+        }
+        PillButton("Paste") {
+            val clip = context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
+            val text = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()?.trim().orEmpty()
+            if (text.isEmpty() || text.length > 200 || text.any { it.isWhitespace() }) keyResult = "Nothing key-like on the clipboard"
+            else useKey(text)
+        }
         PillButton("Test key") {
             if (settings.steamGridDbKey.isBlank()) { keyResult = "Enter a key first"; return@PillButton }
-            keyResult = "Testing…"
-            scope.launch { keyResult = if (vm.testSteamGridDbKey(settings.steamGridDbKey)) "✓ Key works" else "✗ Key rejected (or no network)" }
+            useKey(settings.steamGridDbKey)
         }
         PillButton("Get a key (browser)") {
             runCatching {
@@ -332,11 +356,68 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
         }
         keyResult?.let { Text(it, color = if (it.startsWith("✓")) Color(0xFF5BD68A) else Lh.colors.textMuted, fontSize = 15.sp) }
     }
-    Note("Free from steamgriddb.com → sign in → Preferences → API. Without a key, Lighthouse uses libretro box art only.")
+    Note("Free from steamgriddb.com → sign in → Preferences → API. Easiest: \"Send from phone\" and paste it there. Without a key, Lighthouse uses libretro box art only.")
     if (full) {
         SectionTitle("Fetch")
         SettingRow("Find missing covers", null, note = "Searches online for every game that has no cover yet.") { vm.findMissingCovers() }
         SettingRow("Re-download all covers", null, note = "Replaces downloaded covers. Your own images and covers you picked stay.") { vm.redownloadAllCovers() }
+    }
+}
+
+/** QR code for [KeyReceiver]'s one-shot page: scan with a phone on the same Wi-Fi, paste the key, Send. */
+@Composable
+private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
+    val currentOnKey by androidx.compose.runtime.rememberUpdatedState(onKey)
+    val receiver = remember { KeyReceiver.start(context) { key -> main.post { currentOnKey(key) } } }
+    androidx.compose.runtime.DisposableEffect(receiver) { onDispose { receiver?.stop() } }
+    val close = remember { FocusRequester() }
+    androidx.activity.compose.BackHandler(onBack = onClose)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .trapFocus()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .clickable(indication = null, interactionSource = null, onClick = onClose)
+            .onPreviewKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false },
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            Modifier
+                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
+                .clickable(indication = null, interactionSource = null) {}
+                .padding(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (receiver != null) QrCode(receiver.url, Modifier.size(220.dp))
+            Column(Modifier.width(320.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                if (receiver == null) {
+                    Note("Connect to Wi-Fi first: your phone sends the key over your own network.")
+                } else {
+                    Note("1. Scan the code with your phone's camera (same Wi-Fi as this device).\n2. Paste your SteamGridDB key and press Send.")
+                    Text(receiver.url, color = Lh.colors.textMuted, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    Note("Waiting for your phone…")
+                }
+                PillButton("Cancel", Modifier.focusRequester(close), onClick = onClose)
+            }
+        }
+    }
+    FocusOnAppear(close, Unit)
+}
+
+@Composable
+private fun QrCode(text: String, modifier: Modifier = Modifier) {
+    val matrix = remember(text) { com.google.zxing.qrcode.QRCodeWriter().encode(text, com.google.zxing.BarcodeFormat.QR_CODE, 0, 0) }
+    androidx.compose.foundation.Canvas(modifier.background(Color.White, RoundedCornerShape(8.dp))) {
+        val quiet = 2 // modules of white border inside the white box
+        val cells = matrix.width + quiet * 2
+        val cell = size.minDimension / cells
+        for (y in 0 until matrix.height) for (x in 0 until matrix.width) {
+            if (matrix[x, y]) drawRect(Color.Black, androidx.compose.ui.geometry.Offset((x + quiet) * cell, (y + quiet) * cell), androidx.compose.ui.geometry.Size(cell + 0.5f, cell + 0.5f))
+        }
     }
 }
 
@@ -353,6 +434,27 @@ internal fun ThemeSection(themes: List<LhTheme>, first: Modifier = Modifier) {
         }
     }
     Note("Add your own: put a folder with a theme.json (and background images) in Lighthouse/themes/ on your storage. See docs/THEMES.md in the Lighthouse repo.")
+}
+
+/** Layout and card size for the game shelves. */
+@Composable
+internal fun ShelfSection() {
+    val settings = LocalAppSettings.current
+    SectionTitle("Shelves")
+    ChoiceRow(
+        label = "Layout",
+        options = HomeLayout.entries,
+        selected = settings.layout,
+        display = { if (it == HomeLayout.Carousel) "Carousel" else "Grid" },
+        note = "How platform tabs show their games. Y on a shelf switches too.",
+    ) { settings.updateLayout(it) }
+    ChoiceRow(
+        label = "Card size",
+        options = CardSize.entries,
+        selected = settings.cardSize,
+        display = { it.name },
+        note = "Sizes follow your screen, so Medium suits most devices.",
+    ) { settings.updateCardSize(it) }
 }
 
 /** Theme preview: its HOME background (or a swatch of its colours), name, and a ring when focused. */
@@ -456,6 +558,14 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
             "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device." +
             if (settings.rootExtrasEnabled && !info.rootAvailable) " (Root isn't available right now.)" else "",
     ) { settings.setRootExtras(it) }
+    ChoiceRow(
+        label = "Wi-Fi network name",
+        options = WifiNameSource.entries,
+        selected = settings.wifiNameSource,
+        display = { when (it) { WifiNameSource.Auto -> "Automatic"; WifiNameSource.Location -> "Location permission"; WifiNameSource.Root -> "Root"; WifiNameSource.Off -> "Don't show" } },
+        note = "Android only tells apps the network name if they're allowed to use location (with Location on), or through root. " +
+            "Automatic tries location first, then root. Shown in the Wi-Fi panel only; Lighthouse doesn't use your location for anything else.",
+    ) { settings.updateWifiNameSource(it) }
     if (!info.network) {
         SettingRow("Network access", "Blocked · App info", note = "Lighthouse has no network access, so covers can't be downloaded. On LineageOS, allow it under App info → Mobile data & Wi-Fi.") {
             vm.openAppInfo(context.packageName)
@@ -472,7 +582,8 @@ internal fun AboutSection(first: Modifier = Modifier) {
         "No analytics, no tracking, no accounts. Lighthouse only goes online for cover art:\n" +
             "• SteamGridDB (with your own key): game names are searched to find covers.\n" +
             "• thumbnails.libretro.com: box art fetched by ROM file name.\n" +
-            "This happens only when you allow it (Settings → Covers, or the \"find covers?\" prompt). Everything else stays on the device.",
+            "This happens only when you allow it (Settings → Covers, or the \"find covers?\" prompt). Everything else stays on the device.\n" +
+            "• \"Send from phone\" (Settings → Covers) opens a one-time page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.",
     )
 }
 
