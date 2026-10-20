@@ -9,15 +9,21 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.platform.LocalInputModeManager
 
 /**
  * Moves focus into a pop-up once its first control exists. A single requestFocus() on the first frame can
  * fail silently (the node isn't attached yet), leaving focus behind the pop-up where its B handler never
  * sees key events. requestFocus() throws until attached, so retry for a few frames.
+ * Pop-ups opened by touch (e.g. long-press a game) leave Android in touch mode, where buttons refuse focus;
+ * switch to keyboard mode first so the D-pad can take over straight away.
  */
 @Composable
 fun FocusOnAppear(requester: FocusRequester, vararg keys: Any?) {
+    val inputMode = LocalInputModeManager.current
     LaunchedEffect(*keys) {
+        if (inputMode.inputMode == InputMode.Touch) inputMode.requestInputMode(InputMode.Keyboard)
         repeat(30) {
             withFrameNanos { }
             if (runCatching { requester.requestFocus() }.isSuccess) return@LaunchedEffect
