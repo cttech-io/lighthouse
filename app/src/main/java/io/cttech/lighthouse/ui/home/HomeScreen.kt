@@ -147,6 +147,9 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     // focus at once; the shelf then claims it. If a D-pad press ever lands on the root itself (shelf not
     // laid out yet, or focus lost after returning from another app), bump the token so the shelf re-claims it.
     LaunchedEffect(Unit) { runCatching { rootFocus.requestFocus() } }
+    // Whenever the background itself ends up holding focus (after a restart or an update, or returning from
+    // another app), hand it straight back to a card: otherwise A/X/Select do nothing until a D-pad press.
+    LaunchedEffect(rootFocused) { if (rootFocused && !overlay) { kotlinx.coroutines.delay(150); refocusToken++ } }
     CompositionLocalProvider(LocalRefocusToken provides refocusToken) {
     Box(
         Modifier
@@ -164,7 +167,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 if (event.key == Key.ButtonStart) { vm.refreshSettingsInfo(); menuOpen = true; return@onPreviewKeyEvent true }
                 // B with nothing open: the app drawer (like a console's "all software" list).
                 if (event.key == Key.ButtonB) { drawerOpen = true; return@onPreviewKeyEvent true }
-                if (rootFocused && event.key in DPadKeys) { refocusToken++; return@onPreviewKeyEvent true }
+                // A press that lands on the background (no card focused yet) restores focus instead of being lost.
+                if (rootFocused && (event.key in DPadKeys || event.key in CardKeys)) { refocusToken++; return@onPreviewKeyEvent true }
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
                     Key.ButtonR1 -> { vm.moveTab(+1); true }
@@ -450,6 +454,8 @@ internal fun RestoreFocus(requester: FocusRequester, overlayShowing: Boolean) {
 internal val LocalRefocusToken = androidx.compose.runtime.compositionLocalOf { 0 }
 
 private val DPadKeys = setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight)
+/** Buttons a focused card handles (Play, Favourite, Options): lost if no card has focus yet. */
+private val CardKeys = setOf(Key.ButtonA, Key.ButtonX, Key.ButtonSelect)
 
 @Composable
 private fun EmptyShelf(tab: HomeTab, refocus: Boolean) {
