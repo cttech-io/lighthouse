@@ -1,5 +1,10 @@
 package io.cttech.lighthouse.ui.components
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
 import io.cttech.lighthouse.theme.Lh
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -60,8 +65,8 @@ fun TopBar(
     BoxWithConstraints(modifier.fillMaxWidth()) {
         // Wide screens (the Portal is ~1067dp) get bigger tabs; small 4:3/square screens keep the compact size.
         val big = maxWidth >= 900.dp
-        val tabFont = if (big) 17.sp else 15.sp
-        val tabPad = if (big) 16.dp else 14.dp
+        val tabFont = if (big) 16.sp else 15.sp
+        val tabPad = if (big) 14.dp else 12.dp
         Row(
             Modifier.fillMaxWidth().height(if (big) 58.dp else 52.dp).padding(horizontal = 24.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -73,7 +78,25 @@ fun TopBar(
                 Spacer(Modifier.width(10.dp))
                 val listState = rememberLazyListState()
                 LaunchedEffect(selected) { listState.animateScrollToItem((selected - 1).coerceAtLeast(0)) }
-                LazyRow(state = listState, modifier = Modifier.weight(1f, fill = false), userScrollEnabled = false) {
+                LazyRow(
+                    state = listState,
+                    userScrollEnabled = false,
+                    // Tabs that don't fit fade out at the edge (instead of being cut mid-word), hinting at more.
+                    modifier = Modifier.weight(1f, fill = false)
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            val fade = 48.dp.toPx()
+                            if (listState.canScrollForward) drawRect(
+                                Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+                                blendMode = BlendMode.DstIn,
+                            )
+                            if (listState.canScrollBackward) drawRect(
+                                Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
+                                blendMode = BlendMode.DstIn,
+                            )
+                        },
+                ) {
                     itemsIndexed(tabs, key = { _, t -> t.key }) { i, tab ->
                         val active = i == selected
                         val bg by animateColorAsState(if (active) Color.White.copy(alpha = 0.16f) else Color.Transparent, label = "tabBg")
@@ -93,7 +116,8 @@ fun TopBar(
                 Spacer(Modifier.width(10.dp))
                 ButtonGlyph("R1")
             }
-            Spacer(Modifier.width(16.dp))
+            // Always a clear gap between R1 and the status icons, however many tabs there are.
+            Spacer(Modifier.width(if (big) 40.dp else 24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 status() // Wi-Fi · Bluetooth · Volume · Battery
                 Spacer(Modifier.width(14.dp))
