@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.system.Root
+import io.cttech.lighthouse.library.PlatformCatalog
 import java.io.File
 
 /** What happened when we tried to start a game; anything but [Started] is shown to the user with a fix. */
@@ -87,9 +88,15 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             }
             RomDelivery.EXTRAS -> Unit
             RomDelivery.STEAM_APP_ID -> {
-                val appId = File(path).readText().trim().toIntOrNull()
-                    ?: return LaunchResult.Failed("${File(path).name} doesn't contain a Steam app ID")
-                intent.putExtra("app_id", appId).putExtra("game_source", "STEAM")
+                // A shortcut file holds one decimal game ID. Steam IDs fit an Int (GameNative reads an Int);
+                // DroidDeck's own added games use the unsigned 64-bit range, which it accepts as a String.
+                val file = File(path)
+                val id = file.readText().trim().takeIf { it.isNotEmpty() && it.length <= 20 && it.all(Char::isDigit) && !it.startsWith("0") }
+                    ?: return LaunchResult.Failed("${file.name} doesn't contain a game ID")
+                id.toIntOrNull()?.let { intent.putExtra("app_id", it) } ?: intent.putExtra("app_id", id)
+                // GameNative also writes .epic/.gog/.amazon/.pcgame files for its other stores.
+                val source = PlatformCatalog.GAMENATIVE_SOURCES[file.extension.lowercase()] ?: "STEAM"
+                intent.putExtra("game_source", source)
             }
         }
         profile.extras.forEach { (k, v) -> intent.putExtra(k, v.expand(pkg, path)) }

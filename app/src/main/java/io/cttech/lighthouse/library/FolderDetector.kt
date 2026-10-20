@@ -18,6 +18,7 @@ object FolderDetector {
             val bases = listOf(root) + root.subdirs().filter { it.name.trim().lowercase() in containers }
             for (base in bases) {
                 for (dir in base.subdirs()) {
+                    if (isAppInstallDir(dir)) continue
                     PlatformCatalog.matchFolder(dir.name)?.let { found += Found(it.id, dir) }
                 }
             }
@@ -39,6 +40,16 @@ object FolderDetector {
             PlatformCatalog.all.firstOrNull { ext in it.extensions }?.let { counts.merge(it.id, 1, Int::plus) }
         }
         return counts.maxByOrNull { it.value }?.key
+    }
+
+    /**
+     * An app's own game-install area rather than a folder of shortcuts, e.g. GameNative's
+     * <SD>/GameNative with Steam/steamapps and Epic/games inside. Its name matches a platform, but it
+     * holds whole PC games, so scanning it is slow and finds nothing launchable.
+     */
+    fun isAppInstallDir(dir: File): Boolean = dir.subdirs().any { sub ->
+        val n = sub.name.lowercase()
+        (n == "steam" && File(sub, "steamapps").isDirectory) || (n in setOf("epic", "gog", "amazon") && File(sub, "games").isDirectory)
     }
 
     private fun File.subdirs(): List<File> =

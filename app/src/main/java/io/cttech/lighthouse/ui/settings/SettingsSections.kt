@@ -189,6 +189,36 @@ internal fun FoldersSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, 
     SettingRow("Rescan library", null, note = "Lighthouse also rescans whenever you come back to it.") { vm.rescanLibrary() }
 }
 
+/**
+ * PC-game apps (DroidDeck, GameNative) that can keep a folder of shortcut files in sync themselves:
+ * set it up once in the app and installs/uninstalls show up here without exporting anything by hand.
+ * A opens the app, after making sure the folder exists so it's there to pick.
+ */
+@Composable
+internal fun LibraryAppsSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, hasAccess: Boolean, first: Modifier = Modifier) {
+    val apps = vm.syncApps(info)
+    if (apps.isEmpty() || !hasAccess) return
+    SectionTitle("PC game apps")
+    apps.forEachIndexed { i, app ->
+        key(app.pkg) {
+            val folder = app.folder
+            SettingRow(
+                label = "${app.label}: keep games in sync",
+                value = when {
+                    app.count > 0 -> "${app.count} game${if (app.count == 1) "" else "s"} · Open"
+                    else -> "Not set up · Open"
+                },
+                modifier = if (i == 0) first else Modifier,
+                note = app.steps + " " + (folder?.let { "Folder: ${it.prettyPath()}." } ?: "Lighthouse makes a ${app.label} folder next to your other game folders.") +
+                    if (app.count == 0) " Games then appear on the ${app.label} tab as you install them, and leave when you uninstall." else "",
+            ) {
+                vm.prepareSyncFolder(app)
+                vm.openApp(app.pkg)
+            }
+        }
+    }
+}
+
 @Composable
 internal fun HiddenSection(hidden: List<Game>, onUnhide: (Game) -> Unit) {
     SectionTitle("Hidden")

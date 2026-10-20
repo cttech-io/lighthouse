@@ -110,6 +110,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                     Title("Your games")
                                     StorageSection(vm, info.storageAccess, firstMod)
                                     FoldersSection(vm, library, info.storageAccess)
+                                    LibraryAppsSection(vm, library, info.storageAccess)
                                     val total = library.platforms.filter { it.def.id != io.cttech.lighthouse.library.PlatformCatalog.ANDROID }.sumOf { it.count }
                                     if (info.storageAccess) Note("Found $total games so far. Check each folder's platform; A on a folder changes it.")
                                 }

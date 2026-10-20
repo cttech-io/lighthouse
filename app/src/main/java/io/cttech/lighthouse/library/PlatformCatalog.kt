@@ -18,6 +18,11 @@ data class PlatformDef(
 
 object PlatformCatalog {
     const val ANDROID = "android"
+    const val DROIDDECK = "droiddeck"
+    const val GAMENATIVE = "gamenative"
+
+    /** GameNative export file extension -> the game_source its launch intent expects. */
+    val GAMENATIVE_SOURCES = mapOf("steam" to "STEAM", "epic" to "EPIC", "gog" to "GOG", "amazon" to "AMAZON", "pcgame" to "CUSTOM_GAME")
 
     val all: List<PlatformDef> = listOf(
         PlatformDef(ANDROID, "Android", Color(0xFF3DDC84)),
@@ -54,7 +59,8 @@ object PlatformCatalog {
         ),
         PlatformDef(
             "gamenative", "GameNative", Color(0xFFB0BEC5),
-            extensions = setOf("steam"),
+            // One file per installed game, written by GameNative's frontend sync (or "Export for frontend").
+            extensions = GAMENATIVE_SOURCES.keys,
             folderNames = setOf("gamenative", "gamenative shortcuts"),
         ),
     )

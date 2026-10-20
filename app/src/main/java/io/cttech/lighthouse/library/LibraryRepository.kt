@@ -164,6 +164,8 @@ class LibraryRepository(
     private suspend fun detectSourcesLocked() {
         val found = FolderDetector.detect(storageRoots())
         dao.insertSources(found.map { SourceEntity(platformId = it.platformId, path = it.dir.absolutePath, autoDetected = true) })
+        // Earlier versions auto-detected app install folders (GameNative's own game folder) as shortcut folders.
+        dao.sources().filter { it.autoDetected && FolderDetector.isAppInstallDir(File(it.path)) }.forEach { dao.deleteSource(it.id) }
     }
 
     private suspend fun scanAllRomsLocked() {

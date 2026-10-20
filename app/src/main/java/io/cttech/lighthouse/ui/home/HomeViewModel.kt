@@ -70,6 +70,19 @@ private data class UiPrefs(
     val accessDismissed: Boolean = false,
 )
 
+private val SYNC_APPS = listOf(
+    HomeViewModel.SyncApp(
+        PlatformCatalog.DROIDDECK, "DroidDeck", "com.droiddeck.launcher",
+        steps = "In DroidDeck: Games → open any game → Frontend files → Sync all game files to folder, then choose this folder.",
+        folder = null, count = 0,
+    ),
+    HomeViewModel.SyncApp(
+        PlatformCatalog.GAMENATIVE, "GameNative", "app.gamenative",
+        steps = "In GameNative: Settings → Interface → Frontend Sync, then choose this folder for each store you use (Steam, Epic, GOG, Amazon, Custom).",
+        folder = null, count = 0,
+    ),
+)
+
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LighthouseApp).repository
     private val settings = (app as LighthouseApp).settings
@@ -335,6 +348,35 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setPlatformHidden(id: String, hidden: Boolean) = settings.setTabHidden(id, hidden)
     fun renamePlatform(id: String, label: String) = settings.updateTabLabel(id, label.takeIf { it.isNotBlank() && it != PlatformCatalog.byId(id)?.tabLabel })
+
+    /**
+     * PC-game apps that keep a folder of one-file-per-game shortcuts in sync themselves (DroidDeck's
+     * "Sync all game files to folder", GameNative's Frontend Sync). Lighthouse just watches that folder.
+     */
+    data class SyncApp(val platformId: String, val label: String, val pkg: String, val steps: String, val folder: String?, val count: Int)
+
+    fun syncApps(info: LibraryInfo): List<SyncApp> {
+        val pm = getApplication<Application>().packageManager
+        return SYNC_APPS.filter { pm.getLaunchIntentForPackage(it.pkg) != null }.map { app ->
+            val folders = info.folders.filter { it.source.platformId == app.platformId && !it.source.ignored }
+            app.copy(folder = folders.firstOrNull()?.source?.path, count = folders.sumOf { it.count })
+        }
+    }
+
+    /**
+     * The folder to point [app] at: its existing Lighthouse folder, or a new one next to the other platform
+     * folders (e.g. SD/Games/DroidDeck), created and added so it's ready in the app's folder picker.
+     */
+    fun prepareSyncFolder(app: SyncApp): String? {
+        app.folder?.let { return it }
+        val existing = libraryInfo.value.folders.map { File(it.source.path) }
+            .firstOrNull { it.parentFile?.name?.trim()?.lowercase() == "games" }?.parentFile
+        val base = existing ?: repo.storageRoots().firstOrNull()?.let { File(it, "Games") } ?: return null
+        val dir = File(base, app.label)
+        if (!dir.isDirectory && !dir.mkdirs()) return null
+        repo.addFolder(dir.absolutePath, app.platformId)
+        return dir.absolutePath
+    }
 
     fun addFolder(path: String, platformId: String) = repo.addFolder(path, platformId)
     fun removeFolder(source: io.cttech.lighthouse.data.db.SourceEntity) = repo.removeFolder(source)
