@@ -370,8 +370,15 @@ private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
     val context = LocalContext.current
     val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
     val currentOnKey by androidx.compose.runtime.rememberUpdatedState(onKey)
-    val receiver = remember { KeyReceiver.start(context) { key -> main.post { currentOnKey(key) } } }
-    androidx.compose.runtime.DisposableEffect(receiver) { onDispose { receiver?.stop() } }
+    // null = starting (the keystore can take a moment the first time); Result.failure = no Wi-Fi/couldn't start.
+    val started by androidx.compose.runtime.produceState<Result<KeyReceiver>?>(null) {
+        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            KeyReceiver.start(context) { key -> main.post { currentOnKey(key) } }
+        }
+        value = r?.let { Result.success(it) } ?: Result.failure(IllegalStateException())
+        awaitDispose { r?.stop() }
+    }
+    val receiver = started?.getOrNull()
     val close = remember { FocusRequester() }
     androidx.activity.compose.BackHandler(onBack = onClose)
     Box(
@@ -392,14 +399,22 @@ private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (receiver != null) QrCode(receiver.url, Modifier.size(220.dp))
-            Column(Modifier.width(320.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.width(380.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                if (receiver == null) {
-                    Note("Connect to Wi-Fi first: your phone sends the key over your own network.")
-                } else {
-                    Note("1. Scan the code with your phone's camera (same Wi-Fi as this device).\n2. Paste your SteamGridDB key and press Send.")
-                    Text(receiver.url, color = Lh.colors.textMuted, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                    Note("Waiting for your phone…")
+                when {
+                    started == null -> Note("Starting…")
+                    receiver == null -> Note("Connect to Wi-Fi first: your phone sends the key over your own network.")
+                    else -> {
+                        Note(
+                            "1. Scan the code with your phone's camera (same Wi-Fi as this device).\n" +
+                                "2. Your phone warns the connection isn't private: expected for a page on your own network. " +
+                                "iPhone: Show Details → visit this website. Android: Advanced → Proceed.\n" +
+                                "3. Press Paste key (or paste into the box) and Send.",
+                        )
+                        Text(receiver.url, color = Lh.colors.textMuted, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                        Text("Certificate ${receiver.fingerprint}…", color = Lh.colors.textMuted, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                        Note("Waiting for your phone…")
+                    }
                 }
                 PillButton("Cancel", Modifier.focusRequester(close), onClick = onClose)
             }
@@ -583,7 +598,7 @@ internal fun AboutSection(first: Modifier = Modifier) {
             "• SteamGridDB (with your own key): game names are searched to find covers.\n" +
             "• thumbnails.libretro.com: box art fetched by ROM file name.\n" +
             "This happens only when you allow it (Settings → Covers, or the \"find covers?\" prompt). Everything else stays on the device.\n" +
-            "• \"Send from phone\" (Settings → Covers) opens a one-time page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.",
+            "• \"Send from phone\" (Settings → Covers) opens a one-time HTTPS page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.",
     )
 }
 
