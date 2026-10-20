@@ -59,5 +59,8 @@ fun androidx.compose.ui.Modifier.refocusWhenLost(fallback: () -> FocusRequester)
             if (runCatching { fallback().requestFocus() }.isSuccess) return@LaunchedEffect
         }
     }
+    // Coming back from another app (a game, Magisk, Android settings) can leave nothing focused without a
+    // focus-change callback here, so re-check on every resume; the loop above returns at once if focus is fine.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { lost++; onPauseOrDispose { } }
     return this.then(androidx.compose.ui.Modifier.onFocusChanged { hasFocus[0] = it.hasFocus; if (!it.hasFocus) lost++ })
 }

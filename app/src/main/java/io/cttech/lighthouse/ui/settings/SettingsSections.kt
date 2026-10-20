@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -351,15 +352,17 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
     ) { settings.updateCoverAuto(it) }
     SectionTitle("SteamGridDB")
     Text("API key", color = Color.White, fontSize = 16.sp)
+    val overlay = LocalOverlayHost.current
+    val phoneButton = remember { FocusRequester() }
     ControllerTextField(
         value = settings.steamGridDbKey,
         onValueChange = { settings.updateSteamGridDbKey(it.trim()) },
         placeholder = "Not set: press A to enter",
+        // Down goes to the first button; the geometric search picked the last one under the wide field.
+        modifier = Modifier.focusProperties { down = phoneButton },
         secret = true,
         monospace = true,
     )
-    val overlay = LocalOverlayHost.current
-    val phoneButton = remember { FocusRequester() }
     fun useKey(key: String) {
         settings.updateSteamGridDbKey(key.trim())
         keyResult = "Testing…"

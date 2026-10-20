@@ -77,6 +77,7 @@ import io.cttech.lighthouse.ui.components.rememberBluetoothPermissionRequest
 import io.cttech.lighthouse.ui.components.rememberBtEpoch
 import io.cttech.lighthouse.ui.components.HintBar
 import io.cttech.lighthouse.ui.components.TopBar
+import io.cttech.lighthouse.ui.components.refocusWhenLost
 import kotlinx.coroutines.launch
 
 private val NeutralAccent = Color(0xFF8A93A6)
@@ -138,6 +139,9 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     Box(
         Modifier
             .fillMaxSize()
+            // If nothing at all is focused (after a touch, or back from another app), the root takes focus so
+            // the very first controller press works; otherwise Android swallows it switching out of touch mode.
+            .refocusWhenLost { rootFocus }
             .focusRequester(rootFocus)
             .onFocusChanged { rootFocused = it.isFocused }
             .focusable()
