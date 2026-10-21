@@ -18,8 +18,11 @@ data class LaunchProfile(
     val rom: RomDelivery,
     val mime: String?,
     val needsStorage: Boolean,
-    /** Libretro core path to check before launching (needs root to see inside the emulator's data). */
-    val core: String?,
+    /**
+     * Libretro core paths to check before launching (needs root to see inside the emulator's data), as alternatives:
+     * the first installed one is used and fills `{core}` in the extras.
+     */
+    val cores: List<String>,
     /** String values (placeholders expanded) or JSON booleans, passed as boolean extras. */
     val extras: Map<String, Any>,
 )
@@ -55,7 +58,8 @@ object LaunchProfiles {
                 },
                 mime = o.optString("mime").ifEmpty { null },
                 needsStorage = o.optBoolean("needsStorage", false),
-                core = o.optString("core").ifEmpty { null },
+                cores = o.optJSONArray("core")?.let { a -> List(a.length()) { a.getString(it) } }
+                    ?: listOfNotNull(o.optString("core").ifEmpty { null }),
                 extras = extras?.keys()?.asSequence()?.associateWith { k -> extras.get(k).let { v -> v as? Boolean ?: v.toString() } } ?: emptyMap(),
             )
         }

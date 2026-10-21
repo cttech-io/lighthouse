@@ -56,8 +56,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
     suspend fun status(platformId: String): List<EmulatorStatus> =
         LaunchProfiles.forPlatform(context, platformId).map { p ->
             val pkg = p.packages.firstOrNull(::isInstalled)
-            val core = if (pkg != null && p.core != null) corePresent(p.core.replace("{package}", pkg))
-            else if (p.core == null) true else null
+            val core = if (p.cores.isEmpty()) true else if (pkg != null) findCore(p.cores.map { it.replace("{package}", pkg) }).second else null
             EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
         }
 
@@ -88,10 +87,11 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { it.label })
 
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)
-        profile.core?.let { c ->
-            val core = c.expand(pkg, path)
-            // Only checkable with root (it's inside the emulator's private data); without root, let it try.
-            if (corePresent(core) == false) return LaunchResult.CoreMissing(profile, core)
+        val core = if (profile.cores.isEmpty()) null else {
+            // Only checkable with root (it's inside the emulator's private data); without root, let it try the first.
+            val (core, present) = findCore(profile.cores.map { it.expand(pkg, path) })
+            if (present == false) return LaunchResult.CoreMissing(profile, core)
+            core
         }
 
         val intent = Intent(profile.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -122,7 +122,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         profile.extras.forEach { (k, v) ->
             when (v) {
                 is Boolean -> intent.putExtra(k, v)
-                else -> intent.putExtra(k, v.toString().expand(pkg, path))
+                else -> intent.putExtra(k, v.toString().expand(pkg, path).replace("{core}", core.orEmpty()))
             }
         }
         if (profile.extras.values.any { it is String && "{uri}" in it }) grantWithCompanions(intent, File(path))
@@ -153,6 +153,17 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             "absent" -> false
             else -> null
         }
+
+    /** The first of [cores] that's installed (true); else the first, with false if root saw none, null if it couldn't look. */
+    private suspend fun findCore(cores: List<String>): Pair<String, Boolean?> {
+        var unknown = false
+        for (core in cores) when (corePresent(core)) {
+            true -> return core to true
+            null -> unknown = true
+            false -> Unit
+        }
+        return cores.first() to if (unknown) null else false
+    }
 
     private fun isInstalled(pkg: String): Boolean = runCatching { pm.getPackageInfo(pkg, 0) }.isSuccess
 
