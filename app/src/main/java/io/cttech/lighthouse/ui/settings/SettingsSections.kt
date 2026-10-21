@@ -665,7 +665,25 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
 
 @Composable
 internal fun AboutSection(first: Modifier = Modifier) {
+    val overlay = LocalOverlayHost.current
+    val context = LocalContext.current
+    val licences = remember { FocusRequester() }
     SettingRow("Lighthouse", "${BuildConfig.VERSION_NAME} (${BuildConfig.FLAVOR})", first, note = "GPL-3.0 · github.com/cttech-io/lighthouse") {}
+    SettingRow("Open-source licences", "${OpenSourceLibraries.size} libraries", Modifier.focusRequester(licences)) {
+        overlay.show(licences) {
+            OptionPicker(
+                title = "Open-source licences",
+                options = OpenSourceLibraries,
+                selected = null,
+                label = { it.name },
+                detail = { "${it.licence} · ${it.url.removePrefix("https://")}" },
+                onPick = { lib ->
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(lib.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                },
+                onClose = overlay::close,
+            )
+        }
+    }
     SectionTitle("Privacy")
     Note(
         "No analytics, no tracking, no accounts. Lighthouse only goes online for cover art:\n" +
@@ -675,6 +693,20 @@ internal fun AboutSection(first: Modifier = Modifier) {
             "• \"Send from phone\" (Settings → Covers) opens a one-time HTTPS page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.",
     )
 }
+
+internal data class OpenSourceLibrary(val name: String, val licence: String, val url: String)
+
+// Everything bundled in the APK. Keep in step with gradle/libs.versions.toml and NOTICE.
+internal val OpenSourceLibraries = listOf(
+    OpenSourceLibrary("AndroidX (Jetpack Compose, Activity, Lifecycle, Core, Room)", "Apache-2.0", "https://developer.android.com/jetpack/androidx"),
+    OpenSourceLibrary("Kotlin standard library", "Apache-2.0", "https://github.com/JetBrains/kotlin"),
+    OpenSourceLibrary("kotlinx.coroutines", "Apache-2.0", "https://github.com/Kotlin/kotlinx.coroutines"),
+    OpenSourceLibrary("Compose Multiplatform", "Apache-2.0", "https://github.com/JetBrains/compose-multiplatform"),
+    OpenSourceLibrary("Coil", "Apache-2.0", "https://github.com/coil-kt/coil"),
+    OpenSourceLibrary("Accompanist Drawable Painter", "Apache-2.0", "https://github.com/google/accompanist"),
+    OpenSourceLibrary("OkHttp and Okio", "Apache-2.0", "https://github.com/square/okhttp"),
+    OpenSourceLibrary("ZXing", "Apache-2.0", "https://github.com/zxing/zxing"),
+)
 
 private fun String.prettyPath(): String = this
     .replace("/storage/emulated/0", "Internal")

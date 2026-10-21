@@ -58,6 +58,8 @@ Requires **Android 11 or newer**.
 2. Open Lighthouse. First-run setup finds your games and emulators, offers covers, and can make Lighthouse your Home app.
 3. Allow **All files access** when asked: that's how Lighthouse reads your ROM folders and notices new games.
 
+To check a download, see [Verifying a release](SECURITY.md#verifying-a-release).
+
 ## Privacy
 
 Lighthouse has no analytics, accounts, ads or tracking. It only goes online when you ask it to fetch covers (libretro, and SteamGridDB with your own key). "Send from phone" runs a short-lived HTTPS page on your local network, only while that screen is open.
@@ -101,8 +103,14 @@ tools/themegen/  generator for the bundled theme backgrounds
 
 Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). New emulator support is usually just a launch profile in `app/src/main/assets/launch_profiles.json`.
 
+## Security
+
+Please report security problems privately; see [SECURITY.md](SECURITY.md).
+
 ## Licence
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
 
 Lighthouse is an independent project, written from scratch. It isn't affiliated with, and contains no code or assets from, any other launcher. It doesn't include any games, BIOS files or emulators.
+
+Nintendo Switch, PlayStation 2, Game Boy Advance, Steam and other product names are trademarks of their owners. They're used only to describe compatibility; Lighthouse isn't affiliated with or endorsed by them. Bundled open-source libraries are listed in [NOTICE](NOTICE) and in the app (Settings → About).

@@ -1,5 +1,6 @@
 package io.cttech.lighthouse
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
@@ -38,6 +39,8 @@ class MainActivity : ComponentActivity() {
      * Nintendo-style layout (Settings → Controls): swap A and B before anything else sees them, so every
      * screen, pop-up and text field follows the setting without knowing about it.
      */
+    // Lint mistakes this public Activity method for androidx.core's restricted one (a known false positive).
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         // Still in touch mode (Android may not leave it for some key sources) means nothing in the window has
         // focus, so the key would reach no screen and fall back to Back / "press focused". Take focus first;

@@ -55,7 +55,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         LaunchProfiles.forPlatform(context, platformId).map { p ->
             val pkg = p.packages.firstOrNull(::isInstalled)
             val core = if (pkg != null && p.core != null) {
-                Root.run("if [ -f '${p.core.replace("{package}", pkg)}' ]; then echo present; else echo absent; fi")
+                Root.run("if [ -f ${Root.quote(p.core.replace("{package}", pkg))} ]; then echo present; else echo absent; fi")
                     ?.let { it.contains("present") }
             } else if (p.core == null) true else null
             EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
@@ -91,7 +91,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         profile.core?.let { c ->
             val core = c.expand(pkg, path)
             // Only checkable with root (it's inside the emulator's private data); without root, let it try.
-            val check = Root.run("if [ -f '$core' ]; then echo present; else echo absent; fi")
+            val check = Root.run("if [ -f ${Root.quote(core)} ]; then echo present; else echo absent; fi")
             if (check?.contains("absent") == true) return LaunchResult.CoreMissing(profile, core)
         }
 

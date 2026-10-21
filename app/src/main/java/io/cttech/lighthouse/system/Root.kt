@@ -33,6 +33,9 @@ object Root {
         su != null
     }
 
+    /** Single-quotes [s] for the shell, so file names with quotes or `$` can't break out of a root command. */
+    fun quote(s: String): String = "'" + s.replace("'", "'\\''") + "'"
+
     /** Runs [command] as root; null if root is unavailable or the command failed. */
     suspend fun run(command: String): String? {
         if (!available()) return null
