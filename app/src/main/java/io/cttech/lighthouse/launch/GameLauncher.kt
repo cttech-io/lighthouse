@@ -93,7 +93,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             if (corePresent(core) == false) return LaunchResult.CoreMissing(profile, core)
         }
 
-        val intent = Intent(profile.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        val intent = Intent(profile.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (profile.activity != null) intent.component = ComponentName(pkg, profile.activity) else intent.setPackage(pkg)
         when (profile.rom) {
             RomDelivery.CONTENT -> {
