@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
 }
+
+// Release signing: keystore.properties locally (git-ignored), LIGHTHOUSE_KEYSTORE_* env vars in CI.
+// With neither, release builds come out unsigned. The key itself never lives in the repo.
+val keystoreProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+val releaseStoreFile: String? = keystoreProps.getProperty("storeFile") ?: System.getenv("LIGHTHOUSE_KEYSTORE_FILE")
+val releaseStorePassword: String? = keystoreProps.getProperty("storePassword") ?: System.getenv("LIGHTHOUSE_KEYSTORE_PASSWORD")
 
 android {
     namespace = "io.cttech.lighthouse"
@@ -34,6 +44,18 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseStoreFile != null && releaseStorePassword != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storeType = "pkcs12"
+                storePassword = releaseStorePassword
+                keyAlias = keystoreProps.getProperty("keyAlias") ?: "lighthouse"
+                keyPassword = keystoreProps.getProperty("keyPassword") ?: releaseStorePassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -45,6 +67,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         // Release-optimised but debug-signed: use this to judge smoothness (debug builds are much slower).
         create("profile") {
