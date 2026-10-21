@@ -4,6 +4,7 @@ import io.cttech.lighthouse.library.MoonlightApp
 import io.cttech.lighthouse.library.MoonlightSource
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -118,7 +119,13 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
                 intent.putExtra("game_source", source)
             }
         }
-        profile.extras.forEach { (k, v) -> intent.putExtra(k, v.expand(pkg, path)) }
+        profile.extras.forEach { (k, v) ->
+            when (v) {
+                is Boolean -> intent.putExtra(k, v)
+                else -> intent.putExtra(k, v.toString().expand(pkg, path))
+            }
+        }
+        if (profile.extras.values.any { it is String && "{uri}" in it }) grantWithCompanions(intent, File(path))
         Log.i(TAG, "launch ${game.title} via ${profile.id} ($pkg): $intent extras=${intent.extras?.keySet()}")
         return start(intent)
     }
@@ -151,7 +158,19 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
 
     private fun romUri(file: File): Uri = FileProvider.getUriForFile(context, "${context.packageName}.roms", file)
 
+    /**
+     * A link passed in an extra (not as the intent's data) only carries its read grant through ClipData. The files a
+     * .cue or .m3u refers to go with it, so the emulator can open the tracks next to the sheet.
+     */
+    private fun grantWithCompanions(intent: Intent, rom: File) {
+        val clip = ClipData.newRawUri(null, romUri(rom))
+        RomCompanions.of(rom).forEach { clip.addItem(ClipData.Item(romUri(it))) }
+        intent.clipData = clip
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
     private fun String.expand(pkg: String, path: String) = this
+        .let { if ("{uri}" in it) it.replace("{uri}", romUri(File(path)).toString()) else it }
         .replace("{path}", path)
         .replace("{package}", pkg)
         .replace("{ime}", Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD).orEmpty())

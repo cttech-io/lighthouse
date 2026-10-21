@@ -110,6 +110,7 @@ object LibretroThumbnails {
         "gba" to listOf("Nintendo - Game Boy Advance"),
         "gbc" to listOf("Nintendo - Game Boy Color", "Nintendo - Game Boy"),
         "n64" to listOf("Nintendo - Nintendo 64"),
+        "ps1" to listOf("Sony - PlayStation"),
         "ps2" to listOf("Sony - PlayStation 2"),
         "psp" to listOf("Sony - PlayStation Portable"),
     )

@@ -21,7 +21,7 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 
 **Your library, found for you**
 - Detects platform folders under `Games/`, `ROMs/` or `Emulation/` on internal storage and SD cards, and watches them: copy a game in and it appears within seconds.
-- Platforms: **Switch, PS2, PSP, GBA, GBC/GB, N64**, plus your **Android games and apps**.
+- Platforms: **Switch, PS1, PS2, PSP, GBA, GBC/GB, N64**, plus your **Android games and apps**.
 - Cleans up No-Intro style names, skips BIOS files, keys, saves and Switch updates/DLC, and collapses duplicate copies across storage.
 
 **PC games and streaming**
@@ -30,7 +30,7 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 - **Shortcuts from any app**: "Create shortcut" / "Add to home screen" lands on a Shortcuts tab.
 
 **Launching**
-- One button to play, using per-emulator launch profiles: **Eden** (Switch), **ARMSX2** (PS2), **PPSSPP** (PSP), **RetroArch** with mGBA (GBA/GBC) and Mupen64Plus-Next (N64), **DroidDeck**, **GameNative**. You can choose the emulator per platform.
+- One button to play, using per-emulator launch profiles: **Eden** (Switch), **DuckStation** (PS1), **ARMSX2** (PS2), **PPSSPP** (PSP), **RetroArch** with PCSX ReARMed (PS1), mGBA (GBA/GBC) and Mupen64Plus-Next (N64), **DroidDeck**, **GameNative**. You can choose the emulator per platform.
 - Clear fixes when something's missing: emulator not installed, no storage permission, RetroArch core not downloaded.
 
 **Covers**

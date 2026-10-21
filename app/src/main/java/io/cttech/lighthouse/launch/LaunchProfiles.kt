@@ -20,7 +20,8 @@ data class LaunchProfile(
     val needsStorage: Boolean,
     /** Libretro core path to check before launching (needs root to see inside the emulator's data). */
     val core: String?,
-    val extras: Map<String, String>,
+    /** String values (placeholders expanded) or JSON booleans, passed as boolean extras. */
+    val extras: Map<String, Any>,
 )
 
 /** Reads assets/launch_profiles.json. Adding an emulator is a JSON edit, not a code change. */
@@ -55,7 +56,7 @@ object LaunchProfiles {
                 mime = o.optString("mime").ifEmpty { null },
                 needsStorage = o.optBoolean("needsStorage", false),
                 core = o.optString("core").ifEmpty { null },
-                extras = extras?.keys()?.asSequence()?.associateWith { extras.getString(it) } ?: emptyMap(),
+                extras = extras?.keys()?.asSequence()?.associateWith { k -> extras.get(k).let { v -> v as? Boolean ?: v.toString() } } ?: emptyMap(),
             )
         }
     }

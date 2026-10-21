@@ -40,6 +40,12 @@ object PlatformCatalog {
             folderNames = setOf("ps2", "playstation 2", "playstation2", "sony - playstation 2"),
         ),
         PlatformDef(
+            "ps1", "PS1", Color(0xFFB4ACC0),
+            // Not .bin: a .cue (or .m3u for multi-disc games) names its tracks, so listing both would show games twice.
+            extensions = setOf("cue", "chd", "pbp", "m3u", "iso"),
+            folderNames = setOf("ps1", "psx", "playstation", "playstation 1", "sony - playstation"),
+        ),
+        PlatformDef(
             "psp", "PSP", Color(0xFF00B8D4),
             extensions = setOf("iso", "cso", "chd", "pbp", "elf"),
             folderNames = setOf("psp", "playstation portable", "sony - playstation portable"),

@@ -62,4 +62,11 @@ class RomScannerTest {
         listOf("Patapon (Europe).iso", "Lumines.cso", "Daxter.chd", "EBOOT.PBP", "notes.txt").forEach { touch("PSP/$it") }
         assertEquals(4, RomScanner.scan(platform("psp"), listOf(File(tmp.root, "PSP"))).size)
     }
+
+    @Test fun ps1ListsSheetsNotTracks() {
+        File(tmp.root, "sd/Games/PSX").mkdirs()
+        assertEquals(listOf("ps1"), FolderDetector.detect(listOf(File(tmp.root, "sd"))).map { it.platformId })
+        listOf("Crash Bandicoot (USA).cue", "Crash Bandicoot (USA).bin", "Spyro.chd", "FF7.m3u").forEach { touch("PS1/$it") }
+        assertEquals(3, RomScanner.scan(platform("ps1"), listOf(File(tmp.root, "PS1"))).size)
+    }
 }

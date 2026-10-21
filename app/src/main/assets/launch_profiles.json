@@ -1,5 +1,5 @@
 {
-  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {package} the installed package, {ime} default input method. rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
+  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {uri} FileProvider URI of the ROM (granted along with the files a .cue/.m3u names), {package} the installed package, {ime} default input method. rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
   "profiles": [
     {
       "id": "eden",
@@ -20,6 +20,16 @@
       "action": "android.intent.action.VIEW",
       "rom": "content",
       "mime": "application/octet-stream"
+    },
+    {
+      "id": "duckstation",
+      "label": "DuckStation",
+      "platforms": ["ps1"],
+      "packages": ["com.github.stenzek.duckstation"],
+      "activity": "com.github.stenzek.duckstation.EmulationActivity",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "extras": {"bootPath": "{uri}", "resumeState": false}
     },
     {
       "id": "ppsspp",
@@ -64,6 +74,26 @@
       "extras": {
         "ROM": "{path}",
         "LIBRETRO": "/data/user/0/{package}/cores/mupen64plus_next_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-pcsx-rearmed",
+      "label": "RetroArch · PCSX ReARMed",
+      "platforms": ["ps1"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/pcsx_rearmed_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/pcsx_rearmed_libretro_android.so",
         "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
         "IME": "{ime}",
         "DATADIR": "/data/user/0/{package}",
