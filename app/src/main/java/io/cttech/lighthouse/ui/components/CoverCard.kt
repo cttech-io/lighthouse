@@ -8,6 +8,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import kotlin.math.roundToInt
 import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -63,6 +66,8 @@ fun CoverCard(
     isFavourite: Boolean,
     modifier: Modifier = Modifier,
     focusedScale: Float = Lh.theme.focusScale,
+    /** Largest scale the card is ever drawn at (including any scaling by its parent), so artwork is decoded sharp enough for it. */
+    drawnScale: Float = focusedScale,
     onFocused: () -> Unit,
     onLaunch: () -> Unit,
     onToggleFavourite: () -> Unit,
@@ -127,13 +132,23 @@ fun CoverCard(
             ),
     ) {
         if (game.coverPath != null) {
-            // Real artwork: Coil decodes at the card's on-screen size (cheap), from app storage.
-            AsyncImage(
-                model = File(game.coverPath),
-                contentDescription = game.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(CoverShape),
-            )
+            // Real artwork, decoded at the largest size the card is drawn at: focus scaling is a draw-time
+            // transform, so decoding at the layout size alone would leave the focused card blurry.
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().clip(CoverShape)) {
+                val context = LocalPlatformContext.current
+                val bounded = constraints.hasBoundedWidth && constraints.hasBoundedHeight
+                val w = if (bounded) (constraints.maxWidth * drawnScale).roundToInt() else 0
+                val h = if (bounded) (constraints.maxHeight * drawnScale).roundToInt() else 0
+                val request = remember(game.coverPath, w, h) {
+                    ImageRequest.Builder(context).data(File(game.coverPath)).apply { if (w > 0 && h > 0) size(w, h) }.build()
+                }
+                AsyncImage(
+                    model = request,
+                    contentDescription = game.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         } else {
             val icon = rememberAppIcon(game.packageName)
             if (icon != null) {

@@ -365,6 +365,7 @@ private fun CarouselShelf(games: List<Game>, initialFocus: Int, actions: CardAct
                     accent = actions.accent,
                     isFavourite = game.key in actions.favourites,
                     focusedScale = 1f,
+                    drawnScale = 1f + m.carouselGrowth,
                     modifier = Modifier
                         .width(m.carouselSlot)
                         .graphicsLayer {

@@ -8,6 +8,7 @@
 - Settings → About lists the open-source libraries Lighthouse uses, with their licences.
 
 **Fixed**
+- The focused cover in the carousel was blurry: artwork is now loaded at the size it's shown when enlarged.
 - Root commands that include a file path now quote it safely, so unusual file names can't break them.
 
 ## 0.1.2 (2026-10-20)

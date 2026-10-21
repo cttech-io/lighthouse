@@ -17,3 +17,7 @@ Profiles (`sweep.sh`): Odin 2 Portal, Odin 2, Odin 2 Mini, Retroid Pocket Mini, 
 RG Cube (720×720), RG405M (640×480 @240dpi, the smallest at ~427×320dp).
 Emulator quirks: reinstalling can hand Home back to the Pixel launcher (compat.sh re-asserts the
 role); Android's one-time "Viewing full screen" tip swallows the first key press after a reset.
+
+README screenshots use made-up games with generated placeholder covers, never real titles or box art:
+`python3 make_kit.py shotkit/Games` (needs Pillow and the Noto Sans fonts) creates ROM-named files with a
+cover image beside each one; push that folder to `/sdcard/Games` on a clean emulator instead of `Games/`.
