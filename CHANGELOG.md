@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 (in progress)
+
+**New**
+- Signed release APKs are published on the GitHub Releases page, with a `SHA256SUMS` file and the signing certificate's fingerprint. Install it like any APK, or add the repository to Obtainium to get updates.
+- The release build installs as its own app ("Lighthouse", `io.cttech.lighthouse`), separate from development builds.
+
 ## 0.1.2 (2026-10-20)
 
 **Fixed**
