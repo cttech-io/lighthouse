@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.5 (in progress)
+## 0.1.5 (2026-10-21)
 
 **Improved**
 - Pinned shortcut tiles show which app added them ("Shortcut · Chrome").
