@@ -93,6 +93,14 @@ class AppSettings(context: Context) {
         prefs.edit().putBoolean(KEY_SETUP_DONE, done).apply()
     }
 
+    /**
+     * Setup step to come back to. Setup can restart Lighthouse (becoming the Home app does), and the activity keeps
+     * no saved state, so the step is stored; back to 0 when setup ends.
+     */
+    var setupStep: Int
+        get() = prefs.getInt(KEY_SETUP_STEP, 0)
+        set(value) { prefs.edit().putInt(KEY_SETUP_STEP, value).apply() }
+
     var wifiNameSource by mutableStateOf(enumPref(KEY_WIFI_NAME, WifiNameSource.Auto))
         private set
 
@@ -268,6 +276,7 @@ class AppSettings(context: Context) {
         const val KEY_HOME_BUTTON = "home_button"
         const val KEY_ROOT = "root_extras_enabled"
         const val KEY_SETUP_DONE = "setup_done"
+        const val KEY_SETUP_STEP = "setup_step"
         const val KEY_SGDB = "steamgriddb_api_key"
         const val KEY_COVER_AUTO = "cover_auto"
         const val KEY_COVER_OFFERED = "cover_offered"

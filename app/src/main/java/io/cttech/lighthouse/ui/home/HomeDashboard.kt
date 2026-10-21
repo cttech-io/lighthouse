@@ -73,9 +73,16 @@ internal fun HomeDashboard(
     val target = positions.firstOrNull { it == rememberedKey } ?: positions.firstOrNull()
     val listState = rememberLazyListState()
     val token = LocalRefocusToken.current
-    LaunchedEffect(token, rememberedKey == null) { if (rememberedKey == null) listState.scrollToItem(0) }
-
     val showStats = io.cttech.lighthouse.system.LocalAppSettings.current.showHomeStats
+    // Lazy rows only exist on screen, so the remembered item's row is scrolled into view before focus is
+    // restored (RestoreFocus retries for a few frames); otherwise coming back to Home left nothing focused.
+    val targetRow = rows.indexOfFirst { row -> row.items.any { homePosition(row, it) == target } }
+    LaunchedEffect(token, target) {
+        if (rememberedKey == null) { listState.scrollToItem(0); return@LaunchedEffect }
+        val index = targetRow + if (showStats) 1 else 0
+        if (targetRow >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) listState.scrollToItem(index)
+    }
+
     LazyColumn(
         Modifier.fillMaxSize(),
         state = listState,
@@ -101,7 +108,13 @@ internal fun HomeDashboard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 32.dp, top = 8.dp),
                 )
+                val rowState = rememberLazyListState()
+                val targetItem = row.items.indexOfFirst { homePosition(row, it) == target }
+                LaunchedEffect(token, target) {
+                    if (targetItem >= 0 && rowState.layoutInfo.visibleItemsInfo.none { it.index == targetItem }) rowState.scrollToItem(targetItem)
+                }
                 LazyRow(
+                    state = rowState,
                     contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {

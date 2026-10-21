@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 (in progress)
+
+**Fixed**
+- Setup went back to step 1 after making Lighthouse the Home app. It now carries on where you were.
+- Coming back to HOME with a lower row (such as Platforms) or a far-right item remembered left nothing focused, so the controller did nothing on HOME.
+
 ## 0.1.3 (2026-10-21)
 
 **New**

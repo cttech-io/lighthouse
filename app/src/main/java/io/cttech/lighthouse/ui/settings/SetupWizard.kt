@@ -59,7 +59,10 @@ private val Steps = listOf("Welcome", "Your games", "Emulators", "Covers", "Look
  */
 @Composable
 fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
-    var step by remember { mutableIntStateOf(0) }
+    val settings = io.cttech.lighthouse.system.LocalAppSettings.current
+    var step by remember { mutableIntStateOf(settings.setupStep.coerceIn(0, Steps.lastIndex)) }
+    LaunchedEffect(step) { settings.setupStep = step }
+    fun finish() { settings.setupStep = 0; onFinish() }
     val overlay = remember { OverlayHost() }
     val info by vm.settingsInfo.collectAsStateWithLifecycle()
     val library by vm.libraryInfo.collectAsStateWithLifecycle()
@@ -68,7 +71,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
     val currentFirst = remember { arrayOf(FocusRequester()) }
     val last = Steps.lastIndex
     fun back() { if (step > 0) step-- }
-    fun next() { if (step < last) step++ else onFinish() }
+    fun next() { if (step < last) step++ else finish() }
     androidx.activity.compose.BackHandler { back() } // as the home app, Back never leaves setup
 
     CompositionLocalProvider(LocalOverlayHost provides overlay) {
@@ -114,7 +117,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                     Note("A few quick steps: Lighthouse has already looked for your games and emulators, so mostly you just check what it found. Everything here can be changed later in Settings (Start).")
                                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         PillButton("Get started", firstMod) { next() }
-                                        PillButton("Skip setup", onClick = onFinish)
+                                        PillButton("Skip setup", onClick = ::finish)
                                     }
                                 }
                                 1 -> {
