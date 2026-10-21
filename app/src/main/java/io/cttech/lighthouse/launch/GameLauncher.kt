@@ -170,12 +170,17 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
     private fun romUri(file: File): Uri = FileProvider.getUriForFile(context, "${context.packageName}.roms", file)
 
     /**
-     * A link passed in an extra (not as the intent's data) only carries its read grant through ClipData. The files a
-     * .cue or .m3u refers to go with it, so the emulator can open the tracks next to the sheet.
+     * A link passed in an extra (not as the intent's data) only carries its read grant through ClipData. For a .cue or
+     * .m3u that names other files, the grant covers the game's folder instead: emulators such as DuckStation build the
+     * track links themselves (spaces left unencoded), which an exact-link grant doesn't match but a folder grant does.
      */
     private fun grantWithCompanions(intent: Intent, rom: File) {
         val clip = ClipData.newRawUri(null, romUri(rom))
-        RomCompanions.of(rom).forEach { clip.addItem(ClipData.Item(romUri(it))) }
+        val folder = rom.absoluteFile.parentFile
+        if (folder != null && RomCompanions.of(rom).isNotEmpty()) {
+            clip.addItem(ClipData.Item(romUri(folder)))
+            intent.addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+        }
         intent.clipData = clip
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }

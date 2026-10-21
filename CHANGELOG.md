@@ -3,7 +3,7 @@
 ## 0.1.6 (in progress)
 
 **New**
-- **PS1** games through DuckStation (from the Play Store) or RetroArch with PCSX ReARMed: .cue, .chd, .pbp and .m3u in a `PS1` (or `PSX`, `PlayStation`) folder, with libretro box art. A .cue or .m3u game's track and disc files are shared with the emulator too.
+- **PS1** games through DuckStation (from the Play Store) or RetroArch with PCSX ReARMed: .cue, .chd, .pbp and .m3u in a `PS1` (or `PSX`, `PlayStation`) folder, with libretro box art. For a .cue or .m3u game, the emulator can read the game's folder (for its track and disc files) for that launch.
 - **PSP** games through PPSSPP (or PPSSPP Gold): .iso, .cso, .chd and .pbp in a `PSP` (or `PlayStation Portable`) folder, with libretro box art.
 
 **Fixed**
