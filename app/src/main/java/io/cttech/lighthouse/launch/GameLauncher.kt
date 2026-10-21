@@ -55,10 +55,8 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
     suspend fun status(platformId: String): List<EmulatorStatus> =
         LaunchProfiles.forPlatform(context, platformId).map { p ->
             val pkg = p.packages.firstOrNull(::isInstalled)
-            val core = if (pkg != null && p.core != null) {
-                Root.run("if [ -f ${Root.quote(p.core.replace("{package}", pkg))} ]; then echo present; else echo absent; fi")
-                    ?.let { it.contains("present") }
-            } else if (p.core == null) true else null
+            val core = if (pkg != null && p.core != null) corePresent(p.core.replace("{package}", pkg))
+            else if (p.core == null) true else null
             EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
         }
 
@@ -92,8 +90,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         profile.core?.let { c ->
             val core = c.expand(pkg, path)
             // Only checkable with root (it's inside the emulator's private data); without root, let it try.
-            val check = Root.run("if [ -f ${Root.quote(core)} ]; then echo present; else echo absent; fi")
-            if (check?.contains("absent") == true) return LaunchResult.CoreMissing(profile, core)
+            if (corePresent(core) == false) return LaunchResult.CoreMissing(profile, core)
         }
 
         val intent = Intent(profile.action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -138,6 +135,14 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
     private fun canReadStorage(pkg: String): Boolean =
         pm.checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE, pkg) == PackageManager.PERMISSION_GRANTED
 
+    /** Whether [core] exists: true/false only when root can see the emulator's data folder, else null (don't block). */
+    private suspend fun corePresent(core: String): Boolean? =
+        when (Root.run(coreCheckCommand(core))?.trim()) {
+            "present" -> true
+            "absent" -> false
+            else -> null
+        }
+
     private fun isInstalled(pkg: String): Boolean = runCatching { pm.getPackageInfo(pkg, 0) }.isSuccess
 
     private fun romUri(file: File): Uri = FileProvider.getUriForFile(context, "${context.packageName}.roms", file)
@@ -156,5 +161,19 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         LaunchResult.Failed("Android blocked the launch (${e.message})")
     }
 
-    private companion object { const val TAG = "LighthouseLaunch" }
+    internal companion object {
+        private const val TAG = "LighthouseLaunch"
+
+        /**
+         * Shell test for a core file in another app's private data. su inherits Lighthouse's mount namespace, where
+         * Android 11+ app data isolation hides other apps' /data/user/0 folders, so look through init's root instead.
+         * Reports "unknown" if even the emulator's data folder isn't visible, so a failed check never blocks a launch.
+         */
+        fun coreCheckCommand(core: String): String {
+            val file = "/proc/1/root$core"
+            val dataDir = file.substringBeforeLast('/').substringBeforeLast('/')
+            return "if [ -f ${Root.quote(file)} ]; then echo present; " +
+                "elif [ -d ${Root.quote(dataDir)} ]; then echo absent; else echo unknown; fi"
+        }
+    }
 }

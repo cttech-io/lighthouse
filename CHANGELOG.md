@@ -3,6 +3,7 @@
 ## 0.1.6 (in progress)
 
 **Fixed**
+- RetroArch games (GBA, N64) said "Core not installed" on rooted devices even when the core was installed. Lighthouse's root check couldn't see inside RetroArch's folder on Android 11 and later. It now looks in the right place, and if it can't check, it lets the game start instead of blocking it.
 - Launching a game while its emulator was still open in the background could hand the game to the emulator's old screen instead of starting a fresh one (a possible cause of a black screen at 0.0 fps with Eden). Each launch now starts the emulator's screen fresh. Please report if any emulator behaves worse, for example by losing a game that was still running.
 
 ## 0.1.5 (2026-10-21)
