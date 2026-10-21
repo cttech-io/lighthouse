@@ -118,4 +118,5 @@ dependencies {
     implementation(libs.zxing.core) // QR code for "Send key from phone" (Apache-2.0)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
 }

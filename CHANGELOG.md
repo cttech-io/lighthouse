@@ -4,6 +4,7 @@
 
 **Fixed**
 - Setup went back to step 1 after making Lighthouse the Home app. It now carries on where you were.
+- A cover search that got an unexpected reply (a Wi-Fi sign-in page, a proxy) could crash Lighthouse. It now just finds nothing.
 - Coming back to HOME with a lower row (such as Platforms) or a far-right item remembered left nothing focused, so the controller did nothing on HOME.
 
 ## 0.1.3 (2026-10-21)

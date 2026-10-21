@@ -130,7 +130,8 @@ class CoverService(
                 launch {
                     gate.acquire()
                     try {
-                        fetch(g, sgdb)?.let { (bytes, source) ->
+                        // One game's failure (bad file, odd response) must not abort the whole batch.
+                        runCatching { fetch(g, sgdb) }.onFailure { Log.w(TAG, "cover fetch failed for ${g.key}", it) }.getOrNull()?.let { (bytes, source) ->
                             store.save(g.key, bytes)?.let { pending += CoverEntity(g.key, it.absolutePath, source, System.currentTimeMillis()); found.incrementAndGet() }
                         }
                     } finally {
