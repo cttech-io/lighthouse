@@ -185,7 +185,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun findMissingCovers() { viewModelScope.launch { coverService.findMissing() } }
-    fun rescanLibrary() = repo.refreshAll()
+    fun rescanLibrary() = repo.refreshAll(force = true)
 
     fun openApp(pkg: String) {
         getApplication<Application>().packageManager.getLaunchIntentForPackage(pkg)
@@ -298,7 +298,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val (pkg, id) = game.key.substringAfter('|').split('/', limit = 2).takeIf { it.size == 2 } ?: return
         io.cttech.lighthouse.library.PinnedShortcuts.remove(getApplication(), pkg, id)
         _optionsFor.value = null
-        repo.refreshAll()
+        repo.refreshAll(force = true)
     }
     fun unhide(game: Game) = repo.setHidden(game.key, false)
 

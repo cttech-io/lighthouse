@@ -20,7 +20,7 @@ class PinShortcutActivity : Activity() {
             val accepted = runCatching { request.accept() }.getOrDefault(false)
             Log.i("LighthouseShortcuts", "pin ${info.`package`}/${info.id} accepted=$accepted")
             if (accepted) {
-                (application as LighthouseApp).repository.refreshAll()
+                (application as LighthouseApp).repository.refreshAll(force = true)
                 Toast.makeText(this, "Added to Lighthouse: ${info.shortLabel}", Toast.LENGTH_SHORT).show()
             }
         }

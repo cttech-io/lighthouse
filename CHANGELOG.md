@@ -2,6 +2,9 @@
 
 ## 0.1.4 (in progress)
 
+**Improved**
+- Returning to Lighthouse (after a game, or from Android settings) does less work: repeated refreshes are merged, Moonlight's list is reread at most every 5 minutes (Settings → rescan forces it), and Lighthouse doesn't look for your own cover images for games that already have a downloaded or picked cover.
+
 **Fixed**
 - Setup went back to step 1 after making Lighthouse the Home app. It now carries on where you were.
 - A cover search that got an unexpected reply (a Wi-Fi sign-in page, a proxy) could crash Lighthouse. It now just finds nothing.

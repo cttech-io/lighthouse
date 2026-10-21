@@ -30,6 +30,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Owns the library: detects folders, scans ROMs and apps, watches for changes, stores favourites. */
 class LibraryRepository(
@@ -94,10 +95,20 @@ class LibraryRepository(
     fun hasStorageAccess(): Boolean = storage.hasAccess(app)
     fun storageAccessIntent(): Intent? = storage.accessIntent(app)
 
-    /** Full refresh: apps, then (if allowed) folder detection and every ROM platform. Safe to call on every resume. */
-    fun refreshAll() {
+    private val refreshWaiting = AtomicBoolean(false)
+    @Volatile private var lastMoonlightRead = 0L
+
+    /**
+     * Full refresh: apps, then (if allowed) folder detection and every ROM platform. Safe to call on every resume:
+     * a call while another is still waiting to run is dropped (the waiting one sees the same state), and
+     * Moonlight's list (two root calls) is reread at most every few minutes unless [force]d.
+     */
+    fun refreshAll(force: Boolean = false) {
+        if (force) lastMoonlightRead = 0
+        if (!refreshWaiting.compareAndSet(false, true)) return
         scope.launch {
             lock.withLock {
+                refreshWaiting.set(false) // changes from here on need another pass
                 val started = System.currentTimeMillis()
                 refreshAppsLocked()
                 refreshMoonlightLocked()
@@ -164,7 +175,11 @@ class LibraryRepository(
         val pinnedMoonlight = pinned.orEmpty().mapNotNull(PinnedShortcuts::asMoonlightApp)
         MoonlightSource.register(pinnedMoonlight)
         val streams = if (!MoonlightSource.installed(app)) emptyList() else {
-            val read = MoonlightSource.read(app)?.map { it.locator to it.title }
+            val now = System.currentTimeMillis()
+            // Counted per attempt, not per success: without root every attempt fails, and each one costs su calls.
+            val fresh = if (now - lastMoonlightRead < MOONLIGHT_REREAD_MS) null
+                else { lastMoonlightRead = now; MoonlightSource.read(app) }
+            val read = fresh?.map { it.locator to it.title }
                 ?: dao.games(PlatformCatalog.MOONLIGHT, GameKind.STREAM).map { it.locator to it.title }
             (read + pinnedMoonlight.map { it.locator to it.title }).distinctBy { it.first }
         }
@@ -270,7 +285,11 @@ class LibraryRepository(
         }
     }
 
-    private companion object { const val TAG = "LighthouseLibrary" }
+    private companion object {
+        const val TAG = "LighthouseLibrary"
+        /** Moonlight's game lists change rarely; rereading them costs two root calls. */
+        const val MOONLIGHT_REREAD_MS = 5 * 60_000L
+    }
 }
 
 data class VolumeSpace(val label: String, val freeBytes: Long)

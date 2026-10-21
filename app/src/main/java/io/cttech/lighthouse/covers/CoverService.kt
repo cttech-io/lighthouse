@@ -89,9 +89,11 @@ class CoverService(
     suspend fun applyManual(roots: List<File>) = withContext(Dispatchers.IO) {
         val covers = dao.covers().associateBy { it.gameKey }
         for (g in dao.allGames()) {
-            val file = ManualCovers.find(g.platformId, g.title, g.locator, g.kind == GameKind.APP, roots) ?: continue
             val existing = covers[g.key]
-            if (existing != null && (existing.source != SOURCE_MANUAL || existing.updatedAt >= file.lastModified())) continue // picks/removals stand
+            // Downloaded, picked or removed covers stand, so don't even look (the file checks are the costly part).
+            if (existing != null && existing.source != SOURCE_MANUAL) continue
+            val file = ManualCovers.find(g.platformId, g.title, g.locator, g.kind == GameKind.APP, roots) ?: continue
+            if (existing != null && existing.updatedAt >= file.lastModified()) continue
             store.save(g.key, file.readBytes())?.let { dao.putCover(CoverEntity(g.key, it.absolutePath, SOURCE_MANUAL, file.lastModified())) }
         }
     }
