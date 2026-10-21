@@ -1,5 +1,6 @@
 package io.cttech.lighthouse.ui.home
 
+import io.cttech.lighthouse.system.readBounded
 import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
@@ -165,9 +166,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun applyCover(game: Game, url: String): Boolean = coverService.applyPicked(game.key, url = url).also { if (it) closeCoverPicker() }
 
+    private val sourceLabels = HashMap<String, String?>()
+
+    /** The label of the app that pinned a shortcut, so a look-alike tile can't hide where it came from. */
+    private fun shortcutSource(pkg: String): String? = sourceLabels.getOrPut(pkg) {
+        runCatching { getApplication<Application>().packageManager.let { it.getApplicationLabel(it.getApplicationInfo(pkg, 0)).toString() } }.getOrNull()
+    }
+
     suspend fun applyCoverImage(game: Game, uri: android.net.Uri): Boolean {
         val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching { getApplication<Application>().contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+            runCatching { getApplication<Application>().contentResolver.openInputStream(uri)?.use { it.readBounded() } }.getOrNull()
         } ?: return false
         return coverService.applyPicked(game.key, bytes = bytes).also { if (it) closeCoverPicker() }
     }
@@ -202,8 +210,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val hiddenTabs = settings.hiddenTabs
         // Hidden items, and everything on a hidden platform, stay out of the shelves (the app drawer still has apps).
         val games = allGames.filter { it.key !in hiddenKeys && it.platformId !in hiddenTabs }
-        val hiddenUi = allGames.filter { it.key in hiddenKeys }.map { it.toUi(settings.gameOverrides) }
-        val ui = games.map { it.toUi(settings.gameOverrides).copy(coverPath = covers[it.key]) }
+        val hiddenUi = allGames.filter { it.key in hiddenKeys }.map { it.toUi(settings.gameOverrides, ::shortcutSource) }
+        val ui = games.map { it.toUi(settings.gameOverrides, ::shortcutSource).copy(coverPath = covers[it.key]) }
         val byPlatform = ui.groupBy { it.platformId }
         val byKey = ui.associateBy { it.key }
         val platformTabs = orderedPlatforms()
@@ -343,7 +351,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 if (src.ignored) 0 else games.count { it.platformId == src.platformId && it.locator.startsWith(src.path + "/") })
         }
         val apps = games.filter { it.kind == GameKind.APP }.sortedBy { it.sortTitle }
-            .map { AppRow(it.toUi(settings.gameOverrides), automatic = it.key !in settings.gameOverrides) }
+            .map { AppRow(it.toUi(settings.gameOverrides, ::shortcutSource), automatic = it.key !in settings.gameOverrides) }
         LibraryInfo(platforms, folders, apps)
     }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(viewModelScope, SharingStarted.Eagerly, LibraryInfo())
 
@@ -481,7 +489,7 @@ private fun statusLine(games: List<GameEntity>, scan: ScanInfo): String {
     return parts.joinToString("  ·  ")
 }
 
-private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap()): Game = when (kind) {
+private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap(), sourceLabel: (String) -> String? = { null }): Game = when (kind) {
     GameKind.APP -> Game(key = key, platformId = platformId, title = title, subtitle = "Android app", packageName = locator, isGame = overrides[key] ?: isGame)
     GameKind.ROM -> Game(
         key = key,
@@ -496,7 +504,7 @@ private fun GameEntity.toUi(overrides: Map<String, Boolean> = emptyMap()): Game 
         title = title,
         subtitle = io.cttech.lighthouse.library.MoonlightSource.app(locator)?.hostName?.takeIf { it.isNotEmpty() }?.let { "On $it" } ?: "Moonlight",
     )
-    GameKind.SHORTCUT -> Game(key = key, platformId = platformId, title = title, subtitle = "Shortcut", isGame = overrides[key] ?: isGame)
+    GameKind.SHORTCUT -> Game(key = key, platformId = platformId, title = title, subtitle = sourceLabel(locator.substringBefore('/'))?.let { "Shortcut · $it" } ?: "Shortcut", isGame = overrides[key] ?: isGame)
 }
 
 private fun formatSize(bytes: Long): String = when {

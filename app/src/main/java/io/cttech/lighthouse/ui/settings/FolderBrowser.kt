@@ -57,6 +57,7 @@ internal fun FolderBrowser(roots: List<File>, onPick: (File) -> Unit, onClose: (
             dir?.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") }?.sortedBy { it.name.lowercase() } ?: roots
         }
     }
+    val atRoot = dir?.let { d -> roots.any { it.absolutePath == d.absolutePath } } == true
     fun up() {
         val d = dir ?: return onClose()
         dir = if (roots.any { it.absolutePath == d.absolutePath }) null else d.parentFile
@@ -75,7 +76,7 @@ internal fun FolderBrowser(roots: List<File>, onPick: (File) -> Unit, onClose: (
             Text("Choose a ROM folder", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(dir?.absolutePath ?: "Storage", color = Lh.colors.textMuted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.StartEllipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                dir?.let { d -> PillButton("Use this folder", Modifier.focusRequester(useButton)) { onPick(d) } }
+                dir?.takeUnless { atRoot }?.let { d -> PillButton("Use this folder", Modifier.focusRequester(useButton)) { onPick(d) } }
                 if (dir != null) PillButton("Up", onClick = ::up)
                 PillButton("Cancel", onClick = onClose)
             }
@@ -88,11 +89,12 @@ internal fun FolderBrowser(roots: List<File>, onPick: (File) -> Unit, onClose: (
                     ) { dir = f }
                 }
             }
-            if (entries.isEmpty() && dir != null) Note("No folders in here. Press \"Use this folder\" to pick it.")
+            if (atRoot) Note("This is a whole storage volume. Open a folder inside it, such as Games, then press \"Use this folder\".")
+            if (entries.isEmpty() && dir != null && !atRoot) Note("No folders in here. Press \"Use this folder\" to pick it.")
         }
     }
     // An empty folder has no rows: focus "Use this folder" so the controller never ends up nowhere.
-    FocusOnAppear(if (entries.isEmpty() && dir != null) useButton else first, dir, entries.size)
+    FocusOnAppear(if (entries.isEmpty() && dir != null && !atRoot) useButton else first, dir, entries.size)
 }
 
 private fun volumeName(f: File) = when {

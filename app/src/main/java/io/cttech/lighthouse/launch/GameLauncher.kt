@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.system.Root
+import io.cttech.lighthouse.system.readIdText
 import io.cttech.lighthouse.library.PlatformCatalog
 import java.io.File
 
@@ -102,14 +103,13 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
                 val uri = romUri(File(path))
                 intent.setDataAndType(uri, profile.mime ?: "application/octet-stream")
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                context.grantUriPermission(pkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             RomDelivery.EXTRAS -> Unit
             RomDelivery.STEAM_APP_ID -> {
                 // A shortcut file holds one decimal game ID. Steam IDs fit an Int (GameNative reads an Int);
                 // DroidDeck's own added games use the unsigned 64-bit range, which it accepts as a String.
                 val file = File(path)
-                val id = file.readText().trim().takeIf { it.isNotEmpty() && it.length <= 20 && it.all(Char::isDigit) && !it.startsWith("0") }
+                val id = file.readIdText()?.takeIf { it.isNotEmpty() && it.length <= 20 && it.all(Char::isDigit) && !it.startsWith("0") }
                     ?: return LaunchResult.Failed("${file.name} doesn't contain a game ID")
                 id.toIntOrNull()?.let { intent.putExtra("app_id", it) } ?: intent.putExtra("app_id", id)
                 // GameNative also writes .epic/.gog/.amazon/.pcgame files for its other stores.

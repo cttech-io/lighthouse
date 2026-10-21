@@ -8,6 +8,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import io.cttech.lighthouse.system.readBounded
 
 private const val TAG = "LighthouseCovers"
 private const val UA = "Lighthouse/0.1 (+https://github.com/cttech-io/lighthouse)"
@@ -20,7 +21,7 @@ internal fun httpGet(url: String, headers: Map<String, String> = emptyMap()): By
     c.setRequestProperty("User-Agent", UA)
     headers.forEach { (k, v) -> c.setRequestProperty(k, v) }
     try {
-        if (c.responseCode != 200) null else c.inputStream.use { it.readBytes() }
+        if (c.responseCode != 200) null else c.inputStream.use { it.readBounded() }
     } finally {
         c.disconnect()
     }

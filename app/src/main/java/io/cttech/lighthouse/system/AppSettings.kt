@@ -131,9 +131,10 @@ class AppSettings(context: Context) {
     /** Games already offered (or tried) for an online cover, so nobody is asked twice about the same game. */
     fun coverOffered(): Set<String> = prefs.getStringSet(KEY_COVER_OFFERED, emptySet()).orEmpty()
 
-    fun markCoverOffered(keys: Collection<String>) {
+    /** Records [keys] as offered. Only keys in [inLibrary] are kept, so deleted games don't pile up in the preferences. */
+    fun markCoverOffered(keys: Collection<String>, inLibrary: Set<String>) {
         if (keys.isEmpty()) return
-        prefs.edit().putStringSet(KEY_COVER_OFFERED, coverOffered() + keys).apply()
+        prefs.edit().putStringSet(KEY_COVER_OFFERED, (coverOffered() + keys).filterTo(HashSet()) { it in inLibrary }).apply()
     }
 
     // --- Appearance -------------------------------------------------------------------------------

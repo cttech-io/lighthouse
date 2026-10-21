@@ -6,6 +6,8 @@ import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.data.db.LibraryDao
 import io.cttech.lighthouse.system.AppSettings
+import io.cttech.lighthouse.system.readBounded
+import io.cttech.lighthouse.system.readIdText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +45,11 @@ class CoverService(
         if (settings.coverAuto == io.cttech.lighthouse.system.CoverAutoMode.Never) { _offer.value = emptyList(); return@withContext }
         val have = dao.covers().map { it.gameKey }.toSet()
         val offered = settings.coverOffered()
-        val fresh = dao.allGames().map { it.key }.filter { it !in have && it !in offered }
+        val all = dao.allGames().map { it.key }
+        val fresh = all.filter { it !in have && it !in offered }
         if (fresh.isEmpty() || _job.value?.running == true || !hasNetwork()) { _offer.value = emptyList(); return@withContext }
         when (settings.coverAuto) {
-            io.cttech.lighthouse.system.CoverAutoMode.Always -> { settings.markCoverOffered(fresh); findMissing(fresh.toSet()) }
+            io.cttech.lighthouse.system.CoverAutoMode.Always -> { settings.markCoverOffered(fresh, all.toSet()); findMissing(fresh.toSet()) }
             else -> _offer.value = fresh
         }
     }
@@ -74,7 +77,7 @@ class CoverService(
     suspend fun answerOffer(fetch: Boolean) {
         val keys = _offer.value
         _offer.value = emptyList()
-        settings.markCoverOffered(keys)
+        settings.markCoverOffered(keys, withContext(Dispatchers.IO) { dao.allGames().map { it.key }.toSet() })
         if (fetch) findMissing(keys.toSet())
     }
 
@@ -94,7 +97,8 @@ class CoverService(
             if (existing != null && existing.source != SOURCE_MANUAL) continue
             val file = ManualCovers.find(g.platformId, g.title, g.locator, g.kind == GameKind.APP, roots) ?: continue
             if (existing != null && existing.updatedAt >= file.lastModified()) continue
-            store.save(g.key, file.readBytes())?.let { dao.putCover(CoverEntity(g.key, it.absolutePath, SOURCE_MANUAL, file.lastModified())) }
+            val bytes = file.readBounded() ?: continue
+            store.save(g.key, bytes)?.let { dao.putCover(CoverEntity(g.key, it.absolutePath, SOURCE_MANUAL, file.lastModified())) }
         }
     }
 
@@ -160,7 +164,7 @@ class CoverService(
 
     /** Steam app id for DroidDeck/GameNative shortcuts, else null. */
     fun steamAppIdFor(locator: String): Int? =
-        if (locator.endsWith(".steam", true)) runCatching { File(locator).readText().trim().toInt() }.getOrNull() else null
+        if (locator.endsWith(".steam", true)) runCatching { File(locator).readIdText()?.toInt() }.getOrNull() else null
 
     /** Applies a cover the user picked (download URL or local image bytes). Never overwritten by "find missing". */
     suspend fun applyPicked(gameKey: String, url: String? = null, bytes: ByteArray? = null): Boolean = withContext(Dispatchers.IO) {
@@ -184,7 +188,7 @@ class CoverService(
     private fun fetch(g: GameEntity, sgdb: SteamGridDb?): Pair<ByteArray, String>? = when {
         g.kind == GameKind.APP -> sgdb?.forTitle(g.title)?.let { it to SOURCE_SGDB }
         g.locator.endsWith(".steam", ignoreCase = true) -> {
-            val appId = runCatching { File(g.locator).readText().trim().toInt() }.getOrNull()
+            val appId = runCatching { File(g.locator).readIdText()?.toInt() }.getOrNull()
             appId?.let { sgdb?.forSteamApp(it) }?.let { it to SOURCE_SGDB }
         }
         else -> sgdb?.forTitle(g.title)?.let { it to SOURCE_SGDB }

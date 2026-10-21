@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.5 (in progress)
+
+**Improved**
+- Pinned shortcut tiles show which app added them ("Shortcut · Chrome").
+- Choosing a ROM folder: "Use this folder" isn't offered on a whole storage volume (open a folder inside it instead), and Lighthouse watches at most 2,000 folders so it can't use up the system's file-watch limit.
+
+**Fixed**
+- A huge or wrongly named file (a cover image, a download, a game-ID file) could crash Lighthouse by filling its memory. Anything over 20 MB for images, or 64 bytes for ID files, is now ignored.
+- Emulators no longer keep read access to every game you've launched until the next reboot; access lasts for the launch only.
+- The list of games already offered a cover search no longer keeps games you've deleted.
+
 ## 0.1.4 (2026-10-21)
 
 **Improved**

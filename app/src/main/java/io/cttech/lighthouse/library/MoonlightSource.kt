@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.net.Uri
+import io.cttech.lighthouse.system.readBounded
 import android.os.Process
 import android.util.Log
 import io.cttech.lighthouse.system.Root
@@ -81,7 +82,7 @@ object MoonlightSource {
     /** The box art Moonlight downloaded from the PC (PNG), via its exported poster provider. */
     fun boxArt(context: Context, locator: String): ByteArray? = runCatching {
         val uri = Uri.parse("content://poster.$PACKAGE/boxart/$locator")
-        context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        context.contentResolver.openInputStream(uri)?.use { it.readBounded() }
     }.getOrNull()
 
     private const val FILE_MARK = "@@LIGHTHOUSE_FILE "

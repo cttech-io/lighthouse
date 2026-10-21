@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.os.FileObserver
+import android.util.Log
 import android.provider.Settings
 import java.io.File
 
@@ -22,6 +23,9 @@ object FlavorStorage : StorageAccess {
  * One [FileObserver] per directory (inotify isn't recursive). Rebuilt after every rescan, so new
  * sub-folders get watched too. Observers are held strongly: a collected observer stops firing.
  */
+/** Each folder costs an inotify watch, and the system limit is shared with every app. */
+private const val MAX_WATCHED_DIRS = 2000
+
 private class FileObserverWatcher(private val onChange: (String) -> Unit) : LibraryWatcher {
     private val observers = mutableListOf<FileObserver>()
     private var watchedDirs: Map<String, String> = emptyMap()   // dir path -> platformId
@@ -32,8 +36,9 @@ private class FileObserverWatcher(private val onChange: (String) -> Unit) : Libr
     override fun watch(dirsByPlatform: Map<String, List<File>>) {
         val wanted = linkedMapOf<String, String>()
         for ((platformId, roots) in dirsByPlatform) {
-            for (root in roots) walkDirs(root, 0) { dir -> wanted.putIfAbsent(dir.absolutePath, platformId) }
+            for (root in roots) walkDirs(root, 0) { dir -> if (wanted.size < MAX_WATCHED_DIRS) wanted.putIfAbsent(dir.absolutePath, platformId) }
         }
+        if (wanted.size >= MAX_WATCHED_DIRS) Log.w("LighthouseWatcher", "Watching only the first $MAX_WATCHED_DIRS folders; a ROM folder is too large")
         // Rebuilding tears down inotify watches, which itself emits events; only do it when folders changed.
         if (wanted == watchedDirs) return
         stop()
