@@ -1,5 +1,5 @@
 {
-  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {package} the installed package, {ime} default input method. rom: content = FileProvider URI as intent data; extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
+  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {package} the installed package, {ime} default input method. rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
   "profiles": [
     {
       "id": "eden",
@@ -19,6 +19,16 @@
       "activity": "com.armsx2.BootSplashActivity",
       "action": "android.intent.action.VIEW",
       "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "ppsspp",
+      "label": "PPSSPP",
+      "platforms": ["psp"],
+      "packages": ["org.ppsspp.ppssppgold", "org.ppsspp.ppsspp"],
+      "activity": "org.ppsspp.ppsspp.PpssppActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "document",
       "mime": "application/octet-stream"
     },
     {

@@ -55,4 +55,11 @@ class RomScannerTest {
             .map { it.platformId }.toSet()
         assertEquals(setOf("ps2", "gamenative", "switch"), found)
     }
+
+    @Test fun pspFolderAndFormats() {
+        File(tmp.root, "sd/ROMs/Sony - PlayStation Portable").mkdirs()
+        assertEquals(listOf("psp"), FolderDetector.detect(listOf(File(tmp.root, "sd"))).map { it.platformId })
+        listOf("Patapon (Europe).iso", "Lumines.cso", "Daxter.chd", "EBOOT.PBP", "notes.txt").forEach { touch("PSP/$it") }
+        assertEquals(4, RomScanner.scan(platform("psp"), listOf(File(tmp.root, "PSP"))).size)
+    }
 }

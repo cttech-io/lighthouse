@@ -40,6 +40,11 @@ object PlatformCatalog {
             folderNames = setOf("ps2", "playstation 2", "playstation2", "sony - playstation 2"),
         ),
         PlatformDef(
+            "psp", "PSP", Color(0xFF00B8D4),
+            extensions = setOf("iso", "cso", "chd", "pbp", "elf"),
+            folderNames = setOf("psp", "playstation portable", "sony - playstation portable"),
+        ),
+        PlatformDef(
             "gba", "GBA", Color(0xFF7A5CFF),
             extensions = setOf("gba", "zip", "7z"),
             folderNames = setOf("gba", "game boy advance", "gameboy advance", "nintendo - game boy advance"),

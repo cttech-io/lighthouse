@@ -3,7 +3,8 @@ package io.cttech.lighthouse.launch
 import android.content.Context
 import org.json.JSONObject
 
-enum class RomDelivery { CONTENT, EXTRAS, STEAM_APP_ID }
+/** How a profile hands over the game: a FileProvider link, a document-shaped link (see [RomDocumentProvider]), intent extras, or a Steam ID. */
+enum class RomDelivery { CONTENT, DOCUMENT, EXTRAS, STEAM_APP_ID }
 
 /** One way of starting games: an emulator (or PC runner) and how it wants the game handed over. */
 data class LaunchProfile(
@@ -46,6 +47,7 @@ object LaunchProfiles {
                 action = o.getString("action"),
                 rom = when (o.getString("rom")) {
                     "content" -> RomDelivery.CONTENT
+                    "document" -> RomDelivery.DOCUMENT
                     "extras" -> RomDelivery.EXTRAS
                     "steamAppId" -> RomDelivery.STEAM_APP_ID
                     else -> error("Unknown rom delivery in profile ${o.getString("id")}")

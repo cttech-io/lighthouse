@@ -101,6 +101,10 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
                 intent.setDataAndType(uri, profile.mime ?: "application/octet-stream")
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            RomDelivery.DOCUMENT -> {
+                intent.setDataAndType(RomDocumentProvider.uriFor("${context.packageName}.romdocs", File(path)), profile.mime ?: "application/octet-stream")
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
             RomDelivery.EXTRAS -> Unit
             RomDelivery.STEAM_APP_ID -> {
                 // A shortcut file holds one decimal game ID. Steam IDs fit an Int (GameNative reads an Int);

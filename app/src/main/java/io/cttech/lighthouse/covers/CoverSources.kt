@@ -111,6 +111,7 @@ object LibretroThumbnails {
         "gbc" to listOf("Nintendo - Game Boy Color", "Nintendo - Game Boy"),
         "n64" to listOf("Nintendo - Nintendo 64"),
         "ps2" to listOf("Sony - PlayStation 2"),
+        "psp" to listOf("Sony - PlayStation Portable"),
     )
     private val unsafe = Regex("""[&*/:`<>?\\|"]""")
 

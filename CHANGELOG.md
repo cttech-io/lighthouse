@@ -2,6 +2,9 @@
 
 ## 0.1.6 (in progress)
 
+**New**
+- **PSP** games through PPSSPP (or PPSSPP Gold): .iso, .cso, .chd and .pbp in a `PSP` (or `PlayStation Portable`) folder, with libretro box art.
+
 **Fixed**
 - RetroArch games (GBA, N64) said "Core not installed" on rooted devices even when the core was installed. Lighthouse's root check couldn't see inside RetroArch's folder on Android 11 and later. It now looks in the right place, and if it can't check, it lets the game start instead of blocking it.
 
