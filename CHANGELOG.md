@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6 (in progress)
+
+**Fixed**
+- Launching a game while its emulator was still open in the background could hand the game to the emulator's old screen instead of starting a fresh one (a possible cause of a black screen at 0.0 fps with Eden). Each launch now starts the emulator's screen fresh. Please report if any emulator behaves worse, for example by losing a game that was still running.
+
 ## 0.1.5 (2026-10-21)
 
 **Improved**
