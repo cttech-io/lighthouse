@@ -60,6 +60,7 @@ import io.cttech.lighthouse.system.HapticStrength
 import io.cttech.lighthouse.system.HomeButtonAction
 import io.cttech.lighthouse.system.HomeRole
 import io.cttech.lighthouse.system.KeyReceiver
+import kotlinx.coroutines.isActive
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -406,9 +407,12 @@ private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
     val currentOnKey by androidx.compose.runtime.rememberUpdatedState(onKey)
     // null = starting (the keystore can take a moment the first time); Result.failure = no Wi-Fi/couldn't start.
     val started by androidx.compose.runtime.produceState<Result<KeyReceiver>?>(null) {
-        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // NonCancellable: if the pop-up closes while the server is starting, we still get it back to stop it.
+        // Otherwise it would keep listening (and accepting a key) with nothing left to shut it down.
+        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             KeyReceiver.start(context) { key -> main.post { currentOnKey(key) } }
         }
+        if (!isActive) { r?.stop(); return@produceState }
         value = r?.let { Result.success(it) } ?: Result.failure(IllegalStateException())
         awaitDispose { r?.stop() }
     }
