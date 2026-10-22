@@ -1,6 +1,6 @@
 # Lighthouse
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/cttech-io/lighthouse)
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/cttech-io/lighthouse)
 
 An open-source, controller-first game launcher for Android handhelds.
 
