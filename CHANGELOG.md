@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+**Changed**
+- **Setup: L1/R1 move between steps**, like the sections in Settings, so you no longer have to scroll to the Next button at the bottom of each step. R1 stops on the last step: finishing still takes Finish.
+
 ## 0.1.7 (2026-10-22)
 
 **New**

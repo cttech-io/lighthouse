@@ -36,6 +36,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.cttech.lighthouse.theme.Lh
+import io.cttech.lighthouse.ui.components.ButtonGlyph
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import io.cttech.lighthouse.ui.components.HintBar
 import io.cttech.lighthouse.ui.components.PillButton
@@ -81,6 +83,15 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                 .refocusWhenLost { currentFirst[0] }
                 .trapFocus()
                 .background(Lh.colors.background)
+                // L1/R1 step through, like Settings sections. R1 stops at the last step: finishing stays a deliberate A.
+                .onPreviewKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown || overlay.content != null) return@onPreviewKeyEvent false
+                    when (e.key) {
+                        Key.ButtonL1 -> { back(); true }
+                        Key.ButtonR1 -> { if (step < last) step++; true }
+                        else -> false
+                    }
+                }
                 .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { back(); true } else false },
         ) {
             Column(Modifier.fillMaxSize()) {
@@ -90,6 +101,8 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = if (all) 24.dp else 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Lighthouse setup", color = Color.White, fontSize = if (all) 20.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         Spacer(Modifier.width(if (all) 20.dp else 14.dp))
+                        ButtonGlyph("L1")
+                        Spacer(Modifier.width(8.dp))
                         if (all) Steps.forEachIndexed { i, s ->
                             Text(
                                 "${i + 1}. $s", fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp),
@@ -99,7 +112,10 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                         } else Text(
                             "Step ${step + 1} of ${Steps.size} · ${Steps[step]}", fontSize = 13.sp, color = Lh.colors.textMuted,
                             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
+                        Spacer(Modifier.width(8.dp))
+                        ButtonGlyph("R1")
                     }
                 }
                 key(step) {
@@ -174,8 +190,8 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                     }
                 }
                 HintBar(
-                    hints = buildList { if (step > 0) add("B" to "Back"); add("A" to "Select") },
-                    onTap = { b -> if (b == "B") back() },
+                    hints = buildList { add("L1" to ""); add("R1" to "Step"); if (step > 0) add("B" to "Back"); add("A" to "Select") },
+                    onTap = { b -> when (b) { "L1", "B" -> back(); "R1" -> if (step < last) step++ } },
                 )
             }
             overlay.content?.invoke()
