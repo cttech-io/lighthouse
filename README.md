@@ -12,12 +12,14 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 
 | | |
 |---|---|
-| ![A platform tab in carousel view](docs/screenshots/tab.png) | ![Settings → Appearance: themes](docs/screenshots/settings.png) |
-| A platform tab (carousel view; Y switches to a grid) | Settings, fully controller-driven: themes and layout |
+| ![A platform tab in carousel view](docs/screenshots/tab.png) | ![GBA tab with box art](docs/screenshots/tab-gba.png) |
+| A platform tab (carousel view; Y switches to a grid) | Cover art found automatically for your library |
+| ![PC games from GameNative and DroidDeck](docs/screenshots/tab-pc.png) | ![Settings → Appearance: themes](docs/screenshots/settings.png) |
+| PC games from GameNative, DroidDeck and Moonlight get their own tabs | Settings, fully controller-driven: themes and layout |
 | ![First-run setup: ROM folders found automatically](docs/screenshots/setup.png) | |
 | First-run setup finds your ROM folders | |
 
-<sub>Screenshots use made-up games with placeholder art.</sub>
+<sub>Game artwork and trademarks belong to their respective owners.</sub>
 
 ## Features
 
