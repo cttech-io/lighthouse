@@ -35,4 +35,16 @@ class LaunchProfilesAssetTest {
         assertTrue("snes9x2002_libretro_android.so" in names)
         assertTrue("snes9x2010_libretro_android.so" in names)
     }
+
+    @Test fun websitesAreHttps() {
+        // Offered as "Get … (browser)" when the emulator is missing.
+        profiles.mapNotNull { it.optString("website").ifEmpty { null } }.also { assertTrue(it.isNotEmpty()) }
+            .forEach { assertTrue(it, it.startsWith("https://")) }
+    }
+
+    @Test fun retroArchProfilesReadAsOneAppWithACore() {
+        val p = LaunchProfile("x", "RetroArch · mGBA", setOf("gba"), emptyList(), null, "", RomDelivery.EXTRAS, null, false, emptyList(), emptyMap())
+        assertEquals("RetroArch (mGBA core)", p.displayName)
+        assertEquals("Eden", p.copy(label = "Eden").displayName)
+    }
 }

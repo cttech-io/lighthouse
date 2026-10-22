@@ -25,7 +25,12 @@ data class LaunchProfile(
     val cores: List<String>,
     /** String values (placeholders expanded) or JSON booleans, passed as boolean extras. */
     val extras: Map<String, Any>,
-)
+    /** Where to get the emulator; offered when it isn't installed. */
+    val website: String? = null,
+) {
+    /** For people: "RetroArch · mGBA" reads like two apps, so it's "RetroArch (mGBA core)". */
+    val displayName: String get() = label.split(" · ").let { if (it.size == 2) "${it[0]} (${it[1]} core)" else label }
+}
 
 /** Reads assets/launch_profiles.json. Adding an emulator is a JSON edit, not a code change. */
 object LaunchProfiles {
@@ -61,6 +66,7 @@ object LaunchProfiles {
                 cores = o.optJSONArray("core")?.let { a -> List(a.length()) { a.getString(it) } }
                     ?: listOfNotNull(o.optString("core").ifEmpty { null }),
                 extras = extras?.keys()?.asSequence()?.associateWith { k -> extras.get(k).let { v -> v as? Boolean ?: v.toString() } } ?: emptyMap(),
+                website = o.optString("website").ifEmpty { null },
             )
         }
     }

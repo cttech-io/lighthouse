@@ -128,7 +128,7 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
     // Right-aligned, one line. On narrow screens hints are dropped from the left: the important ones
     // (Play, Favourite…) are listed last, so they're the ones that stay.
     Layout(
-        modifier = modifier.fillMaxWidth().height(44.dp).padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth().height(HintBarHeight).padding(horizontal = 16.dp),
         content = {
             hints.forEach { (button, label) ->
                 // Tappable for touch users (not focusable: the controller uses the real buttons).
@@ -160,6 +160,45 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
         }
     }
 }
+
+/** Height of [HintBar]; full-screen pop-ups leave this much room at the bottom so the bar never covers them. */
+val HintBarHeight = 44.dp
+
+/**
+ * Which hints the bar shows. Pop-ups register theirs with [ProvideHints] while they're open; the newest wins,
+ * so the bar always describes what the buttons do right now. With nothing open, the screen's own hints show.
+ */
+class HintHost {
+    internal class Entry(hints: List<Pair<String, String>>, onTap: (String) -> Unit) {
+        var hints by mutableStateOf(hints)
+        var onTap by mutableStateOf(onTap)
+    }
+    internal val entries = androidx.compose.runtime.mutableStateListOf<Entry>()
+}
+
+val LocalHintHost = compositionLocalOf<HintHost?> { null }
+
+/** While this is in composition, the hint bar shows [hints] (tapping one calls [onTap]). */
+@Composable
+fun ProvideHints(hints: List<Pair<String, String>>, onTap: (button: String) -> Unit = {}) {
+    val host = LocalHintHost.current ?: return
+    val entry = remember { HintHost.Entry(hints, onTap) }
+    androidx.compose.runtime.SideEffect { entry.hints = hints; entry.onTap = onTap }
+    DisposableEffect(host) {
+        host.entries.add(entry)
+        onDispose { host.entries.remove(entry) }
+    }
+}
+
+/** The bar for [host]: the newest pop-up's hints, or [hints] when none is open. */
+@Composable
+fun HostedHintBar(host: HintHost, hints: List<Pair<String, String>>, modifier: Modifier = Modifier, onTap: (button: String) -> Unit = {}) {
+    val top = host.entries.lastOrNull()
+    HintBar(top?.hints ?: hints, modifier, top?.onTap ?: onTap)
+}
+
+/** The usual hints for a pop-up menu or dialog. */
+fun popupHints(back: String = "Close") = listOf("B" to back, "A" to "Select")
 
 /** Fades a horizontally scrolling row out at whichever edges have more content (tabs that don't fit). */
 fun Modifier.fadingEdges(state: androidx.compose.foundation.lazy.LazyListState, width: Dp = 48.dp): Modifier = this

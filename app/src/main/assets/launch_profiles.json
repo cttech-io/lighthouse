@@ -1,9 +1,10 @@
 {
-  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {uri} FileProvider URI of the ROM (granted along with the files a .cue/.m3u names), {package} the installed package, {ime} default input method, {core} the installed core (core may be a list of alternatives; the first one installed is used). rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file.",
+  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {uri} FileProvider URI of the ROM (granted along with the files a .cue/.m3u names), {package} the installed package, {ime} default input method, {core} the installed core (core may be a list of alternatives; the first one installed is used). rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file. website: where to get the emulator, offered when it isn't installed.",
   "profiles": [
     {
       "id": "eden",
       "label": "Eden",
+      "website": "https://eden-emu.dev/",
       "platforms": ["switch"],
       "packages": ["dev.eden.eden_emulator"],
       "activity": "org.yuzu.yuzu_emu.activities.EmulationActivity",
@@ -14,6 +15,7 @@
     {
       "id": "armsx2",
       "label": "ARMSX2",
+      "website": "https://github.com/ARMSX2/ARMSX2/releases",
       "platforms": ["ps2"],
       "packages": ["com.armsx2"],
       "activity": "com.armsx2.BootSplashActivity",
@@ -24,6 +26,7 @@
     {
       "id": "azahar",
       "label": "Azahar",
+      "website": "https://azahar-emu.org/",
       "platforms": ["3ds"],
       "packages": ["org.azahar_emu.azahar"],
       "activity": "org.citra.citra_emu.activities.EmulationActivity",
@@ -34,6 +37,7 @@
     {
       "id": "dolphin",
       "label": "Dolphin",
+      "website": "https://dolphin-emu.org/download/",
       "platforms": ["gamecube", "wii"],
       "packages": ["org.dolphinemu.dolphinemu"],
       "activity": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
@@ -44,6 +48,7 @@
     {
       "id": "melonds",
       "label": "melonDS",
+      "website": "https://github.com/rafaelvcaetano/melonDS-android/releases",
       "platforms": ["nds"],
       "packages": ["me.magnum.melonds", "me.magnum.melonds.nightly"],
       "activity": "me.magnum.melonds.ui.emulator.EmulatorActivity",
@@ -54,6 +59,7 @@
     {
       "id": "flycast",
       "label": "Flycast",
+      "website": "https://github.com/flyinghead/flycast/releases",
       "platforms": ["dreamcast"],
       "packages": ["com.flycast.emulator"],
       "activity": "com.flycast.emulator.MainActivity",
@@ -64,6 +70,7 @@
     {
       "id": "duckstation",
       "label": "DuckStation",
+      "website": "https://www.duckstation.org/",
       "platforms": ["ps1"],
       "packages": ["com.github.stenzek.duckstation"],
       "activity": "com.github.stenzek.duckstation.EmulationActivity",
@@ -74,6 +81,7 @@
     {
       "id": "ppsspp",
       "label": "PPSSPP",
+      "website": "https://www.ppsspp.org/download/",
       "platforms": ["psp"],
       "packages": ["org.ppsspp.ppssppgold", "org.ppsspp.ppsspp"],
       "activity": "org.ppsspp.ppsspp.PpssppActivity",
@@ -84,6 +92,7 @@
     {
       "id": "retroarch-mgba",
       "label": "RetroArch · mGBA",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["gba", "gbc"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -104,6 +113,7 @@
     {
       "id": "retroarch-mupen64plus",
       "label": "RetroArch · Mupen64Plus-Next",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["n64"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -127,6 +137,7 @@
     {
       "id": "retroarch-pcsx-rearmed",
       "label": "RetroArch · PCSX ReARMed",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["ps1"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -147,6 +158,7 @@
     {
       "id": "retroarch-fceumm",
       "label": "RetroArch · FCEUmm",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["nes"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -171,6 +183,7 @@
     {
       "id": "retroarch-snes9x",
       "label": "RetroArch · Snes9x",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["snes"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -197,6 +210,7 @@
     {
       "id": "retroarch-genesis-plus-gx",
       "label": "RetroArch · Genesis Plus GX",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["megadrive", "mastersystem", "gamegear"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -220,6 +234,7 @@
     {
       "id": "retroarch-mednafen-pce-fast",
       "label": "RetroArch · Beetle PCE Fast",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["pcengine"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -243,6 +258,7 @@
     {
       "id": "retroarch-stella",
       "label": "RetroArch · Stella",
+      "website": "https://www.retroarch.com/?page=platforms",
       "platforms": ["atari2600"],
       "packages": ["com.retroarch.aarch64", "com.retroarch"],
       "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
@@ -274,6 +290,7 @@
     {
       "id": "gamenative",
       "label": "GameNative",
+      "website": "https://github.com/utkarshdalal/GameNative/releases",
       "platforms": ["gamenative"],
       "packages": ["app.gamenative"],
       "action": "app.gamenative.LAUNCH_GAME",

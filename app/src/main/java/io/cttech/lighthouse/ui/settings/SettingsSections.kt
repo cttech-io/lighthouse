@@ -294,10 +294,10 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
             SectionTitle(p.label)
             SettingRow(
                 label = "Emulator",
-                value = active?.profile?.label ?: "None installed",
+                value = active?.profile?.displayName ?: "None installed",
                 modifier = (if (i == 0) first else Modifier).focusRequester(r),
                 note = when {
-                    active == null -> "Install one of: ${p.options.joinToString { it.profile.label }}"
+                    active == null -> "Install one of: ${p.options.joinToString { it.profile.displayName }}"
                     installed.size > 1 -> "A to choose between ${installed.size} installed emulators"
                     else -> null
                 },
@@ -307,7 +307,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                         title = "${p.label}: emulator",
                         options = installed,
                         selected = active,
-                        label = { it.profile.label },
+                        label = { it.profile.displayName },
                         onPick = { vm.library.chooseEmulator(p.platformId, it.profile.id); overlay.close(); refresh++ },
                         onClose = overlay::close,
                     )

@@ -19,11 +19,16 @@ import io.cttech.lighthouse.system.readIdText
 import io.cttech.lighthouse.library.PlatformCatalog
 import java.io.File
 
+/** An app that would play the game, and where to get it. */
+data class MissingApp(val name: String, val website: String?)
+
+private const val MOONLIGHT_WEBSITE = "https://github.com/moonlight-stream/moonlight-android/releases"
+
 /** What happened when we tried to start a game; anything but [Started] is shown to the user with a fix. */
 sealed interface LaunchResult {
     data object Started : LaunchResult
-    /** No profile for this platform has its app installed. */
-    data class EmulatorMissing(val names: List<String>) : LaunchResult
+    /** No profile for this platform has its app installed. [apps] are the ones that would work. */
+    data class EmulatorMissing(val apps: List<MissingApp>) : LaunchResult
     /** e.g. RetroArch without storage permission: it can't open ROMs by path. */
     data class NeedsStoragePermission(val profile: LaunchProfile, val pkg: String) : LaunchResult
     /** [corePath] is the preferred core; [alternatives] are every core the profile accepts (including it). */
@@ -81,7 +86,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             else LaunchResult.Failed("${game.title} couldn't be opened. Is Lighthouse still the default Home app?")
         }
         if (game.platformId == PlatformCatalog.MOONLIGHT) {
-            if (!MoonlightSource.installed(context)) return LaunchResult.EmulatorMissing(listOf("Moonlight"))
+            if (!MoonlightSource.installed(context)) return LaunchResult.EmulatorMissing(listOf(MissingApp("Moonlight", MOONLIGHT_WEBSITE)))
             val locator = game.key.substringAfter('|')
             // The PC name and HDR flag come from the last read; without one, Moonlight looks the PC up by its id.
             val app = MoonlightSource.app(locator) ?: MoonlightApp(
@@ -93,7 +98,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         }
         val path = game.path ?: return LaunchResult.Failed("No file for ${game.title}")
         val (profile, pkg) = activeProfile(game.platformId)
-            ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { it.label })
+            ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { MissingApp(it.displayName, it.website) })
 
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)
         val core = if (profile.cores.isEmpty()) null else {

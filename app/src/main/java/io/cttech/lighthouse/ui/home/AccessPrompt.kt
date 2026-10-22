@@ -39,11 +39,13 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.cttech.lighthouse.ui.components.ProvideHints
 
 /** First-run ask for "All files access" (sideload flavour), needed to find and watch ROM folders. */
 @Composable
 fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
     val grant = remember { FocusRequester() }
+    ProvideHints(listOf("A" to "Select"))
     Box(
         Modifier.fillMaxSize().trapFocus().background(Color.Black.copy(alpha = 0.78f)),
         contentAlignment = Alignment.Center,

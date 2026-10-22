@@ -68,6 +68,9 @@ import io.cttech.lighthouse.ui.components.ControllerTextField
 import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
+import io.cttech.lighthouse.ui.components.popupHints
+import io.cttech.lighthouse.ui.components.ProvideHints
+import io.cttech.lighthouse.ui.components.HintBarHeight
 
 
 /**
@@ -86,6 +89,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
     val firstGrid = remember { FocusRequester() }
     val searchBox = remember { FocusRequester() }
     val hasKey = remember { vm.covers.hasSteamGridDbKey() }
+    ProvideHints(popupHints()) { if (it == "B") onClose() }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch { if (!vm.covers.applyCoverImage(game, uri)) status = "Couldn't read that image" }
     }
@@ -128,7 +132,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false
             },
     ) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 20.dp, bottom = HintBarHeight), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Choose cover: ${game.title}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ControllerTextField(
@@ -207,6 +211,7 @@ fun GameOptionsSheet(
     onClose: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
+    ProvideHints(popupHints()) { if (it == "B") onClose() }
     Box(
         Modifier
             .fillMaxSize()
@@ -246,6 +251,7 @@ fun GameOptionsSheet(
 @Composable
 fun CoverOfferDialog(count: Int, hasKey: Boolean, onFind: () -> Unit, onAlways: () -> Unit, onNotNow: () -> Unit) {
     val first = remember { FocusRequester() }
+    ProvideHints(popupHints("Not now")) { if (it == "B") onNotNow() }
     Box(
         Modifier
             .fillMaxSize()

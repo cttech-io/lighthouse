@@ -3,6 +3,8 @@
 ## Unreleased
 
 **Changed**
+- **The button hints follow what's open.** Menus, dialogs, Quick Settings, the cover picker and the app drawer show their own hints (B Close, A Select…) instead of HOME's, and the hints are no longer dimmed behind a pop-up.
+- **"No emulator installed" says what to get and where.** RetroArch profiles read as "RetroArch (mGBA core)" instead of "RetroArch · mGBA", and the dialog has a **Get … (browser)** button for each emulator that would work. Settings → Emulators uses the same names.
 - **Setup: L1/R1 move between steps**, like the sections in Settings, so you no longer have to scroll to the Next button at the bottom of each step. R1 stops on the last step: finishing still takes Finish.
 
 ## 0.1.7 (2026-10-22)

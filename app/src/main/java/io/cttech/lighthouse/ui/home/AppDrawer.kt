@@ -71,6 +71,9 @@ import io.cttech.lighthouse.ui.components.rememberAppIcon
 import io.cttech.lighthouse.ui.components.trapFocus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.cttech.lighthouse.ui.components.popupHints
+import io.cttech.lighthouse.ui.components.ProvideHints
+import io.cttech.lighthouse.ui.components.HintBarHeight
 
 /** One launchable activity (an app can have more than one, e.g. RetroArch). */
 data class DrawerApp(val label: String, val packageName: String, val activity: String)
@@ -106,6 +109,7 @@ fun AppDrawer(hiddenState: (String) -> Boolean?, onSetHidden: (String, Boolean) 
         if (q.isBlank()) apps else apps.filter { TitleCleaner.sortKey(it.label).contains(q) }
     }
     val first = remember { FocusRequester() }
+    ProvideHints(listOf("B" to "Close", "⧉" to "Options", "A" to "Open")) { if (it == "B") onClose() }
 
     Box(
         Modifier
@@ -116,7 +120,7 @@ fun AppDrawer(hiddenState: (String) -> Boolean?, onSetHidden: (String, Boolean) 
                 if (menuFor == null && e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false
             },
     ) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 18.dp, bottom = HintBarHeight), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("All apps", color = Lh.colors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 ControllerTextField(
@@ -165,6 +169,7 @@ private fun AppMenu(app: DrawerApp, hidden: Boolean?, onOpen: () -> Unit, onSetH
     val first = remember { FocusRequester() }
     var opened by remember { mutableStateOf(false) }
     val canUninstall = remember(app.packageName) { isUninstallable(context, app.packageName) }
+    ProvideHints(popupHints()) { if (it == "B") onClose() }
     Box(
         Modifier
             .fillMaxSize()

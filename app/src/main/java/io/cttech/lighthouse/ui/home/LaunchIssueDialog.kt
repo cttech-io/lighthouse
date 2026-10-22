@@ -23,6 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
@@ -44,6 +46,8 @@ import io.cttech.lighthouse.system.CoreInstaller
 import io.cttech.lighthouse.system.Root
 import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
+import io.cttech.lighthouse.ui.components.popupHints
+import io.cttech.lighthouse.ui.components.ProvideHints
 
 /** Explains why a game didn't start and offers the fix. B / Back closes it. */
 @Composable
@@ -60,6 +64,7 @@ fun LaunchIssueDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var coreInstall by remember { mutableStateOf(CoreInstall.Idle) }
+    ProvideHints(popupHints()) { if (it == "B") onDismiss() }
     Box(
         Modifier
             .fillMaxSize()
@@ -81,8 +86,7 @@ fun LaunchIssueDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val (title, body) = when (issue) {
-                is LaunchResult.EmulatorMissing -> "No emulator installed" to
-                    "Install ${issue.names.joinToString(" or ")} to play this."
+                is LaunchResult.EmulatorMissing -> "No emulator installed" to emulatorMissingBody(issue)
                 is LaunchResult.NeedsStoragePermission -> "${issue.profile.label.substringBefore(" ·")} can't read your games" to
                     "It needs storage access (\"Files and media\") to open ROMs from your SD card and internal storage."
                 is LaunchResult.CoreMissing -> when (coreInstall) {
@@ -95,6 +99,16 @@ fun LaunchIssueDialog(
             }
             Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(body, color = Lh.colors.text.copy(alpha = 0.85f), fontSize = 16.sp, lineHeight = 22.sp)
+            // Somewhere to get it, not just its name. RetroArch profiles share one site, so one button each.
+            val gets = (issue as? LaunchResult.EmulatorMissing)?.apps.orEmpty().filter { it.website != null }.distinctBy { it.website }.take(3)
+            if (gets.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                gets.forEachIndexed { i, app ->
+                    PillButton("Get ${app.name.substringBefore(" (")} (browser)", if (i == 0) Modifier.focusRequester(first) else Modifier) {
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(app.website)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                        onDismiss()
+                    }
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 when (issue) {
                     is LaunchResult.NeedsStoragePermission -> {
@@ -124,8 +138,13 @@ fun LaunchIssueDialog(
                     else -> Unit
                 }
                 val finished = issue is LaunchResult.CoreMissing && coreInstall == CoreInstall.Done
-                PillButton(if ((issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing || issue is LaunchResult.CoreUnchecked) && !finished) "Cancel" else "OK",
-                    if (issue is LaunchResult.EmulatorMissing || issue is LaunchResult.Failed || finished) Modifier.focusRequester(first) else Modifier,
+                PillButton(
+                    when {
+                        (issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing || issue is LaunchResult.CoreUnchecked) && !finished -> "Cancel"
+                        issue is LaunchResult.EmulatorMissing -> "Close"
+                        else -> "OK"
+                    },
+                    if ((issue is LaunchResult.EmulatorMissing && gets.isEmpty()) || issue is LaunchResult.Failed || finished) Modifier.focusRequester(first) else Modifier,
                     onClick = onDismiss)
             }
         }
@@ -134,6 +153,16 @@ fun LaunchIssueDialog(
 }
 
 private enum class CoreInstall { Idle, Working, Done, Failed }
+
+/** "Install RetroArch (mGBA core) to play this", or the choice when several emulators would do. */
+private fun emulatorMissingBody(issue: LaunchResult.EmulatorMissing): String {
+    val names = issue.apps.map { it.name }.distinct()
+    return when (names.size) {
+        0 -> "There's no emulator Lighthouse knows for this platform yet."
+        1 -> "Install ${names[0]} to play this, then press A on the game again."
+        else -> "Install one of these to play this: ${names.dropLast(1).joinToString(", ")} or ${names.last()}. Then press A on the game again."
+    }
+}
 
 private fun coreName(path: String) = path.substringAfterLast('/').removeSuffix("_libretro_android.so")
 

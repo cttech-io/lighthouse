@@ -132,6 +132,7 @@ private fun StatusButton(requester: FocusRequester, onClick: () -> Unit, wide: B
 @Composable
 fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Unit, onClose: () -> Unit) {
     val first = remember { FocusRequester() }
+    ProvideHints(popupHints()) { if (it == "B") onClose() }
     Box(
         Modifier
             .fillMaxSize()

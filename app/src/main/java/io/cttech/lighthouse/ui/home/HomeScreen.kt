@@ -75,7 +75,10 @@ import io.cttech.lighthouse.ui.components.QuickSettingsIcons
 import io.cttech.lighthouse.ui.components.QuickSettingsPanel
 import io.cttech.lighthouse.ui.components.rememberBluetoothPermissionRequest
 import io.cttech.lighthouse.ui.components.rememberBtEpoch
-import io.cttech.lighthouse.ui.components.HintBar
+import io.cttech.lighthouse.ui.components.HintBarHeight
+import io.cttech.lighthouse.ui.components.HintHost
+import io.cttech.lighthouse.ui.components.HostedHintBar
+import io.cttech.lighthouse.ui.components.LocalHintHost
 import io.cttech.lighthouse.ui.components.TopBar
 import io.cttech.lighthouse.ui.components.refocusWhenLost
 import kotlinx.coroutines.launch
@@ -150,7 +153,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     // Whenever the background itself ends up holding focus (after a restart or an update, or returning from
     // another app), hand it straight back to a card: otherwise A/X/Select do nothing until a D-pad press.
     LaunchedEffect(rootFocused) { if (rootFocused && !overlay) { kotlinx.coroutines.delay(150); refocusToken++ } }
-    CompositionLocalProvider(LocalRefocusToken provides refocusToken) {
+    val hintHost = remember { HintHost() }
+    CompositionLocalProvider(LocalRefocusToken provides refocusToken, LocalHintHost provides hintHost) {
     Box(
         Modifier
             .fillMaxSize()
@@ -230,23 +234,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             }
             }
             }
-            HintBar(
-                onTap = { b ->
-                    when (b) {
-                        "B" -> drawerOpen = true
-                        "☰" -> { vm.refreshSettingsInfo(); menuOpen = true }
-                        "Y" -> if (tab !is HomeTab.Home) vm.toggleLayout()
-                    }
-                },
-                hints = buildList {
-                    add("B" to "Apps")
-                    if (tab !is HomeTab.Home) add("Y" to if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
-                    add("☰" to "Settings")
-                    add("⧉" to "Options")
-                    add("X" to "Favourite")
-                    add("A" to "Play")
-                },
-            )
+            Spacer(Modifier.height(HintBarHeight)) // the hint bar is drawn above the pop-ups, further down
         }
         openPanel?.let { panel ->
             QuickSettingsPanel(panel, btEpoch, onBtPermission = requestBt) {
@@ -328,6 +316,26 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onDismiss = vm::dismissAccessPrompt,
             )
         }
+        // Above the pop-ups' dimming so it stays readable; Settings and setup draw their own.
+        if (!menuOpen && !setupOpen) HostedHintBar(
+            hintHost,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            onTap = { b ->
+                when (b) {
+                    "B" -> drawerOpen = true
+                    "☰" -> { vm.refreshSettingsInfo(); menuOpen = true }
+                    "Y" -> if (tab !is HomeTab.Home) vm.toggleLayout()
+                }
+            },
+            hints = buildList {
+                add("B" to "Apps")
+                if (tab !is HomeTab.Home) add("Y" to if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
+                add("☰" to "Settings")
+                add("⧉" to "Options")
+                add("X" to "Favourite")
+                add("A" to "Play")
+            },
+        )
     }
     }
 }
