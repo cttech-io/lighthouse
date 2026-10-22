@@ -1,5 +1,7 @@
 # Lighthouse
 
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/cttech-io/lighthouse)
+
 An open-source, controller-first game launcher for Android handhelds.
 
 Lighthouse puts your emulated games, Android games, PC games and streaming in one library. Each platform gets its own tab, switched with the shoulder buttons, and a console-style HOME page sits in front of them all. It's built to be driven entirely from a controller. It has **no analytics or tracking**, and needs **no root** (root unlocks a few optional extras).
