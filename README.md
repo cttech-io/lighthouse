@@ -6,7 +6,7 @@ An open-source, controller-first game launcher for Android handhelds.
 
 Lighthouse puts your emulated games, Android games, PC games and streaming in one library. Each platform gets its own tab, switched with the shoulder buttons, and a console-style HOME page sits in front of them all. It's built to be driven entirely from a controller. It has **no analytics or tracking**, and needs **no root** (root unlocks a few optional extras).
 
-> **Status:** v0.1.3, early but usable. Developed and used daily as the Home app on an AYN Odin 2 Portal. It's also tested on emulators at the screen sizes of other popular handhelds (Odin 2 / Mini, Retroid Pocket 5 / Mini, Anbernic 4:3 and square). Expect rough edges, and please [report them](../../issues).
+> **Status:** v0.1.6, early but usable. Developed and used daily as the Home app on an AYN Odin 2 Portal. It's also tested on emulators at the screen sizes of other popular handhelds (Odin 2 / Mini, Retroid Pocket 5 / Mini, Anbernic 4:3 and square). Expect rough edges, and please [report them](../../issues).
 
 ![HOME: favourites and recently added games](docs/screenshots/home.png)
 
