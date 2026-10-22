@@ -106,6 +106,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
     val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
+    var settingsOnCovers by remember { mutableStateOf(false) }
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
     val settings = io.cttech.lighthouse.system.LocalAppSettings.current
     var setupOpen by remember { mutableStateOf(!settings.setupDone) } // first-run setup (or "Run setup again")
@@ -265,7 +266,13 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onClose = { vm.closeOptions(); refocusToken++ },
             )
         }
-        pickerFor?.let { g -> CoverPicker(g, vm) { vm.covers.closePicker(); refocusToken++ } }
+        pickerFor?.let { g ->
+            CoverPicker(
+                g, vm,
+                onSetUpKey = { vm.covers.closePicker(); settingsOnCovers = true; menuOpen = true },
+                onClose = { vm.covers.closePicker(); refocusToken++ },
+            )
+        }
         if (drawerOpen) AppDrawer(
             hiddenState = { pkg ->
                 val key = io.cttech.lighthouse.data.db.gameKey(io.cttech.lighthouse.library.PlatformCatalog.ANDROID, pkg)
@@ -280,7 +287,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 hidden = state.hidden,
                 onUnhide = vm::unhide,
                 onRunSetup = { menuOpen = false; setupOpen = true },
-                onClose = { menuOpen = false; refocusToken++ },
+                onClose = { menuOpen = false; settingsOnCovers = false; refocusToken++ },
+                openOnCovers = settingsOnCovers,
             )
         }
         if (showCoverOffer) {
@@ -296,7 +304,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             io.cttech.lighthouse.ui.settings.SetupWizard(vm) {
                 settings.updateSetupDone(true)
                 setupOpen = false
-                vm.rescanLibrary() // also offers covers for anything still without one
+                // Setup's Covers step already asked, so no "N games have no cover" straight after it.
+                vm.covers.afterSetup { vm.rescanLibrary() }
                 refocusToken++
             }
         }

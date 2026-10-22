@@ -54,6 +54,19 @@ class CoverService(
         }
     }
 
+    fun clearOffer() { _offer.value = emptyList() }
+
+    /**
+     * Setup's Covers step has just asked how to handle covers, so the games found so far aren't offered again
+     * on HOME. Only in Ask mode: Always still fetches them.
+     */
+    suspend fun skipOfferForCurrentGames() = withContext(Dispatchers.IO) {
+        _offer.value = emptyList()
+        if (settings.coverAuto != io.cttech.lighthouse.system.CoverAutoMode.Ask) return@withContext
+        val all = dao.allGames().map { it.key }.toSet()
+        settings.markCoverOffered(all, all)
+    }
+
     /** Installed Android apps keep their icons unless the user turned on online covers for them (Settings → Covers). */
     private fun wantsCover(g: GameEntity) = g.kind != GameKind.APP || settings.coverForApps
 

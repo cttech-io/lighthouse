@@ -77,17 +77,22 @@ import io.cttech.lighthouse.ui.components.HintBarHeight
 
 
 /**
- * Choose a cover: search SteamGridDB (prefilled with the title; Steam shortcuts open on their own art),
- * pick a game, then pick one of its 600×900 grids. Or use any image from storage, or remove the cover.
+ * Choose a cover: libretro's box art for the ROM (no key needed) comes first, then SteamGridDB (search prefilled
+ * with the title; Steam shortcuts open on their own art): pick a game, then one of its 600×900 grids.
+ * Or use any image from storage, or remove the cover. Without a SteamGridDB key there's no search, and
+ * "Set up key" goes to Settings → Covers.
  */
 @Composable
-fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
+fun CoverPicker(game: Game, vm: HomeViewModel, onSetUpKey: () -> Unit, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     var query by remember { mutableStateOf(game.title) }
     var hits by remember { mutableStateOf<List<SteamGridDb.SearchHit>>(emptyList()) }
     var selected by remember { mutableStateOf<Int?>(null) }
     var grids by remember { mutableStateOf<List<SteamGridDb.Grid>>(emptyList()) }
+    var libretro by remember { mutableStateOf<SteamGridDb.Grid?>(null) }
+    val choices = listOfNotNull(libretro) + grids
+    val storageButton = remember { FocusRequester() }
     var status by remember { mutableStateOf<String?>(null) }
     val firstGrid = remember { FocusRequester() }
     val searchBox = remember { FocusRequester() }
@@ -119,10 +124,18 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
 
     LaunchedEffect(game.key) {
         val appId = vm.covers.steamAppIdFor(game)
-        when {
-            !hasKey -> { status = "Add your SteamGridDB API key in Settings to search"; runCatching { searchBox.requestFocus() } }
-            appId != null -> loadGrids(steamAppId = appId) // exact match for Steam shortcuts
-            else -> search()
+        if (hasKey) {
+            launch {
+                libretro = vm.covers.libretroCover(game)
+                if (libretro != null && grids.isEmpty()) focusWhenShown(firstGrid) // SteamGridDB had nothing
+            }
+            if (appId != null) loadGrids(steamAppId = appId) else search() // exact match for Steam shortcuts
+        } else {
+            // No key, no search: start on libretro's box art if there is one, else on "Image from storage".
+            status = "Looking for box art…"
+            libretro = vm.covers.libretroCover(game)
+            status = if (libretro != null) "Box art from libretro. Add a SteamGridDB key for more choices." else "No box art found. Add a SteamGridDB key to search for more."
+            focusWhenShown(if (libretro != null) firstGrid else storageButton)
         }
     }
 
@@ -137,7 +150,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 20.dp, bottom = HintBarHeight), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Choose cover: ${game.title}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (hasKey) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ControllerTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -165,30 +178,34 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             ) {
-                itemsIndexed(grids, key = { _, g -> g.url }) { i, grid ->
-                    GridChoice(grid, if (i == 0) Modifier.focusRequester(firstGrid) else Modifier) {
+                itemsIndexed(choices, key = { _, g -> g.url }) { i, grid ->
+                    GridChoice(grid, if (i == 0) Modifier.focusRequester(firstGrid) else Modifier, label = if (grid === libretro) "libretro" else null) {
                         status = "Applying…"
                         scope.launch { if (!vm.covers.applyCover(game, grid.url)) status = "Download failed: try another" }
                     }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PillButton("Image from storage") { pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                PillButton("Image from storage", Modifier.focusRequester(storageButton)) { pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                 if (game.coverPath != null) ConfirmPillButton("Remove cover", "Press A again to remove") { vm.removeCover(game) }
+                if (!hasKey) PillButton("Set up SteamGridDB key", onClick = onSetUpKey)
                 PillButton("Cancel", onClick = onClose)
             }
         }
     }
 }
 
+/** Focus [target] once it's laid out (it may only appear on the next frame). */
+private suspend fun focusWhenShown(target: FocusRequester) {
+    repeat(30) { androidx.compose.runtime.withFrameNanos { }; if (runCatching { target.requestFocus() }.getOrDefault(false)) return }
+}
+
+/** One cover to pick. [label] marks where it's from when that isn't SteamGridDB. */
 @Composable
-private fun GridChoice(grid: SteamGridDb.Grid, modifier: Modifier, onPick: () -> Unit) {
+private fun GridChoice(grid: SteamGridDb.Grid, modifier: Modifier, label: String? = null, onPick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
-    AsyncImage(
-        model = grid.thumb,
-        contentDescription = grid.style,
-        contentScale = ContentScale.Crop,
-        modifier = modifier
+    Box(
+        modifier
             .aspectRatio(2f / 3f)
             .graphicsLayer { val s = if (focused) 1.08f else 1f; scaleX = s; scaleY = s }
             .clip(RoundedCornerShape(8.dp))
@@ -197,7 +214,22 @@ private fun GridChoice(grid: SteamGridDb.Grid, modifier: Modifier, onPick: () ->
             .onFocusChanged { focused = it.isFocused }
             .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { onPick(); true } else false }
             .clickable(onClick = onPick),
-    )
+    ) {
+        // libretro box art isn't 2:3, so it's fitted rather than cropped.
+        AsyncImage(
+            model = grid.thumb,
+            contentDescription = label ?: grid.style,
+            contentScale = if (label != null) ContentScale.Fit else ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        label?.let {
+            Text(
+                it, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+    }
 }
 
 /** Select / long-press on a game: quick actions. B closes. */

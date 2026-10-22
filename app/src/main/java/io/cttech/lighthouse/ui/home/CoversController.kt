@@ -3,6 +3,7 @@ package io.cttech.lighthouse.ui.home
 import android.app.Application
 import android.net.Uri
 import io.cttech.lighthouse.covers.CoverService
+import io.cttech.lighthouse.covers.LibretroThumbnails
 import io.cttech.lighthouse.covers.SteamGridDb
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.system.AppSettings
@@ -43,6 +44,12 @@ class CoversController(
     suspend fun coverGrids(gameId: Int? = null, steamAppId: Int? = null) =
         withContext(Dispatchers.IO) { service.steamGridDb()?.grids(gameId, steamAppId).orEmpty() }
 
+    /** libretro's box art for a ROM, when it has one (no key needed). Apps and PC games have none. */
+    suspend fun libretroCover(game: Game): SteamGridDb.Grid? = withContext(Dispatchers.IO) {
+        val path = game.path?.takeIf { game.packageName == null } ?: return@withContext null
+        LibretroThumbnails.urlForRom(game.platformId, path)?.let { SteamGridDb.Grid(it, it, "libretro") }
+    }
+
     suspend fun applyCover(game: Game, url: String): Boolean = service.applyPicked(game.key, url = url).also { if (it) closePicker() }
 
     suspend fun applyCoverImage(game: Game, uri: Uri): Boolean {
@@ -60,6 +67,12 @@ class CoversController(
 
     fun findMissing() { scope.launch { service.findMissing() } }
     fun redownloadAll() { scope.launch { service.redownloadAll() } }
+
+    /** Setup finished: no cover prompt for the games it already covered, then [rescan] (which offers any new ones). */
+    fun afterSetup(rescan: () -> Unit) {
+        service.clearOffer() // now, before HOME's first frame could show the prompt
+        scope.launch { service.skipOfferForCurrentGames(); rescan() }
+    }
 
     fun answerOffer(fetch: Boolean, always: Boolean = false) {
         if (always) settings.updateCoverAuto(CoverAutoMode.Always)

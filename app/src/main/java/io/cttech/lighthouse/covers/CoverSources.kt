@@ -128,8 +128,17 @@ object LibretroThumbnails {
     )
     private val unsafe = Regex("""[&*/:`<>?\\|"]""")
 
-    fun forRom(platformId: String, romPath: String): ByteArray? {
-        val names = systems[platformId] ?: return null
+    fun forRom(platformId: String, romPath: String): ByteArray? = find(platformId, romPath)?.second
+
+    /** The URL of the box art that exists for this ROM (shown in the cover picker), or null. */
+    fun urlForRom(platformId: String, romPath: String): String? = find(platformId, romPath)?.first
+
+    private fun find(platformId: String, romPath: String): Pair<String, ByteArray>? =
+        candidateUrls(platformId, romPath).firstNotNullOfOrNull { url -> httpGet(url)?.let { url to it } }
+
+    /** Where the box art could be, best guess first. */
+    internal fun candidateUrls(platformId: String, romPath: String): List<String> {
+        val names = systems[platformId] ?: return emptyList()
         val base = File(romPath).nameWithoutExtension
         // Exact name first, then without version/revision tags, then with only the first tag group.
         val candidates = linkedSetOf(
@@ -137,11 +146,9 @@ object LibretroThumbnails {
             base.replace(Regex("""\s*\((v|Rev )[^)]*\)"""), ""),
             Regex("""^([^(\[]+\([^)]*\))""").find(base)?.value ?: base,
         )
-        for (system in names) for (name in candidates) {
-            val url = "https://thumbnails.libretro.com/${pathEnc(system)}/Named_Boxarts/${pathEnc(name.replace(unsafe, "_"))}.png"
-            httpGet(url)?.let { return it }
+        return names.flatMap { system ->
+            candidates.map { "https://thumbnails.libretro.com/${pathEnc(system)}/Named_Boxarts/${pathEnc(it.replace(unsafe, "_"))}.png" }
         }
-        return null
     }
 
     private fun pathEnc(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")

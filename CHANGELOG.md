@@ -6,6 +6,8 @@
 - **The button hints follow what's open.** Menus, dialogs, Quick Settings, the cover picker and the app drawer show their own hints (B Close, A Select…) instead of HOME's, and the hints are no longer dimmed behind a pop-up.
 - **"No emulator installed" says what to get and where.** RetroArch profiles read as "RetroArch (mGBA core)" instead of "RetroArch · mGBA", and the dialog has a **Get … (browser)** button for each emulator that would work. Settings → Emulators uses the same names.
 - **Setup: L1/R1 move between steps**, like the sections in Settings, so you no longer have to scroll to the Next button at the bottom of each step. R1 stops on the last step: finishing still takes Finish.
+- **The cover picker works without a SteamGridDB key.** It shows libretro's box art for the game (when there is one) first, marked "libretro", with or without a key. Without a key it no longer opens on a search box that can't search: it starts on the box art, or on **Image from storage**, and **Set up SteamGridDB key** opens Settings → Covers.
+- **No "N games have no cover" pop-up straight after setup.** Setup's Covers step has just asked; games added later are still offered.
 - **Game and app menus are an even list.** Full-width rows instead of pills of different widths, with Hide (or Remove shortcut) set apart at the bottom.
 - **Remove cover and Remove shortcut ask first.** The first A changes the button to "Press A again to remove…"; moving away or waiting a few seconds cancels. Both deleted something straight away before. The cover picker only offers Remove cover when there is one.
 

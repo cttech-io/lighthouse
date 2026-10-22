@@ -75,8 +75,9 @@ fun SettingsScreen(
     onUnhide: (Game) -> Unit,
     onRunSetup: () -> Unit,
     onClose: () -> Unit,
+    openOnCovers: Boolean = false, // from the cover picker's "Set up key"
 ) {
-    var tabIndex by remember { mutableIntStateOf(SettingsTab.Appearance.ordinal) }
+    var tabIndex by remember { mutableIntStateOf((if (openOnCovers) SettingsTab.Covers else SettingsTab.Appearance).ordinal) }
     val tab = SettingsTab.entries[tabIndex]
     val overlay = remember { OverlayHost() }
     val info by vm.settingsInfo.collectAsStateWithLifecycle()
