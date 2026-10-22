@@ -70,6 +70,7 @@ import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.model.HomeTab
 import io.cttech.lighthouse.ui.components.CoverCard
+import io.cttech.lighthouse.ui.components.fadingEdges
 import io.cttech.lighthouse.ui.components.QuickPanel
 import io.cttech.lighthouse.ui.components.QuickSettingsIcons
 import io.cttech.lighthouse.ui.components.QuickSettingsPanel
@@ -422,6 +423,9 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
     val requester = remember { FocusRequester() }
     var focused by remember { mutableIntStateOf(initialFocus) }
     val current = games.getOrNull(focused) ?: games.first()
+    // The focused row goes to the top (the grid scrolls to an item's row), so it's never under the bottom fade;
+    // the last rows simply scroll to the end.
+    LaunchedEffect(focused) { gridState.animateScrollToItem(focused) }
 
     Column(Modifier.fillMaxSize()) {
         Text(
@@ -436,6 +440,7 @@ private fun GridShelf(games: List<Game>, initialFocus: Int, actions: CardActions
         LazyVerticalGrid(
             columns = GridCells.Adaptive(LocalCardMetrics.current.gridMin),
             state = gridState,
+            modifier = Modifier.fadingEdges(gridState, 40.dp, vertical = true),
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),

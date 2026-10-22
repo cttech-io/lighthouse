@@ -200,20 +200,26 @@ fun HostedHintBar(host: HintHost, hints: List<Pair<String, String>>, modifier: M
 /** The usual hints for a pop-up menu or dialog. */
 fun popupHints(back: String = "Close") = listOf("B" to back, "A" to "Select")
 
-/** Fades a horizontally scrolling row out at whichever edges have more content (tabs that don't fit). */
-fun Modifier.fadingEdges(state: androidx.compose.foundation.lazy.LazyListState, width: Dp = 48.dp): Modifier = this
+/**
+ * Fades a scrolling list out at whichever edges have more content: tabs that don't fit, or ([vertical])
+ * grid rows below the screen, so a cut-off row reads as "more below" rather than clipped.
+ */
+fun Modifier.fadingEdges(
+    state: androidx.compose.foundation.gestures.ScrollableState,
+    width: Dp = 48.dp,
+    vertical: Boolean = false,
+): Modifier = this
     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
     .drawWithContent {
         drawContent()
         val fade = width.toPx()
-        if (state.canScrollForward) drawRect(
-            Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+        val length = if (vertical) size.height else size.width
+        fun edge(colors: List<Color>, from: Float, to: Float) = drawRect(
+            if (vertical) Brush.verticalGradient(colors, startY = from, endY = to) else Brush.horizontalGradient(colors, startX = from, endX = to),
             blendMode = BlendMode.DstIn,
         )
-        if (state.canScrollBackward) drawRect(
-            Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
-            blendMode = BlendMode.DstIn,
-        )
+        if (state.canScrollForward) edge(listOf(Color.Black, Color.Transparent), length - fade, length)
+        if (state.canScrollBackward) edge(listOf(Color.Transparent, Color.Black), 0f, fade)
     }
 
 /** True inside the top bar on small screens: status icons drop the battery percentage and shrink. */

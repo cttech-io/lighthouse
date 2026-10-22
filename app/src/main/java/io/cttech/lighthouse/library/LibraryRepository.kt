@@ -257,6 +257,8 @@ class LibraryRepository(
                 val sources = activeSources()
                 scanPlatformLocked(platformId, sources.filter { it.platformId == platformId })
                 watcher.watch(sources.groupBy { it.platformId }.mapValues { (_, s) -> s.map { File(it.path) } })
+                // A game added while HOME is open gets its own cover image, or the cover offer, straight away.
+                runCatching { afterScan(storageRoots()) }.onFailure { Log.w(TAG, "afterScan failed", it) }
                 Log.i(TAG, "rescanned $platformId after file change")
             }
         }

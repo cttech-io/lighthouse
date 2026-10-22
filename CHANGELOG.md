@@ -10,6 +10,10 @@
 - **No "N games have no cover" pop-up straight after setup.** Setup's Covers step has just asked; games added later are still offered.
 - **Game and app menus are an even list.** Full-width rows instead of pills of different widths, with Hide (or Remove shortcut) set apart at the bottom.
 - **Remove cover and Remove shortcut ask first.** The first A changes the button to "Press A again to remove…"; moving away or waiting a few seconds cancels. Both deleted something straight away before. The cover picker only offers Remove cover when there is one.
+- **Grid layout: the focused row is always whole.** Moving down scrolls the row to the top, and the row below fades out at the bottom edge instead of looking cut off by the button hints.
+
+**Fixed**
+- A game added while HOME was open didn't pick up its own cover image or get the "no cover" pop-up until the next full scan or restart. Both now happen a moment after the file arrives.
 
 ## 0.1.7 (2026-10-22)
 
