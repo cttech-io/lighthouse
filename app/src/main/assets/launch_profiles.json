@@ -22,6 +22,16 @@
       "mime": "application/octet-stream"
     },
     {
+      "id": "azahar",
+      "label": "Azahar",
+      "platforms": ["3ds"],
+      "packages": ["org.azahar_emu.azahar"],
+      "activity": "org.citra.citra_emu.activities.EmulationActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
       "id": "duckstation",
       "label": "DuckStation",
       "platforms": ["ps1"],

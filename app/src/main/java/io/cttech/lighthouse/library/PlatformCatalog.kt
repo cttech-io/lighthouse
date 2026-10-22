@@ -35,6 +35,12 @@ object PlatformCatalog {
             skipUpdatesAndDlc = true,
         ),
         PlatformDef(
+            "3ds", "3DS", Color(0xFFD81B60),
+            // .app is skipped: Azahar can open it, but it's too generic a name to claim for every folder.
+            extensions = setOf("3ds", "cci", "cxi", "3dsx", "cia"),
+            folderNames = setOf("3ds", "nintendo 3ds", "n3ds", "nintendo - nintendo 3ds"),
+        ),
+        PlatformDef(
             "ps2", "PS2", Color(0xFF2F6BFF),
             extensions = setOf("iso", "chd", "cso", "zso", "cue", "bin", "gz"),
             folderNames = setOf("ps2", "playstation 2", "playstation2", "sony - playstation 2"),

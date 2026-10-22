@@ -21,6 +21,7 @@ class PlatformCatalogTest {
         assertEquals("gamegear", PlatformCatalog.matchFolder("Game Gear")?.id)
         assertEquals("pcengine", PlatformCatalog.matchFolder("TurboGrafx-16")?.id)
         assertEquals("atari2600", PlatformCatalog.matchFolder("Atari 2600")?.id)
+        assertEquals("3ds", PlatformCatalog.matchFolder("Nintendo 3DS")?.id)
         assertNull(PlatformCatalog.matchFolder("Dreamcast"))
     }
 
