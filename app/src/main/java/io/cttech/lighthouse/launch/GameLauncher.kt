@@ -26,7 +26,8 @@ sealed interface LaunchResult {
     data class EmulatorMissing(val names: List<String>) : LaunchResult
     /** e.g. RetroArch without storage permission: it can't open ROMs by path. */
     data class NeedsStoragePermission(val profile: LaunchProfile, val pkg: String) : LaunchResult
-    data class CoreMissing(val profile: LaunchProfile, val corePath: String) : LaunchResult
+    /** [corePath] is the preferred core; [alternatives] are every core the profile accepts (including it). */
+    data class CoreMissing(val profile: LaunchProfile, val corePath: String, val alternatives: List<String> = listOf(corePath)) : LaunchResult
     data class Failed(val message: String) : LaunchResult
 }
 
@@ -89,8 +90,9 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)
         val core = if (profile.cores.isEmpty()) null else {
             // Only checkable with root (it's inside the emulator's private data); without root, let it try the first.
-            val (core, present) = findCore(profile.cores.map { it.expand(pkg, path) })
-            if (present == false) return LaunchResult.CoreMissing(profile, core)
+            val candidates = profile.cores.map { it.expand(pkg, path) }
+            val (core, present) = findCore(candidates)
+            if (present == false) return LaunchResult.CoreMissing(profile, core, candidates)
             core
         }
 

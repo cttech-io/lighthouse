@@ -21,6 +21,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.launch.LaunchResult
+import io.cttech.lighthouse.system.CoreInstaller
 import io.cttech.lighthouse.system.Root
 import io.cttech.lighthouse.ui.components.PillButton
 import io.cttech.lighthouse.ui.components.FocusOnAppear
@@ -51,6 +56,9 @@ fun LaunchIssueDialog(
 ) {
     val first = remember { FocusRequester() }
     val rootAvailable by produceState(false) { value = Root.available() }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var coreInstall by remember { mutableStateOf(CoreInstall.Idle) }
     Box(
         Modifier
             .fillMaxSize()
@@ -76,9 +84,10 @@ fun LaunchIssueDialog(
                     "Install ${issue.names.joinToString(" or ")} to play this."
                 is LaunchResult.NeedsStoragePermission -> "${issue.profile.label.substringBefore(" ·")} can't read your games" to
                     "It needs storage access (\"Files and media\") to open ROMs from your SD card and internal storage."
-                is LaunchResult.CoreMissing -> "Core not installed" to
-                    "${issue.profile.label} needs the ${issue.corePath.substringAfterLast('/').removeSuffix("_libretro_android.so")} core. " +
-                    "Open RetroArch → Main Menu → Online Updater → Core Downloader and install it."
+                is LaunchResult.CoreMissing -> when (coreInstall) {
+                    CoreInstall.Done -> "Core installed" to "Press A on the game again to play it."
+                    else -> "Core not installed" to coreMissingBody(issue, rootAvailable, coreInstall)
+                }
                 is LaunchResult.Failed -> "Couldn't start the game" to issue.message
                 LaunchResult.Started -> "" to ""
             }
@@ -90,16 +99,51 @@ fun LaunchIssueDialog(
                         if (rootAvailable) PillButton("Allow with root", Modifier.focusRequester(first)) { onGrantWithRoot(issue.pkg) }
                         PillButton("Open app settings", if (rootAvailable) Modifier else Modifier.focusRequester(first)) { onOpenAppInfo(issue.pkg); onDismiss() }
                     }
-                    is LaunchResult.CoreMissing -> PillButton("Open RetroArch", Modifier.focusRequester(first)) {
-                        onOpenApp(issue.corePath.removePrefix("/data/user/0/").substringBefore('/')); onDismiss()
+                    is LaunchResult.CoreMissing -> if (coreInstall != CoreInstall.Done) {
+                        val canDownload = rootAvailable && CoreInstaller.parse(issue.corePath) != null
+                        if (canDownload && coreInstall != CoreInstall.Working) {
+                            PillButton("Download core", Modifier.focusRequester(first)) {
+                                coreInstall = CoreInstall.Working
+                                scope.launch { coreInstall = if (CoreInstaller.install(context, issue.corePath)) CoreInstall.Done else CoreInstall.Failed }
+                            }
+                        }
+                        if (coreInstall != CoreInstall.Working) {
+                            PillButton("Open RetroArch", if (canDownload) Modifier else Modifier.focusRequester(first)) {
+                                onOpenApp(issue.corePath.removePrefix("/data/user/0/").substringBefore('/')); onDismiss()
+                            }
+                        }
                     }
                     else -> Unit
                 }
-                PillButton(if (issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing) "Cancel" else "OK",
-                    if (issue is LaunchResult.EmulatorMissing || issue is LaunchResult.Failed) Modifier.focusRequester(first) else Modifier,
+                val finished = issue is LaunchResult.CoreMissing && coreInstall == CoreInstall.Done
+                PillButton(if ((issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing) && !finished) "Cancel" else "OK",
+                    if (issue is LaunchResult.EmulatorMissing || issue is LaunchResult.Failed || finished) Modifier.focusRequester(first) else Modifier,
                     onClick = onDismiss)
             }
         }
     }
-    FocusOnAppear(first, issue, rootAvailable)
+    FocusOnAppear(first, issue, rootAvailable, coreInstall)
+}
+
+private enum class CoreInstall { Idle, Working, Done, Failed }
+
+private fun coreName(path: String) = path.substringAfterLast('/').removeSuffix("_libretro_android.so")
+
+/** What's missing, what else would do, and the way to get it (a one-tap download only where root allows it). */
+private fun coreMissingBody(issue: LaunchResult.CoreMissing, rootAvailable: Boolean, state: CoreInstall): String {
+    val name = coreName(issue.corePath)
+    val others = issue.alternatives.map(::coreName).filter { it != name }
+    val needs = "${issue.profile.label} needs the $name core" +
+        if (others.isEmpty()) "." else " (or one of: ${others.joinToString(", ")})."
+    return when (state) {
+        CoreInstall.Working -> "Downloading $name from libretro's build server\u2026"
+        CoreInstall.Failed -> "$needs Couldn't download or install it. Check your connection, or install it in RetroArch: " +
+            "Main Menu → Online Updater → Core Downloader."
+        else -> if (rootAvailable && CoreInstaller.parse(issue.corePath) != null) {
+            "$needs Download core fetches $name from buildbot.libretro.com and installs it into RetroArch (uses root). " +
+                "Or install it yourself in RetroArch: Main Menu → Online Updater → Core Downloader."
+        } else {
+            "$needs Open RetroArch → Main Menu → Online Updater → Core Downloader and install it."
+        }
+    }
 }

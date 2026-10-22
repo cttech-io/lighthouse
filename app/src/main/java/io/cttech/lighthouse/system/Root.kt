@@ -37,9 +37,9 @@ object Root {
     fun quote(s: String): String = "'" + s.replace("'", "'\\''") + "'"
 
     /** Runs [command] as root; null if root is unavailable or the command failed. */
-    suspend fun run(command: String): String? {
+    suspend fun run(command: String, timeoutSec: Long = 8): String? {
         if (!available()) return null
-        return withContext(Dispatchers.IO) { exec(su!!, command) }
+        return withContext(Dispatchers.IO) { exec(su!!, command, timeoutSec) }
     }
 
     private fun exec(suPath: String, command: String, timeoutSec: Long = 8): String? = runCatching {
