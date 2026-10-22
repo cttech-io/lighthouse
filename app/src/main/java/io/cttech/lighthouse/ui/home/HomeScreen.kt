@@ -112,8 +112,16 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val settings = io.cttech.lighthouse.system.LocalAppSettings.current
     var setupOpen by remember { mutableStateOf(!settings.setupDone) } // first-run setup (or "Run setup again")
     val coverOffer by vm.covers.offer.collectAsStateWithLifecycle()
+    // A crash report from the last run, asked about once (after setup, if that's open); kept in Settings → About.
+    val scope = rememberCoroutineScope()
+    var crashReport by remember { mutableStateOf<io.cttech.lighthouse.system.CrashReports.Report?>(null) }
+    LaunchedEffect(setupOpen) {
+        if (!setupOpen) crashReport = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            io.cttech.lighthouse.system.CrashReports.takeUnseen(context)
+        }
+    }
     val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
-    val busy = accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || setupOpen
+    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || setupOpen
     val showCoverOffer = coverOffer.isNotEmpty() && !busy
     val overlay = busy || showCoverOffer
 
@@ -123,6 +131,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     BackHandler(enabled = true) {
         when {
             setupOpen -> return@BackHandler // setup has its own Back handling
+            crashReport != null -> crashReport = null
             showCoverOffer -> vm.covers.answerOffer(fetch = false)
             pickerFor != null -> vm.covers.closePicker()
             optionsFor != null -> vm.closeOptions()
@@ -139,6 +148,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     LaunchedEffect(vm) {
         vm.homePresses.collect {
             openPanel = null
+            crashReport = null
             menuOpen = false
             drawerOpen = false
             vm.closeOptions()
@@ -290,6 +300,16 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onRunSetup = { menuOpen = false; setupOpen = true },
                 onClose = { menuOpen = false; settingsOnCovers = false; refocusToken++ },
                 openOnCovers = settingsOnCovers,
+            )
+        }
+        crashReport?.let { report ->
+            CrashReportDialog(
+                report, afterCrash = true,
+                onDelete = {
+                    scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.cttech.lighthouse.system.CrashReports.deleteAll(context) }
+                    crashReport = null; refocusToken++
+                },
+                onClose = { crashReport = null; refocusToken++ },
             )
         }
         if (showCoverOffer) {
