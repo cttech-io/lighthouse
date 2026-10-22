@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+**Improved**
+- Platform tabs now run in release order within each family: PS1, PS2, PSP; NES, SNES, N64, GameCube, Wii, Switch; GBC, GBA, 3DS; Master System, Mega Drive, Game Gear. A tab order you set yourself in Settings is unchanged.
+
 ## 0.1.6 (2026-10-22)
 
 **New**

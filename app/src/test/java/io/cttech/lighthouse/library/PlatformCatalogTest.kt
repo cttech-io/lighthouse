@@ -43,4 +43,12 @@ class PlatformCatalogTest {
             }
         }
     }
+
+    @Test fun relatedSystemsAreInReleaseOrder() {
+        fun inOrder(vararg ids: String) = ids.map(PlatformCatalog::order).let { o -> assertEquals(o.sorted(), o) }
+        inOrder("ps1", "ps2", "psp")
+        inOrder("nes", "snes", "n64", "gamecube", "wii", "switch")
+        inOrder("gbc", "gba", "3ds")
+        inOrder("mastersystem", "megadrive", "gamegear")
+    }
 }

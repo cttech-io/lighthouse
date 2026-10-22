@@ -29,26 +29,10 @@ object PlatformCatalog {
     val all: List<PlatformDef> = listOf(
         PlatformDef(ANDROID, "Android", Color(0xFF3DDC84)),
         PlatformDef(
-            "switch", "Switch", Color(0xFFFF4554),
-            extensions = setOf("xci", "nsp", "nca", "nro"),
-            folderNames = setOf("switch", "ns", "nintendo switch"),
-            skipUpdatesAndDlc = true,
-        ),
-        PlatformDef(
-            "gamecube", "GameCube", Color(0xFF7E57C2),
-            extensions = setOf("iso", "gcm", "ciso", "gcz", "rvz", "tgc", "dol", "elf"),
-            folderNames = setOf("gamecube", "gc", "ngc", "nintendo gamecube", "nintendo - gamecube"),
-        ),
-        PlatformDef(
-            "wii", "Wii", Color(0xFF29B6F6),
-            extensions = setOf("iso", "wbfs", "rvz", "wia", "ciso", "gcz", "dol", "elf"),
-            folderNames = setOf("wii", "nintendo wii", "nintendo - wii"),
-        ),
-        PlatformDef(
-            "3ds", "3DS", Color(0xFFD81B60),
-            // .app is skipped: Azahar can open it, but it's too generic a name to claim for every folder.
-            extensions = setOf("3ds", "cci", "cxi", "3dsx", "cia"),
-            folderNames = setOf("3ds", "nintendo 3ds", "n3ds", "nintendo - nintendo 3ds"),
+            "ps1", "PS1", Color(0xFFB4ACC0),
+            // Not .bin: a .cue (or .m3u for multi-disc games) names its tracks, so listing both would show games twice.
+            extensions = setOf("cue", "chd", "pbp", "m3u", "iso"),
+            folderNames = setOf("ps1", "psx", "playstation", "playstation 1", "sony - playstation"),
         ),
         PlatformDef(
             "ps2", "PS2", Color(0xFF2F6BFF),
@@ -56,30 +40,9 @@ object PlatformCatalog {
             folderNames = setOf("ps2", "playstation 2", "playstation2", "sony - playstation 2"),
         ),
         PlatformDef(
-            "ps1", "PS1", Color(0xFFB4ACC0),
-            // Not .bin: a .cue (or .m3u for multi-disc games) names its tracks, so listing both would show games twice.
-            extensions = setOf("cue", "chd", "pbp", "m3u", "iso"),
-            folderNames = setOf("ps1", "psx", "playstation", "playstation 1", "sony - playstation"),
-        ),
-        PlatformDef(
             "psp", "PSP", Color(0xFF00B8D4),
             extensions = setOf("iso", "cso", "chd", "pbp", "elf"),
             folderNames = setOf("psp", "playstation portable", "sony - playstation portable"),
-        ),
-        PlatformDef(
-            "gba", "GBA", Color(0xFF7A5CFF),
-            extensions = setOf("gba", "zip", "7z"),
-            folderNames = setOf("gba", "game boy advance", "gameboy advance", "nintendo - game boy advance"),
-        ),
-        PlatformDef(
-            "gbc", "GBC", Color(0xFF26C6A6),
-            extensions = setOf("gbc", "gb", "zip", "7z"),
-            folderNames = setOf("gbc", "gb", "game boy color", "gameboy color", "game boy", "gameboy"),
-        ),
-        PlatformDef(
-            "n64", "N64", Color(0xFFFFB300),
-            extensions = setOf("z64", "n64", "v64", "zip", "7z"),
-            folderNames = setOf("n64", "nintendo 64"),
         ),
         PlatformDef(
             "nes", "NES", Color(0xFFE53935),
@@ -92,14 +55,51 @@ object PlatformCatalog {
             folderNames = setOf("snes", "sfc", "super nintendo", "super famicom", "super nintendo entertainment system", "nintendo - super nintendo entertainment system"),
         ),
         PlatformDef(
-            "megadrive", "Mega Drive", Color(0xFF1E88E5),
-            extensions = setOf("md", "gen", "smd", "68k", "bin", "zip", "7z"),
-            folderNames = setOf("megadrive", "mega drive", "genesis", "sega genesis", "sega mega drive", "md", "sega - mega drive - genesis"),
+            "n64", "N64", Color(0xFFFFB300),
+            extensions = setOf("z64", "n64", "v64", "zip", "7z"),
+            folderNames = setOf("n64", "nintendo 64"),
+        ),
+        PlatformDef(
+            "gamecube", "GameCube", Color(0xFF7E57C2),
+            extensions = setOf("iso", "gcm", "ciso", "gcz", "rvz", "tgc", "dol", "elf"),
+            folderNames = setOf("gamecube", "gc", "ngc", "nintendo gamecube", "nintendo - gamecube"),
+        ),
+        PlatformDef(
+            "wii", "Wii", Color(0xFF29B6F6),
+            extensions = setOf("iso", "wbfs", "rvz", "wia", "ciso", "gcz", "dol", "elf"),
+            folderNames = setOf("wii", "nintendo wii", "nintendo - wii"),
+        ),
+        PlatformDef(
+            "switch", "Switch", Color(0xFFFF4554),
+            extensions = setOf("xci", "nsp", "nca", "nro"),
+            folderNames = setOf("switch", "ns", "nintendo switch"),
+            skipUpdatesAndDlc = true,
+        ),
+        PlatformDef(
+            "gbc", "GBC", Color(0xFF26C6A6),
+            extensions = setOf("gbc", "gb", "zip", "7z"),
+            folderNames = setOf("gbc", "gb", "game boy color", "gameboy color", "game boy", "gameboy"),
+        ),
+        PlatformDef(
+            "gba", "GBA", Color(0xFF7A5CFF),
+            extensions = setOf("gba", "zip", "7z"),
+            folderNames = setOf("gba", "game boy advance", "gameboy advance", "nintendo - game boy advance"),
+        ),
+        PlatformDef(
+            "3ds", "3DS", Color(0xFFD81B60),
+            // .app is skipped: Azahar can open it, but it's too generic a name to claim for every folder.
+            extensions = setOf("3ds", "cci", "cxi", "3dsx", "cia"),
+            folderNames = setOf("3ds", "nintendo 3ds", "n3ds", "nintendo - nintendo 3ds"),
         ),
         PlatformDef(
             "mastersystem", "Master System", Color(0xFFD84315),
             extensions = setOf("sms", "zip", "7z"),
             folderNames = setOf("mastersystem", "master system", "sega master system", "sms", "sega - master system - mark iii"),
+        ),
+        PlatformDef(
+            "megadrive", "Mega Drive", Color(0xFF1E88E5),
+            extensions = setOf("md", "gen", "smd", "68k", "bin", "zip", "7z"),
+            folderNames = setOf("megadrive", "mega drive", "genesis", "sega genesis", "sega mega drive", "md", "sega - mega drive - genesis"),
         ),
         PlatformDef(
             "gamegear", "Game Gear", Color(0xFF00897B),
