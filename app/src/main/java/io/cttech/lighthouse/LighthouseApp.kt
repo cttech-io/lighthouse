@@ -32,6 +32,7 @@ class LighthouseApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        io.cttech.lighthouse.system.CrashReports.install(this) // saved on the device only; see CrashReports
         // Keep the Android tab in sync as apps are installed, updated or removed.
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)

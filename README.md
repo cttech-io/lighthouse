@@ -80,6 +80,8 @@ To check a download, see [Verifying a release](SECURITY.md#verifying-a-release).
 
 Lighthouse has no analytics, accounts, ads or tracking. It only goes online when you ask it to fetch covers (libretro, and SteamGridDB with your own key). "Send from phone" runs a short-lived HTTPS page on your local network, only while that screen is open.
 
+If Lighthouse crashes, it saves a crash report on the device and asks about it the next time it opens. Nothing is sent automatically: you can read the report, then send it yourself (a pre-filled GitHub issue, an email to lighthouse@cttech.io from your own email app, or the share sheet), or delete it. File paths under shared storage are removed from the report. The latest one stays in Settings → About until you delete it.
+
 ## Building
 
 Requires JDK 21 and the Android SDK (API 37).

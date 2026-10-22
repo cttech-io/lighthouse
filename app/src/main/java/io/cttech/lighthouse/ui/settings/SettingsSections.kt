@@ -55,6 +55,7 @@ import io.cttech.lighthouse.library.PlatformCatalog
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.system.CardSize
 import io.cttech.lighthouse.system.CoverAutoMode
+import io.cttech.lighthouse.system.CrashReports
 import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.system.HapticStrength
 import io.cttech.lighthouse.system.HomeButtonAction
@@ -582,14 +583,46 @@ internal fun AboutSection(first: Modifier = Modifier) {
             )
         }
     }
+    CrashReportRow()
     SectionTitle("Privacy")
     Note(
         "No analytics, no tracking, no accounts. Lighthouse only goes online for cover art:\n" +
             "• SteamGridDB (with your own key): game names are searched to find covers.\n" +
             "• thumbnails.libretro.com: box art fetched by ROM file name.\n" +
             "This happens only when you allow it (Settings → Covers, or the \"find covers?\" prompt). Everything else stays on the device.\n" +
-            "• \"Send from phone\" (Settings → Covers) opens a one-time HTTPS page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.",
+            "• \"Send from phone\" (Settings → Covers) opens a one-time HTTPS page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.\n" +
+            "• Crash reports are saved on the device and never sent automatically. After a crash Lighthouse asks; you can send one yourself " +
+            "(GitHub, email or the share sheet), and you see it first.",
     )
+}
+
+/** The newest crash report (view, send, delete); in debug builds, a way to make one. */
+@Composable
+private fun CrashReportRow() {
+    val overlay = LocalOverlayHost.current
+    val context = LocalContext.current
+    val r = remember { FocusRequester() }
+    var refresh by remember { mutableIntStateOf(0) }
+    val report by produceState<CrashReports.Report?>(null, refresh) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CrashReports.latest(context) }
+    }
+    val saved = report?.let { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(it.time)) }
+    SettingRow(
+        "Last crash report", saved ?: "None", Modifier.focusRequester(r),
+        note = if (report != null) "Saved on this device only. A to read it, send it yourself, or delete it." else null,
+    ) {
+        val shown = report ?: return@SettingRow
+        overlay.show(r) {
+            io.cttech.lighthouse.ui.home.CrashReportDialog(
+                shown, afterCrash = false,
+                onDelete = { CrashReports.deleteAll(context); refresh++; overlay.close() },
+                onClose = overlay::close,
+            )
+        }
+    }
+    if (BuildConfig.DEBUG) SettingRow("Crash now", "Debug build", note = "Throws on purpose, to try the crash report.") {
+        throw IllegalStateException("Crash now (Settings → About, debug build)")
+    }
 }
 
 internal data class OpenSourceLibrary(val name: String, val licence: String, val url: String)

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+**New**
+- **Opt-in crash reports.** If Lighthouse closes unexpectedly, it saves a report on the device and asks about it next time: read it, then **Report on GitHub** (a pre-filled issue in your browser), **Email it** (to lighthouse@cttech.io, from your own email app), **Share log**, or **Delete**. Nothing is ever sent automatically, and storage paths (which can contain your folder names) are removed from the report. The latest report stays in Settings → About.
+
+## 0.1.8 (release candidates)
+
 **Changed**
 - **The button hints follow what's open.** Menus, dialogs, Quick Settings, the cover picker and the app drawer show their own hints (B Close, A Select…) instead of HOME's, and the hints are no longer dimmed behind a pop-up.
 - **"No emulator installed" says what to get and where.** RetroArch profiles read as "RetroArch (mGBA core)" instead of "RetroArch · mGBA", and the dialog has a **Get … (browser)** button for each emulator that would work. Settings → Emulators uses the same names.
