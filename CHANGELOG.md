@@ -9,6 +9,7 @@
 - **Download missing RetroArch cores in one tap (root, optional).** When a game needs a core RetroArch doesn't have, the "Core not installed" pop-up now names every core that will do (e.g. Snes9x, or Snes9x 2010/2005/2002) and, on a rooted device, offers **Download core**: it fetches the core from libretro's own build server (buildbot.libretro.com) and installs it into RetroArch. Only when you press it, and nothing happens without root. Without root the pop-up still takes you to RetroArch's Core Downloader.
 - **A one-time heads-up for RetroArch games when Lighthouse can't check the core (no root).** The first time you play a game that needs a core Lighthouse can't look for, it says which core to download (and where), then **Play anyway** starts the game. It shows once per core.
 - **3DS** games through Azahar: .3ds, .cci, .cxi, .3dsx and .cia in a `3DS` (or `Nintendo 3DS`) folder, with libretro box art.
+- **GameCube and Wii** games through Dolphin: .iso, .gcm, .rvz, .wbfs, .wia, .ciso, .gcz (plus .dol and .elf homebrew) in a `GameCube` (or `GC`) or `Wii` folder, with libretro box art. Dolphin's launch hand-off was checked on a device.
 
 **Fixed**
 - Installing an Android app no longer pops up "1 game has no cover" (or searches online for it). Apps keep their icons; **Settings → Covers → Covers for Android apps** turns online covers back on for them.

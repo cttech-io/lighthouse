@@ -111,6 +111,8 @@ object LibretroThumbnails {
         "gbc" to listOf("Nintendo - Game Boy Color", "Nintendo - Game Boy"),
         "n64" to listOf("Nintendo - Nintendo 64"),
         "3ds" to listOf("Nintendo - Nintendo 3DS"),
+        "gamecube" to listOf("Nintendo - GameCube"),
+        "wii" to listOf("Nintendo - Wii"),
         "ps1" to listOf("Sony - PlayStation"),
         "ps2" to listOf("Sony - PlayStation 2"),
         "psp" to listOf("Sony - PlayStation Portable"),

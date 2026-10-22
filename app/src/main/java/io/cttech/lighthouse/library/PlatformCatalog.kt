@@ -35,6 +35,16 @@ object PlatformCatalog {
             skipUpdatesAndDlc = true,
         ),
         PlatformDef(
+            "gamecube", "GameCube", Color(0xFF7E57C2),
+            extensions = setOf("iso", "gcm", "ciso", "gcz", "rvz", "tgc", "dol", "elf"),
+            folderNames = setOf("gamecube", "gc", "ngc", "nintendo gamecube", "nintendo - gamecube"),
+        ),
+        PlatformDef(
+            "wii", "Wii", Color(0xFF29B6F6),
+            extensions = setOf("iso", "wbfs", "rvz", "wia", "ciso", "gcz", "dol", "elf"),
+            folderNames = setOf("wii", "nintendo wii", "nintendo - wii"),
+        ),
+        PlatformDef(
             "3ds", "3DS", Color(0xFFD81B60),
             // .app is skipped: Azahar can open it, but it's too generic a name to claim for every folder.
             extensions = setOf("3ds", "cci", "cxi", "3dsx", "cia"),

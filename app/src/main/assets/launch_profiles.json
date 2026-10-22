@@ -32,6 +32,16 @@
       "mime": "application/octet-stream"
     },
     {
+      "id": "dolphin",
+      "label": "Dolphin",
+      "platforms": ["gamecube", "wii"],
+      "packages": ["org.dolphinemu.dolphinemu"],
+      "activity": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "extras": {"AutoStartFile": "{path}"}
+    },
+    {
       "id": "duckstation",
       "label": "DuckStation",
       "platforms": ["ps1"],
