@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags, to compare with the previous release's versionCode
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -31,6 +33,15 @@ jobs:
             # The tag must match the app's version (ignoring an -rcN style suffix).
             if [[ "${TAG%%-*}" != "$NAME" ]]; then
               echo "::error::tag $GITHUB_REF_NAME doesn't match versionName $NAME"; exit 1
+            fi
+            # Every published APK gets a new versionCode, release candidates included.
+            CODE=$(sed -n 's/^ *versionCode = \([0-9]*\)/\1/p' app/build.gradle.kts)
+            PREV=$(git tag --list 'v*' --sort=-creatordate | grep -vx "$GITHUB_REF_NAME" | head -1)
+            if [[ -n "$PREV" ]]; then
+              PREV_CODE=$(git show "${PREV}:app/build.gradle.kts" | sed -n 's/^ *versionCode = \([0-9]*\)/\1/p')
+              if (( CODE <= PREV_CODE )); then
+                echo "::error::versionCode $CODE isn't higher than $PREV's ($PREV_CODE); bump it for every release, rcs too"; exit 1
+              fi
             fi
             echo "file=lighthouse-$TAG.apk" >> "$GITHUB_OUTPUT"
           else
