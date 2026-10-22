@@ -113,6 +113,13 @@ object LibretroThumbnails {
         "ps1" to listOf("Sony - PlayStation"),
         "ps2" to listOf("Sony - PlayStation 2"),
         "psp" to listOf("Sony - PlayStation Portable"),
+        "nes" to listOf("Nintendo - Nintendo Entertainment System"),
+        "snes" to listOf("Nintendo - Super Nintendo Entertainment System"),
+        "megadrive" to listOf("Sega - Mega Drive - Genesis"),
+        "mastersystem" to listOf("Sega - Master System - Mark III"),
+        "gamegear" to listOf("Sega - Game Gear"),
+        "pcengine" to listOf("NEC - PC Engine - TurboGrafx 16"),
+        "atari2600" to listOf("Atari - 2600"),
     )
     private val unsafe = Regex("""[&*/:`<>?\\|"]""")
 

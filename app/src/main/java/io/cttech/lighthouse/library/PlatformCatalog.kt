@@ -66,6 +66,41 @@ object PlatformCatalog {
             folderNames = setOf("n64", "nintendo 64"),
         ),
         PlatformDef(
+            "nes", "NES", Color(0xFFE53935),
+            extensions = setOf("nes", "unf", "unif", "fds", "zip", "7z"),
+            folderNames = setOf("nes", "famicom", "nintendo entertainment system", "nintendo - nintendo entertainment system"),
+        ),
+        PlatformDef(
+            "snes", "SNES", Color(0xFF9575CD),
+            extensions = setOf("smc", "sfc", "fig", "swc", "zip", "7z"),
+            folderNames = setOf("snes", "sfc", "super nintendo", "super famicom", "super nintendo entertainment system", "nintendo - super nintendo entertainment system"),
+        ),
+        PlatformDef(
+            "megadrive", "Mega Drive", Color(0xFF1E88E5),
+            extensions = setOf("md", "gen", "smd", "68k", "bin", "zip", "7z"),
+            folderNames = setOf("megadrive", "mega drive", "genesis", "sega genesis", "sega mega drive", "md", "sega - mega drive - genesis"),
+        ),
+        PlatformDef(
+            "mastersystem", "Master System", Color(0xFFD84315),
+            extensions = setOf("sms", "zip", "7z"),
+            folderNames = setOf("mastersystem", "master system", "sega master system", "sms", "sega - master system - mark iii"),
+        ),
+        PlatformDef(
+            "gamegear", "Game Gear", Color(0xFF00897B),
+            extensions = setOf("gg", "zip", "7z"),
+            folderNames = setOf("gamegear", "game gear", "sega game gear", "gg", "sega - game gear"),
+        ),
+        PlatformDef(
+            "pcengine", "PC Engine", Color(0xFFFB8C00),
+            extensions = setOf("pce", "sgx", "zip", "7z"),
+            folderNames = setOf("pcengine", "pc engine", "turbografx-16", "turbografx16", "tg16", "pce", "nec - pc engine - turbografx 16"),
+        ),
+        PlatformDef(
+            "atari2600", "Atari 2600", Color(0xFFA1887F),
+            extensions = setOf("a26", "bin", "zip", "7z"),
+            folderNames = setOf("atari2600", "atari 2600", "a2600", "atari - 2600"),
+        ),
+        PlatformDef(
             "droiddeck", "DroidDeck", Color(0xFF1A9FFF),
             extensions = setOf("steam"),
             folderNames = setOf("droiddeck"),

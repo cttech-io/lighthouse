@@ -5,6 +5,7 @@
 **New**
 - **PS1** games through DuckStation (from the Play Store) or RetroArch with PCSX ReARMed: .cue, .chd, .pbp and .m3u in a `PS1` (or `PSX`, `PlayStation`) folder, with libretro box art. For a .cue or .m3u game, the emulator can read the game's folder (for its track and disc files) for that launch.
 - **PSP** games through PPSSPP (or PPSSPP Gold): .iso, .cso, .chd and .pbp in a `PSP` (or `PlayStation Portable`) folder, with libretro box art.
+- **NES, SNES, Mega Drive, Master System, Game Gear, PC Engine and Atari 2600** through RetroArch (cores: FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast, Stella). Put games in a folder named for the system (`NES`, `SNES`, `Genesis`, `Master System`, `Game Gear`, `PC Engine`, `Atari 2600`, and the usual alternative names); download the core once in RetroArch. Libretro box art works for all of them.
 
 **Fixed**
 - RetroArch games (GBA, N64) said "Core not installed" on rooted devices even when the core was installed. Lighthouse's root check couldn't see inside RetroArch's folder on Android 11 and later. It now looks in the right place, and if it can't check, it lets the game start instead of blocking it.

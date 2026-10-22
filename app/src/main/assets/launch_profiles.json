@@ -105,6 +105,106 @@
       }
     },
     {
+      "id": "retroarch-fceumm",
+      "label": "RetroArch · FCEUmm",
+      "platforms": ["nes"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/fceumm_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/fceumm_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-snes9x",
+      "label": "RetroArch · Snes9x",
+      "platforms": ["snes"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/snes9x_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/snes9x_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-genesis-plus-gx",
+      "label": "RetroArch · Genesis Plus GX",
+      "platforms": ["megadrive", "mastersystem", "gamegear"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/genesis_plus_gx_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/genesis_plus_gx_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-mednafen-pce-fast",
+      "label": "RetroArch · Beetle PCE Fast",
+      "platforms": ["pcengine"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/mednafen_pce_fast_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/mednafen_pce_fast_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
+      "id": "retroarch-stella",
+      "label": "RetroArch · Stella",
+      "platforms": ["atari2600"],
+      "packages": ["com.retroarch.aarch64", "com.retroarch"],
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "needsStorage": true,
+      "core": "/data/user/0/{package}/cores/stella_libretro_android.so",
+      "extras": {
+        "ROM": "{path}",
+        "LIBRETRO": "/data/user/0/{package}/cores/stella_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg",
+        "IME": "{ime}",
+        "DATADIR": "/data/user/0/{package}",
+        "SDCARD": "/storage/emulated/0",
+        "EXTERNAL": "/storage/emulated/0/Android/data/{package}/files"
+      }
+    },
+    {
       "id": "droiddeck",
       "label": "DroidDeck",
       "platforms": ["droiddeck"],
