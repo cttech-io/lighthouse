@@ -28,6 +28,11 @@ sealed interface LaunchResult {
     data class NeedsStoragePermission(val profile: LaunchProfile, val pkg: String) : LaunchResult
     /** [corePath] is the preferred core; [alternatives] are every core the profile accepts (including it). */
     data class CoreMissing(val profile: LaunchProfile, val corePath: String, val alternatives: List<String> = listOf(corePath)) : LaunchResult
+    /**
+     * A core-based game on a device where the core can't be checked (no root): the player is told once, per core, to
+     * make sure it's downloaded. Not an error; playing anyway launches the game.
+     */
+    data class CoreUnchecked(val profile: LaunchProfile, val corePath: String, val alternatives: List<String>) : LaunchResult
     data class Failed(val message: String) : LaunchResult
 }
 
@@ -61,8 +66,11 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
         }
 
-    /** Android apps launch directly; ROMs and shortcuts go through the platform's launch profile. */
-    suspend fun launch(game: Game): LaunchResult {
+    /**
+     * Android apps launch directly; ROMs and shortcuts go through the platform's launch profile.
+     * [needsCoreHint] says whether a profile's one-time "download the core" notice is still due.
+     */
+    suspend fun launch(game: Game, needsCoreHint: (profileId: String) -> Boolean = { false }): LaunchResult {
         game.packageName?.let { pkg ->
             val intent = pm.getLaunchIntentForPackage(pkg) ?: return LaunchResult.Failed("${game.title} can't be opened")
             return start(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -93,6 +101,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             val candidates = profile.cores.map { it.expand(pkg, path) }
             val (core, present) = findCore(candidates)
             if (present == false) return LaunchResult.CoreMissing(profile, core, candidates)
+            if (present == null && needsCoreHint(profile.id)) return LaunchResult.CoreUnchecked(profile, core, candidates)
             core
         }
 

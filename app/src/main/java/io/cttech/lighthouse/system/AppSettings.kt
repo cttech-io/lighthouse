@@ -213,6 +213,14 @@ class AppSettings(context: Context) {
         changed()
     }
 
+    /** Profiles whose one-time "make sure the core is downloaded" notice has been shown (see LaunchResult.CoreUnchecked). */
+    fun coreHintShown(profileId: String): Boolean = profileId in prefs.getStringSet(KEY_CORE_HINTS, emptySet()).orEmpty()
+
+    fun markCoreHintShown(profileId: String) {
+        val seen = prefs.getStringSet(KEY_CORE_HINTS, emptySet()).orEmpty()
+        prefs.edit().putStringSet(KEY_CORE_HINTS, seen + profileId).apply()
+    }
+
     var hiddenTabs by mutableStateOf(prefs.getStringSet(KEY_HIDDEN_TABS, emptySet()).orEmpty().toSet())
         private set
 
@@ -284,6 +292,7 @@ class AppSettings(context: Context) {
         const val KEY_THEME = "theme_id"
         const val KEY_TAB_ORDER = "tab_order"
         const val KEY_HIDDEN_TABS = "hidden_tabs"
+        const val KEY_CORE_HINTS = "core_hints_shown"
         const val KEY_TAB_LABELS = "tab_labels"
         const val KEY_EMULATORS = "emulator_choice"
         const val KEY_GAME_OVERRIDES = "game_overrides"

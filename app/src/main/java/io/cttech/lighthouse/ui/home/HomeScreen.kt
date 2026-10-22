@@ -312,6 +312,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onGrantWithRoot = vm::grantStorageAndRetry,
                 onOpenAppInfo = vm::openAppInfo,
                 onOpenApp = vm::openApp,
+                onPlayAnyway = vm::playPending,
             )
         }
         if (accessPrompt) {

@@ -95,8 +95,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun launch(game: Game) {
         viewModelScope.launch {
-            when (val r = launcher.launch(game)) {
+            when (val r = launcher.launch(game) { id -> !settings.coreHintShown(id) }) {
                 LaunchResult.Started -> repo.recordLaunch(game.key)
+                is LaunchResult.CoreUnchecked -> { settings.markCoreHintShown(r.profile.id); _launchIssue.value = r; pendingRetry = game }
                 else -> { _launchIssue.value = r; pendingRetry = game }
             }
         }
@@ -113,6 +114,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             if (launcher.grantStorageWithRoot(pkg) && game != null) { _launchIssue.value = null; launch(game) }
             else _launchIssue.value = LaunchResult.Failed("Couldn't grant storage access with root. Use the app's settings instead.")
         }
+    }
+
+    /** "Play anyway" on the one-time core notice: the notice is already marked as shown, so this starts the game. */
+    fun playPending() {
+        val game = pendingRetry
+        _launchIssue.value = null
+        if (game != null) launch(game)
     }
 
     fun openAppInfo(pkg: String) = launcher.openAppInfo(pkg)

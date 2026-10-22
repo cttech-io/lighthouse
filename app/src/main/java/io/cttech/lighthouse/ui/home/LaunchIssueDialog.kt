@@ -53,6 +53,7 @@ fun LaunchIssueDialog(
     onGrantWithRoot: (String) -> Unit,
     onOpenAppInfo: (String) -> Unit,
     onOpenApp: (String) -> Unit,
+    onPlayAnyway: () -> Unit = {},
 ) {
     val first = remember { FocusRequester() }
     val rootAvailable by produceState(false) { value = Root.available() }
@@ -88,6 +89,7 @@ fun LaunchIssueDialog(
                     CoreInstall.Done -> "Core installed" to "Press A on the game again to play it."
                     else -> "Core not installed" to coreMissingBody(issue, rootAvailable, coreInstall)
                 }
+                is LaunchResult.CoreUnchecked -> "Check you have the core" to coreHintBody(issue)
                 is LaunchResult.Failed -> "Couldn't start the game" to issue.message
                 LaunchResult.Started -> "" to ""
             }
@@ -113,10 +115,16 @@ fun LaunchIssueDialog(
                             }
                         }
                     }
+                    is LaunchResult.CoreUnchecked -> {
+                        PillButton("Play anyway", Modifier.focusRequester(first), onClick = onPlayAnyway)
+                        PillButton("Open RetroArch") {
+                            onOpenApp(issue.corePath.removePrefix("/data/user/0/").substringBefore('/')); onDismiss()
+                        }
+                    }
                     else -> Unit
                 }
                 val finished = issue is LaunchResult.CoreMissing && coreInstall == CoreInstall.Done
-                PillButton(if ((issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing) && !finished) "Cancel" else "OK",
+                PillButton(if ((issue is LaunchResult.NeedsStoragePermission || issue is LaunchResult.CoreMissing || issue is LaunchResult.CoreUnchecked) && !finished) "Cancel" else "OK",
                     if (issue is LaunchResult.EmulatorMissing || issue is LaunchResult.Failed || finished) Modifier.focusRequester(first) else Modifier,
                     onClick = onDismiss)
             }
@@ -146,4 +154,13 @@ private fun coreMissingBody(issue: LaunchResult.CoreMissing, rootAvailable: Bool
             "$needs Open RetroArch → Main Menu → Online Updater → Core Downloader and install it."
         }
     }
+}
+
+/** Shown once per core where Lighthouse can't look inside RetroArch (no root): RetroArch itself would only show a vague error. */
+private fun coreHintBody(issue: LaunchResult.CoreUnchecked): String {
+    val name = coreName(issue.corePath)
+    val others = issue.alternatives.map(::coreName).filter { it != name }
+    val needs = "${issue.profile.label} needs the $name core" + if (others.isEmpty()) "" else " (or one of: ${others.joinToString(", ")})"
+    return "$needs. Lighthouse can't see inside RetroArch without root, so it can't check. If the game doesn't start, install the core in " +
+        "RetroArch: Main Menu → Online Updater → Core Downloader. You'll only see this once for this core."
 }
