@@ -445,7 +445,7 @@ private const val RECENT_WINDOW_MS = 30L * 24 * 60 * 60 * 1000
  */
 private val STREAMING_PACKAGES = listOf("com.limelight", "com.valvesoftware.steamlink")
 
-private fun buildHomeRows(
+internal fun buildHomeRows(
     tabs: List<HomeTab>,
     byKey: Map<String, Game>,
     byPlatform: Map<String, List<Game>>,

@@ -36,7 +36,7 @@ import kotlin.concurrent.thread
  * Phones warn once that it isn't trusted, which is expected; the pop-up shows the fingerprint to compare.
  * HTTPS also makes the page a secure context, so its Paste button can read the phone's clipboard.
  */
-class KeyReceiver private constructor(
+class KeyReceiver internal constructor(
     private val server: ServerSocket,
     private val token: String,
     /** First bytes of the certificate's SHA-256 fingerprint, e.g. "3F:A2:…", to compare with the phone. */
@@ -78,7 +78,11 @@ class KeyReceiver private constructor(
             "POST" -> {
                 val length = lines.firstOrNull { it.startsWith("content-length:", ignoreCase = true) }
                     ?.substringAfter(':')?.trim()?.toIntOrNull()?.coerceIn(0, MAX_BODY) ?: 0
-                val body = ByteArray(length).also { var read = 0; while (read < length) { val n = input.read(it, read, length - read); if (n < 0) break; read += n } }
+                val body = ByteArray(length)
+                var read = 0
+                while (read < length) { val n = input.read(body, read, length - read); if (n < 0) break; read += n }
+                // The client sent less than it promised: that could be half a key, so don't accept it.
+                if (read < length) return respond(socket, 400, page("That didn't look like a key. Go back and try again."))
                 val key = String(body).split('&').firstOrNull { it.startsWith("key=") }
                     ?.let { URLDecoder.decode(it.removePrefix("key="), "UTF-8") }?.trim().orEmpty()
                 if (key.isEmpty() || key.length > 200) return respond(socket, 400, page("That didn't look like a key. Go back and try again."))

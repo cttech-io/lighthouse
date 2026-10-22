@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
@@ -58,9 +59,24 @@ fun BluetoothGlyph(enabled: Boolean, connected: Boolean, tint: Color, size: Dp =
     }
 }
 
+/** Battery level (percent) below which the icon turns red. */
+const val LOW_BATTERY_PERCENT = 15
+
 /**
- * Battery: outline with a clear gap around the fill (so it reads cleanly at 100%), terminal nub,
- * green fill + dark bolt while plugged in, amber with battery saver, red when low.
+ * Fill colour for the battery icon: green while plugged in, else red when low, else amber in battery saver, else
+ * [normal]. Low beats saver because Android switches saver on at about this level, so the warning would never show.
+ * [onLightBackground] picks deeper shades for when the icon sits on the white focus pill.
+ */
+fun batteryFillColor(level: Int, plugged: Boolean, powerSave: Boolean, normal: Color, onLightBackground: Boolean): Color = when {
+    plugged -> if (onLightBackground) Color(0xFF1E8E3E) else Color(0xFF34C759)
+    level in 0 until LOW_BATTERY_PERCENT -> if (onLightBackground) Color(0xFFC62828) else Color(0xFFFF5252)
+    powerSave -> if (onLightBackground) Color(0xFFB26A00) else Color(0xFFFFB300)
+    else -> normal
+}
+
+/**
+ * Battery: outline with a clear gap around the fill (so it reads cleanly at 100%), terminal nub, and a fill coloured
+ * by state ([batteryFillColor]). Colour is never the only cue: a bolt marks charging and a plus marks battery saver.
  */
 @Composable
 fun BatteryGlyph(level: Int, plugged: Boolean, powerSave: Boolean, tint: Color) {
@@ -82,12 +98,8 @@ fun BatteryGlyph(level: Int, plugged: Boolean, powerSave: Boolean, tint: Color) 
         val innerTop = top + inset
         val innerW = (right - left) - inset * 2
         val innerH = (bottom - top) - inset * 2
-        val fill = when {
-            plugged -> Color(0xFF34C759)
-            powerSave -> Color(0xFFFFB300)
-            level in 0..15 -> Color(0xFFFF5252)
-            else -> tint
-        }
+        // The focus pill is white and turns the icon black, so a dark tint means a light background.
+        val fill = batteryFillColor(level, plugged, powerSave, tint, onLightBackground = tint.luminance() < 0.5f)
         val frac = level.coerceIn(0, 100) / 100f
         if (frac > 0f) {
             drawRoundRect(fill, Offset(innerLeft, innerTop), Size(innerW * frac, innerH), androidx.compose.ui.geometry.CornerRadius(1.6.dp.toPx()))
@@ -108,6 +120,14 @@ fun BatteryGlyph(level: Int, plugged: Boolean, powerSave: Boolean, tint: Color) 
                 close()
             }
             drawPath(bolt, Color(0xFF0B0E14))
+        } else if (powerSave) {
+            // Battery saver's plus sign, so the state doesn't rely on the amber alone.
+            val cx = left + (right - left) / 2
+            val cy = size.height / 2
+            val arm = (bottom - top) * 0.28f
+            val w = 1.8.dp.toPx()
+            drawLine(Color(0xFF0B0E14), Offset(cx - arm, cy), Offset(cx + arm, cy), w, StrokeCap.Round)
+            drawLine(Color(0xFF0B0E14), Offset(cx, cy - arm), Offset(cx, cy + arm), w, StrokeCap.Round)
         }
     }
 }

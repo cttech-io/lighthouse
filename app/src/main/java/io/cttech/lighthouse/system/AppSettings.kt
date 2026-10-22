@@ -27,6 +27,16 @@ enum class CardSize { Small, Medium, Large }
 val HOME_SECTIONS = listOf("favourites", "continue", "recent", "streaming", "moonlight", "platforms")
 
 /**
+ * A saved section order brought up to date: unknown ids are dropped, and a section added in an update goes after
+ * its default neighbour rather than at the end of the saved order.
+ */
+internal fun mergeHomeSectionOrder(saved: List<String>): List<String> =
+    HOME_SECTIONS.filter { it !in saved }.fold(saved.filter { it in HOME_SECTIONS }) { order, id ->
+        val before = HOME_SECTIONS.subList(0, HOME_SECTIONS.indexOf(id)).lastOrNull { it in order }
+        order.toMutableList().apply { add(if (before == null) 0 else indexOf(before) + 1, id) }
+    }
+
+/**
  * Small user preferences. Backed by SharedPreferences; exposed as Compose state so the UI reacts instantly,
  * and as [changes] (bumped on every library-affecting write) so view models can rebuild their state.
  */
@@ -185,13 +195,7 @@ class AppSettings(context: Context) {
 
     /** HOME dashboard sections in display order; ids not listed (new sections) follow in the default order. */
     var homeSectionOrder by mutableStateOf(
-        prefs.getString(KEY_HOME_ORDER, null)?.split(',')?.filter { it.isNotBlank() }.orEmpty().let { saved ->
-            // A section added in an update goes after its default neighbour, not to the end of a saved order.
-            HOME_SECTIONS.filter { it !in saved }.fold(saved.filter { it in HOME_SECTIONS }) { order, id ->
-                val before = HOME_SECTIONS.subList(0, HOME_SECTIONS.indexOf(id)).lastOrNull { it in order }
-                order.toMutableList().apply { add(if (before == null) 0 else indexOf(before) + 1, id) }
-            }
-        },
+        mergeHomeSectionOrder(prefs.getString(KEY_HOME_ORDER, null)?.split(',')?.filter { it.isNotBlank() }.orEmpty()),
     )
         private set
 
