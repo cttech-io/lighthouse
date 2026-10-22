@@ -17,7 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       # Both flavours must always build: the play flavour is our future Play Store route.
       - name: Assemble debug (sideload + play)
         run: ./gradlew --console=plain assembleSideloadDebug assemblePlayDebug
