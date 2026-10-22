@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 (2026-10-22)
 
 **Changed**
 - **The button hints follow what's open.** Menus, dialogs, Quick Settings, the cover picker and the app drawer show their own hints (B Close, A Select…) instead of HOME's, and the hints are no longer dimmed behind a pop-up.
