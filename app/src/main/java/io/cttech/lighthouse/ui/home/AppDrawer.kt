@@ -192,20 +192,22 @@ private fun AppMenu(app: DrawerApp, hidden: Boolean?, onOpen: () -> Unit, onSetH
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(app.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-            PillButton("Open", Modifier.focusRequester(first).onFocusChanged { if (it.isFocused) opened = true }, onClick = onOpen)
-            PillButton("App info") {
+            // Same full-width rows as the game menu.
+            val row = Modifier.fillMaxWidth()
+            PillButton("Open", row.focusRequester(first).onFocusChanged { if (it.isFocused) opened = true }, onClick = onOpen)
+            PillButton("App info", row) {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", app.packageName, null))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                 onClose()
             }
-            if (canUninstall) PillButton("Uninstall") {
+            if (canUninstall) PillButton("Uninstall", row) { // Android asks to confirm
                 val intent = Intent(Intent.ACTION_DELETE, Uri.fromParts("package", app.packageName, null))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
                 onClose()
             }
-            if (hidden != null) PillButton(if (hidden) "Unhide in Lighthouse" else "Hide from Lighthouse") { onSetHidden(!hidden) }
+            if (hidden != null) PillButton(if (hidden) "Unhide in Lighthouse" else "Hide from Lighthouse", row) { onSetHidden(!hidden) }
         }
     }
     // The grid tile that opened the menu still holds focus on the first frames, and requestFocus() then returns

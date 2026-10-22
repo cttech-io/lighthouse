@@ -66,6 +66,9 @@ import io.cttech.lighthouse.covers.SteamGridDb
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.ui.components.ControllerTextField
 import io.cttech.lighthouse.ui.components.PillButton
+import io.cttech.lighthouse.ui.components.ConfirmPillButton
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import kotlinx.coroutines.launch
 import io.cttech.lighthouse.ui.components.popupHints
@@ -171,7 +174,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PillButton("Image from storage") { pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                PillButton("Remove cover") { vm.removeCover(game) }
+                if (game.coverPath != null) ConfirmPillButton("Remove cover", "Press A again to remove") { vm.removeCover(game) }
                 PillButton("Cancel", onClick = onClose)
             }
         }
@@ -235,13 +238,21 @@ fun GameOptionsSheet(
         ) {
             Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
             game.subtitle?.let { Text(it, color = Lh.colors.textMuted, fontSize = 14.sp) }
-            PillButton("Play", Modifier.focusRequester(first)) { onClose(); onPlay() }
-            PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites") { onToggleFavourite(); onClose() }
-            PillButton("Change cover", onClick = onChangeCover)
-            if (game.coverPath != null) PillButton("Remove cover", onClick = onRemoveCover)
+            // Full-width rows read as a menu (and keep a steady focus target); Hide/Remove sits apart at the bottom.
+            val row = Modifier.fillMaxWidth()
+            PillButton("Play", row.focusRequester(first)) { onClose(); onPlay() }
+            PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites", row) { onToggleFavourite(); onClose() }
+            PillButton("Change cover", row, onClick = onChangeCover)
+            // The image file is deleted, so it can't be undone: ask first.
+            if (game.coverPath != null) ConfirmPillButton("Remove cover", "Press A again to remove the cover", row, onConfirm = onRemoveCover)
             // Apps only: ROMs are always games. Decides whether it appears in Continue playing.
-            if (game.packageName != null) PillButton(if (game.isGame) "Counts as a game: yes" else "Counts as a game: no", onClick = onToggleCountsAsGame)
-            PillButton(if (game.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) "Remove shortcut" else "Hide from Lighthouse", onClick = onHide)
+            if (game.packageName != null) PillButton(if (game.isGame) "Counts as a game: yes" else "Counts as a game: no", row, onClick = onToggleCountsAsGame)
+            Spacer(Modifier.height(4.dp))
+            if (game.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) {
+                ConfirmPillButton("Remove shortcut", "Press A again to remove the shortcut", row, onConfirm = onHide)
+            } else {
+                PillButton("Hide from Lighthouse", row, onClick = onHide) // undone in Settings → Library
+            }
         }
     }
     FocusOnAppear(first, game.key)

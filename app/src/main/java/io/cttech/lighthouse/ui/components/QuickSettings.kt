@@ -360,6 +360,19 @@ fun PillButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit
     }
 }
 
+/**
+ * For actions that can't be undone: the first press asks ([confirmLabel]), the second does it.
+ * Moving away, or a few seconds without a second press, cancels.
+ */
+@Composable
+fun ConfirmPillButton(label: String, confirmLabel: String, modifier: Modifier = Modifier, onConfirm: () -> Unit) {
+    var armed by remember { mutableStateOf(false) }
+    LaunchedEffect(armed) { if (armed) { kotlinx.coroutines.delay(4000); armed = false } }
+    PillButton(if (armed) confirmLabel else label, modifier.onFocusChanged { if (!it.isFocused) armed = false }) {
+        if (armed) { armed = false; onConfirm() } else armed = true
+    }
+}
+
 /** Starts the first intent action that resolves (system panel, then full settings page). */
 private fun Context.openFirst(vararg actions: String) {
     for (action in actions) {
