@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import io.cttech.lighthouse.LighthouseApp
 import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
+import io.cttech.lighthouse.data.db.gameKey
 import io.cttech.lighthouse.launch.GameLauncher
 import io.cttech.lighthouse.launch.LaunchResult
 import io.cttech.lighthouse.library.PlatformCatalog
@@ -33,6 +34,9 @@ data class HomeState(
     val homeRows: List<HomeRow> = emptyList(),
     /** Hidden items, listed in Settings so they can be unhidden. */
     val hidden: List<Game> = emptyList(),
+    /** Keys of every Android app Lighthouse has in its library (hidden or not), and of everything hidden: the app drawer's Hide / Unhide. */
+    val libraryAppKeys: Set<String> = emptySet(),
+    val hiddenKeys: Set<String> = emptySet(),
     /** e.g. "31 games · 14 apps · SD 87 GB free · Internal 52 GB free · scanned 14:05" */
     val statusLine: String = "",
     val selectedTab: Int = 0,
@@ -245,6 +249,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             tabs = tabs,
             homeRows = homeRows,
             hidden = hiddenUi,
+            libraryAppKeys = allGames.filter { it.platformId == PlatformCatalog.ANDROID }.mapTo(HashSet()) { it.key },
+            hiddenKeys = hiddenKeys,
             statusLine = statusLine(games, scan),
             // Home always has something (at least the Platforms row), so it is the natural starting tab.
             selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
@@ -306,6 +312,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFavourite(game: Game) = repo.toggleFavourite(game.key)
+
+    fun setAppHidden(packageName: String, hidden: Boolean) = repo.setHidden(gameKey(PlatformCatalog.ANDROID, packageName), hidden)
 
     fun hide(game: Game) { repo.setHidden(game.key, true); _optionsFor.value = null }
 

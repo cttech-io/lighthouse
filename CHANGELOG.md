@@ -5,6 +5,7 @@
 **New**
 - **DS** games through melonDS: .nds, .dsi, .srl and .ids in a `DS` (or `Nintendo DS`) folder, with libretro box art.
 - **Dreamcast** games through Flycast: .gdi, .cdi, .chd and .cue in a `Dreamcast` (or `DC`) folder, with libretro box art. Both are launched the way the emulators' own manifests describe but haven't been tried on a device yet. A Dreamcast game that is split into separate track files (.gdi, .cue) may not load from Lighthouse; a single .chd or .cdi will.
+- **App drawer menu.** Press Select (or long-press) on an app in the drawer for **Open**, **App info**, **Uninstall** and **Hide from Lighthouse** (or **Unhide**). Uninstall isn't offered for system apps and Hide only for apps Lighthouse lists on its shelves. The drawer reloads when you come back, so an uninstalled app disappears.
 
 **Fixed**
 - The battery icon's red "low" warning never showed in practice: Android turns battery saver on at about 15%, and saver's amber took priority. Plugged in is green, then under 15% is red, then battery saver is amber. Battery saver also gets a small plus sign so it isn't only a colour, and the colours are deeper when the icon sits on the white focus pill.

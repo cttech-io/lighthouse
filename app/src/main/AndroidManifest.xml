@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Lets the app drawer hand an app to the system uninstall dialog. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Cover art only (SteamGridDB, libretro thumbnails), and only when the user asks. No analytics. -->
     <uses-permission android:name="android.permission.INTERNET" />

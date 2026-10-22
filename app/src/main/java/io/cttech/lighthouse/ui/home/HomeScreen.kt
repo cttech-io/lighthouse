@@ -278,7 +278,14 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             )
         }
         pickerFor?.let { g -> CoverPicker(g, vm) { vm.closeCoverPicker(); refocusToken++ } }
-        if (drawerOpen) AppDrawer { drawerOpen = false; refocusToken++ }
+        if (drawerOpen) AppDrawer(
+            hiddenState = { pkg ->
+                val key = io.cttech.lighthouse.data.db.gameKey(io.cttech.lighthouse.library.PlatformCatalog.ANDROID, pkg)
+                if (key in state.libraryAppKeys) key in state.hiddenKeys else null
+            },
+            onSetHidden = vm::setAppHidden,
+            onClose = { drawerOpen = false; refocusToken++ },
+        )
         if (menuOpen) {
             io.cttech.lighthouse.ui.settings.SettingsScreen(
                 vm = vm,
