@@ -86,6 +86,11 @@ object PlatformCatalog {
             folderNames = setOf("gba", "game boy advance", "gameboy advance", "nintendo - game boy advance"),
         ),
         PlatformDef(
+            "nds", "DS", Color(0xFF26A69A),
+            extensions = setOf("nds", "dsi", "srl", "ids"),
+            folderNames = setOf("nds", "ds", "nintendo ds", "nintendo - nintendo ds"),
+        ),
+        PlatformDef(
             "3ds", "3DS", Color(0xFFD81B60),
             // .app is skipped: Azahar can open it, but it's too generic a name to claim for every folder.
             extensions = setOf("3ds", "cci", "cxi", "3dsx", "cia"),
@@ -105,6 +110,12 @@ object PlatformCatalog {
             "gamegear", "Game Gear", Color(0xFF00897B),
             extensions = setOf("gg", "zip", "7z"),
             folderNames = setOf("gamegear", "game gear", "sega game gear", "gg", "sega - game gear"),
+        ),
+        PlatformDef(
+            "dreamcast", "Dreamcast", Color(0xFFFF7043),
+            // Not .bin/.raw: a .gdi or .cue names its tracks, so listing those would show games twice.
+            extensions = setOf("gdi", "cdi", "chd", "cue"),
+            folderNames = setOf("dreamcast", "dc", "sega dreamcast", "sega - dreamcast"),
         ),
         PlatformDef(
             "pcengine", "PC Engine", Color(0xFFFB8C00),

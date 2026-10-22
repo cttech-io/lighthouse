@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+**New**
+- **DS** games through melonDS: .nds, .dsi, .srl and .ids in a `DS` (or `Nintendo DS`) folder, with libretro box art.
+- **Dreamcast** games through Flycast: .gdi, .cdi, .chd and .cue in a `Dreamcast` (or `DC`) folder, with libretro box art. Both are launched the way the emulators' own manifests describe but haven't been tried on a device yet. A Dreamcast game that is split into separate track files (.gdi, .cue) may not load from Lighthouse; a single .chd or .cdi will.
+
 **Improved**
 - Platform tabs now run in release order within each family: PS1, PS2, PSP; NES, SNES, N64, GameCube, Wii, Switch; GBC, GBA, 3DS; Master System, Mega Drive, Game Gear. A tab order you set yourself in Settings is unchanged.
 

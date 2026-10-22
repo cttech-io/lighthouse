@@ -24,7 +24,9 @@ class PlatformCatalogTest {
         assertEquals("3ds", PlatformCatalog.matchFolder("Nintendo 3DS")?.id)
         assertEquals("gamecube", PlatformCatalog.matchFolder("GameCube")?.id)
         assertEquals("wii", PlatformCatalog.matchFolder("Nintendo Wii")?.id)
-        assertNull(PlatformCatalog.matchFolder("Dreamcast"))
+        assertEquals("nds", PlatformCatalog.matchFolder("Nintendo DS")?.id)
+        assertEquals("dreamcast", PlatformCatalog.matchFolder("Dreamcast")?.id)
+        assertNull(PlatformCatalog.matchFolder("Saturn"))
     }
 
     @Test fun retroExtensions() {
@@ -48,7 +50,7 @@ class PlatformCatalogTest {
         fun inOrder(vararg ids: String) = ids.map(PlatformCatalog::order).let { o -> assertEquals(o.sorted(), o) }
         inOrder("ps1", "ps2", "psp")
         inOrder("nes", "snes", "n64", "gamecube", "wii", "switch")
-        inOrder("gbc", "gba", "3ds")
-        inOrder("mastersystem", "megadrive", "gamegear")
+        inOrder("gbc", "gba", "nds", "3ds")
+        inOrder("mastersystem", "megadrive", "gamegear", "dreamcast")
     }
 }

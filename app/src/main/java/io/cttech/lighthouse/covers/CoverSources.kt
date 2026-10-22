@@ -110,6 +110,8 @@ object LibretroThumbnails {
         "gba" to listOf("Nintendo - Game Boy Advance"),
         "gbc" to listOf("Nintendo - Game Boy Color", "Nintendo - Game Boy"),
         "n64" to listOf("Nintendo - Nintendo 64"),
+        "nds" to listOf("Nintendo - Nintendo DS"),
+        "dreamcast" to listOf("Sega - Dreamcast"),
         "3ds" to listOf("Nintendo - Nintendo 3DS"),
         "gamecube" to listOf("Nintendo - GameCube"),
         "wii" to listOf("Nintendo - Wii"),
