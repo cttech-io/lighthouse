@@ -45,7 +45,7 @@ class CoverService(
         if (settings.coverAuto == io.cttech.lighthouse.system.CoverAutoMode.Never) { _offer.value = emptyList(); return@withContext }
         val have = dao.covers().map { it.gameKey }.toSet()
         val offered = settings.coverOffered()
-        val all = dao.allGames().map { it.key }
+        val all = dao.allGames().filter(::wantsCover).map { it.key }
         val fresh = all.filter { it !in have && it !in offered }
         if (fresh.isEmpty() || _job.value?.running == true || !hasNetwork()) { _offer.value = emptyList(); return@withContext }
         when (settings.coverAuto) {
@@ -53,6 +53,9 @@ class CoverService(
             else -> _offer.value = fresh
         }
     }
+
+    /** Installed Android apps keep their icons unless the user turned on online covers for them (Settings → Covers). */
+    private fun wantsCover(g: GameEntity) = g.kind != GameKind.APP || settings.coverForApps
 
     /** Moonlight games get the box art Moonlight already has from the PC; picks and removals stand. */
     suspend fun applyMoonlight() = withContext(Dispatchers.IO) {
@@ -123,7 +126,7 @@ class CoverService(
             return@withContext
         }
         val have = dao.covers().map { it.gameKey }.toSet()
-        val todo = dao.allGames().filter { it.key !in have && (only == null || it.key in only) }
+        val todo = dao.allGames().filter { it.key !in have && (only == null || it.key in only) && wantsCover(it) }
         val sgdb = settings.steamGridDbKey.takeIf { it.isNotBlank() }?.let(::SteamGridDb)
         val done = java.util.concurrent.atomic.AtomicInteger()
         val found = java.util.concurrent.atomic.AtomicInteger()

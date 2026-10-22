@@ -128,6 +128,15 @@ class AppSettings(context: Context) {
         prefs.edit().putString(KEY_COVER_AUTO, mode.name).apply()
     }
 
+    /** Whether installed Android apps are offered online covers too. Off by default: apps have their icons. */
+    var coverForApps by mutableStateOf(prefs.getBoolean(KEY_COVER_APPS, false))
+        private set
+
+    fun updateCoverForApps(on: Boolean) {
+        coverForApps = on
+        prefs.edit().putBoolean(KEY_COVER_APPS, on).apply()
+    }
+
     /** Games already offered (or tried) for an online cover, so nobody is asked twice about the same game. */
     fun coverOffered(): Set<String> = prefs.getStringSet(KEY_COVER_OFFERED, emptySet()).orEmpty()
 
@@ -289,6 +298,7 @@ class AppSettings(context: Context) {
         const val KEY_SGDB = "steamgriddb_api_key"
         const val KEY_COVER_AUTO = "cover_auto"
         const val KEY_COVER_OFFERED = "cover_offered"
+        const val KEY_COVER_APPS = "cover_for_apps"
         const val KEY_THEME = "theme_id"
         const val KEY_TAB_ORDER = "tab_order"
         const val KEY_HIDDEN_TABS = "hidden_tabs"

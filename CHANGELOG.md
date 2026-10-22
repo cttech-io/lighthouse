@@ -11,6 +11,7 @@
 - **3DS** games through Azahar: .3ds, .cci, .cxi, .3dsx and .cia in a `3DS` (or `Nintendo 3DS`) folder, with libretro box art.
 
 **Fixed**
+- Installing an Android app no longer pops up "1 game has no cover" (or searches online for it). Apps keep their icons; **Settings → Covers → Covers for Android apps** turns online covers back on for them.
 - RetroArch games (GBA, N64) said "Core not installed" on rooted devices even when the core was installed. Lighthouse's root check couldn't see inside RetroArch's folder on Android 11 and later. It now looks in the right place, and if it can't check, it lets the game start instead of blocking it.
 - N64 games still said "Core not installed": Lighthouse looked for a Mupen64Plus-Next core that RetroArch doesn't offer on Android. It now finds the GLES3 or GLES2 version, whichever you downloaded.
 

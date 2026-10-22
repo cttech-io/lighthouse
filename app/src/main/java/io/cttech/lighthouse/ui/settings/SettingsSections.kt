@@ -352,6 +352,10 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
         modifier = first,
         note = "Your own images are always used first: a picture named like the ROM next to it, or in Lighthouse/covers/<platform>/.",
     ) { settings.updateCoverAuto(it) }
+    ToggleRow(
+        "Covers for Android apps", settings.coverForApps,
+        note = "Off: apps keep their icons and are never searched for or offered covers. On: they're treated like games.",
+    ) { settings.updateCoverForApps(it) }
     SectionTitle("SteamGridDB")
     Text("API key", color = Color.White, fontSize = 16.sp)
     val overlay = LocalOverlayHost.current
