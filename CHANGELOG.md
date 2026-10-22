@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7 (2026-10-22)
 
 **New**
 - **DS** games through melonDS: .nds, .dsi, .srl and .ids in a `DS` (or `Nintendo DS`) folder, with libretro box art.
