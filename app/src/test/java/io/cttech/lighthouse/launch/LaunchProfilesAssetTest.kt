@@ -26,4 +26,13 @@ class LaunchProfilesAssetTest {
             cores(n64).map { it.substringAfterLast('/') },
         )
     }
+
+    @Test fun snes9xAcceptsTheVariantsRetroArchOffers() {
+        // Someone who downloads "Snes9x 2002" (or 2005/2010) instead of the current core must still be able to play.
+        val snes = profiles.single { it.getString("id") == "retroarch-snes9x" }
+        val names = cores(snes).map { it.substringAfterLast('/') }
+        assertEquals("snes9x_libretro_android.so", names.first())
+        assertTrue("snes9x2002_libretro_android.so" in names)
+        assertTrue("snes9x2010_libretro_android.so" in names)
+    }
 }
