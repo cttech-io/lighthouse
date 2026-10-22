@@ -123,7 +123,7 @@ internal fun StorageSection(vm: HomeViewModel, hasAccess: Boolean, first: Modifi
 
 /** ROM folders: found automatically or added by hand. Change a folder's platform, remove it, or add one. */
 @Composable
-internal fun FoldersSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, hasAccess: Boolean, first: Modifier = Modifier) {
+internal fun FoldersSection(vm: HomeViewModel, info: LibraryInfo, hasAccess: Boolean, first: Modifier = Modifier) {
     val overlay = LocalOverlayHost.current
     val addButton = remember { FocusRequester() }
     val platformChoices = remember { PlatformCatalog.all.filter { it.id != PlatformCatalog.ANDROID } }
@@ -163,8 +163,8 @@ internal fun FoldersSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, 
                         detail = { if (it == "remove") "Its games leave Lighthouse. Nothing is deleted from storage." else null },
                         onPick = {
                             overlay.close()
-                            if (it == "remove") vm.removeFolder(row.source)
-                            else choosePlatform("Games in this folder are…", row.source.platformId, r) { p -> vm.setFolderPlatform(row.source, p) }
+                            if (it == "remove") vm.library.removeFolder(row.source)
+                            else choosePlatform("Games in this folder are…", row.source.platformId, r) { p -> vm.library.setFolderPlatform(row.source, p) }
                         },
                         onClose = overlay::close,
                     )
@@ -174,16 +174,16 @@ internal fun FoldersSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, 
     }
     removed.forEach { row ->
         key(row.source.id) {
-            SettingRow(row.source.path.prettyPath(), "Removed · Use again", note = "Found automatically, removed by you") { vm.setFolderPlatform(row.source, row.source.platformId) }
+            SettingRow(row.source.path.prettyPath(), "Removed · Use again", note = "Found automatically, removed by you") { vm.library.setFolderPlatform(row.source, row.source.platformId) }
         }
     }
     SettingRow("Add a folder…", null, (if (active.isEmpty()) first else Modifier).focusRequester(addButton)) {
         overlay.show(addButton) {
             FolderBrowser(
-                roots = vm.storageRoots(),
+                roots = vm.library.storageRoots(),
                 onPick = { dir ->
                     overlay.close()
-                    choosePlatform("Games in ${dir.name} are…", vm.guessPlatform(dir.absolutePath), addButton) { p -> vm.addFolder(dir.absolutePath, p) }
+                    choosePlatform("Games in ${dir.name} are…", vm.library.guessPlatform(dir.absolutePath), addButton) { p -> vm.library.addFolder(dir.absolutePath, p) }
                 },
                 onClose = overlay::close,
             )
@@ -198,8 +198,8 @@ internal fun FoldersSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, 
  * A opens the app, after making sure the folder exists so it's there to pick.
  */
 @Composable
-internal fun LibraryAppsSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, hasAccess: Boolean, first: Modifier = Modifier) {
-    val apps = vm.syncApps(info)
+internal fun LibraryAppsSection(vm: HomeViewModel, info: LibraryInfo, hasAccess: Boolean, first: Modifier = Modifier) {
+    val apps = vm.library.syncApps(info)
     if (apps.isEmpty() || !hasAccess) return
     SectionTitle("PC game apps")
     apps.forEachIndexed { i, app ->
@@ -215,7 +215,7 @@ internal fun LibraryAppsSection(vm: HomeViewModel, info: HomeViewModel.LibraryIn
                 note = app.steps + " " + (folder?.let { "Folder: ${it.prettyPath()}." } ?: "Lighthouse makes a ${app.label} folder next to your other game folders.") +
                     if (app.count == 0) " Games then appear on the ${app.label} tab as you install them, and leave when you uninstall." else "",
             ) {
-                vm.prepareSyncFolder(app)
+                vm.library.prepareSyncFolder(app)
                 vm.openApp(app.pkg)
             }
         }
@@ -233,7 +233,7 @@ internal fun HiddenSection(hidden: List<Game>, onUnhide: (Game) -> Unit) {
 
 /** Which Android apps count as games (Continue playing). Automatic guess unless overridden. */
 @Composable
-internal fun GameAppsSection(vm: HomeViewModel, apps: List<HomeViewModel.AppRow>) {
+internal fun GameAppsSection(vm: HomeViewModel, apps: List<AppRow>) {
     SectionTitle("Apps that count as games")
     Note("Games show up in Continue playing; other apps don't. Lighthouse guesses; change any app here or from its options.")
     apps.forEach { row ->
@@ -247,7 +247,7 @@ internal fun GameAppsSection(vm: HomeViewModel, apps: List<HomeViewModel.AppRow>
 
 /** Tab names, order and visibility. HOME is always first. */
 @Composable
-internal fun PlatformsSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo, first: Modifier = Modifier) {
+internal fun PlatformsSection(vm: HomeViewModel, info: LibraryInfo, first: Modifier = Modifier) {
     Note("HOME always comes first. Rename a tab with A on its name; ◀ ▶ move it; hidden platforms leave the tabs and HOME.")
     info.platforms.forEachIndexed { i, row ->
         key(row.def.id) {
@@ -258,15 +258,15 @@ internal fun PlatformsSection(vm: HomeViewModel, info: HomeViewModel.LibraryInfo
                     onValueChange = { name = it },
                     placeholder = row.defaultLabel,
                     modifier = (if (i == 0) first else Modifier).width(220.dp),
-                    onSubmit = { vm.renamePlatform(row.def.id, name) },
+                    onSubmit = { vm.library.renamePlatform(row.def.id, name) },
                 )
                 Text(
                     (if (row.def.id == PlatformCatalog.ANDROID) "apps" else "${row.count} games") + if (row.hidden) " · hidden" else "",
                     color = Lh.colors.textMuted, fontSize = 14.sp, modifier = Modifier.width(130.dp),
                 )
-                PillButton(if (row.hidden) "Show" else "Hide") { vm.setPlatformHidden(row.def.id, !row.hidden) }
-                PillButton("◀") { vm.movePlatform(row.def.id, -1) }
-                PillButton("▶") { vm.movePlatform(row.def.id, +1) }
+                PillButton(if (row.hidden) "Show" else "Hide") { vm.library.setPlatformHidden(row.def.id, !row.hidden) }
+                PillButton("◀") { vm.library.movePlatform(row.def.id, -1) }
+                PillButton("▶") { vm.library.movePlatform(row.def.id, +1) }
             }
         }
     }
@@ -282,7 +282,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
     val scope = rememberCoroutineScope()
     var refresh by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) { refresh++; onPauseOrDispose { } } // re-check after visiting an emulator's settings
-    val platforms by produceState<List<HomeViewModel.PlatformEmulators>?>(null, refresh) { value = vm.emulatorStatus() }
+    val platforms by produceState<List<PlatformEmulators>?>(null, refresh) { value = vm.library.emulatorStatus() }
     // Placeholder rows hold focus while loading; when they go, the page's refocus safety net moves it on.
     val list = platforms ?: run { SettingRow("Checking emulators…", modifier = first) {}; return }
     if (list.isEmpty()) { SettingRow("No ROM platforms yet", note = "Add a ROM folder in Settings → Library.", modifier = first) {}; return }
@@ -308,7 +308,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                         options = installed,
                         selected = active,
                         label = { it.profile.label },
-                        onPick = { vm.chooseEmulator(p.platformId, it.profile.id); overlay.close(); refresh++ },
+                        onPick = { vm.library.chooseEmulator(p.platformId, it.profile.id); overlay.close(); refresh++ },
                         onClose = overlay::close,
                     )
                 }
@@ -319,7 +319,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                         "Storage access", if (rootAvailable) "Grant with root" else "Open app info",
                         note = "${active.profile.label} needs \"Files and media\" access to open ROMs by path.",
                     ) {
-                        if (rootAvailable) scope.launch { vm.grantStorage(active.pkg); refresh++ } else vm.openAppInfo(active.pkg)
+                        if (rootAvailable) scope.launch { vm.library.grantStorage(active.pkg); refresh++ } else vm.openAppInfo(active.pkg)
                     }
                 }
                 when (active.corePresent) {
@@ -343,7 +343,6 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
     val settings = LocalAppSettings.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var keyResult by remember(settings.steamGridDbKey) { mutableStateOf<String?>(null) }
     ChoiceRow(
         label = "Games without your own artwork",
         options = CoverAutoMode.entries,
@@ -356,125 +355,11 @@ internal fun CoversSection(vm: HomeViewModel, first: Modifier = Modifier, full: 
         "Covers for Android apps", settings.coverForApps,
         note = "Off: apps keep their icons and are never searched for or offered covers. On: they're treated like games.",
     ) { settings.updateCoverForApps(it) }
-    SectionTitle("SteamGridDB")
-    Text("API key", color = Color.White, fontSize = 16.sp)
-    val overlay = LocalOverlayHost.current
-    val phoneButton = remember { FocusRequester() }
-    ControllerTextField(
-        value = settings.steamGridDbKey,
-        onValueChange = { settings.updateSteamGridDbKey(it.trim()) },
-        placeholder = "Not set: press A to enter",
-        // Down goes to the first button; the geometric search picked the last one under the wide field.
-        modifier = Modifier.focusProperties { down = phoneButton },
-        secret = true,
-        monospace = true,
-    )
-    fun useKey(key: String) {
-        settings.updateSteamGridDbKey(key.trim())
-        keyResult = "Testing…"
-        scope.launch { keyResult = if (vm.testSteamGridDbKey(key.trim())) "✓ Key works" else "✗ Key rejected (or no network)" }
-    }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        PillButton("Send from phone", Modifier.focusRequester(phoneButton)) {
-            overlay.show(phoneButton) { KeyFromPhoneDialog(onKey = { useKey(it); overlay.close() }, onClose = overlay::close) }
-        }
-        PillButton("Paste") {
-            val clip = context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
-            val text = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()?.trim().orEmpty()
-            if (text.isEmpty() || text.length > 200 || text.any { it.isWhitespace() }) keyResult = "Nothing key-like on the clipboard"
-            else useKey(text)
-        }
-        PillButton("Test key") {
-            if (settings.steamGridDbKey.isBlank()) { keyResult = "Enter a key first"; return@PillButton }
-            useKey(settings.steamGridDbKey)
-        }
-        PillButton("Get a key (browser)") {
-            runCatching {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.steamgriddb.com/profile/preferences/api")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            }
-        }
-        keyResult?.let { Text(it, color = if (it.startsWith("✓")) Color(0xFF5BD68A) else Lh.colors.textMuted, fontSize = 15.sp) }
-    }
-    Note("Free from steamgriddb.com → sign in → Preferences → API. Easiest: \"Send from phone\" and paste it there. Without a key, Lighthouse uses libretro box art only.")
+    SteamGridDbKeySection(testKey = vm.covers::testSteamGridDbKey)
     if (full) {
         SectionTitle("Fetch")
-        SettingRow("Find missing covers", null, note = "Searches online for every game that has no cover yet.") { vm.findMissingCovers() }
-        SettingRow("Re-download all covers", null, note = "Replaces downloaded covers. Your own images and covers you picked stay.") { vm.redownloadAllCovers() }
-    }
-}
-
-/** QR code for [KeyReceiver]'s one-shot page: scan with a phone on the same Wi-Fi, paste the key, Send. */
-@Composable
-private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
-    val context = LocalContext.current
-    val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
-    val currentOnKey by androidx.compose.runtime.rememberUpdatedState(onKey)
-    // null = starting (the keystore can take a moment the first time); Result.failure = no Wi-Fi/couldn't start.
-    val started by androidx.compose.runtime.produceState<Result<KeyReceiver>?>(null) {
-        // NonCancellable: if the pop-up closes while the server is starting, we still get it back to stop it.
-        // Otherwise it would keep listening (and accepting a key) with nothing left to shut it down.
-        val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
-            KeyReceiver.start(context) { key -> main.post { currentOnKey(key) } }
-        }
-        if (!isActive) { r?.stop(); return@produceState }
-        value = r?.let { Result.success(it) } ?: Result.failure(IllegalStateException())
-        awaitDispose { r?.stop() }
-    }
-    val receiver = started?.getOrNull()
-    val close = remember { FocusRequester() }
-    androidx.activity.compose.BackHandler(onBack = onClose)
-    Box(
-        Modifier
-            .fillMaxSize()
-            .trapFocus()
-            .background(Color.Black.copy(alpha = 0.6f))
-            .clickable(indication = null, interactionSource = null, onClick = onClose)
-            .onPreviewKeyEvent { e -> if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonB || e.key == Key.Escape)) { onClose(); true } else false },
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            Modifier
-                .background(Lh.colors.surface, RoundedCornerShape(18.dp))
-                .clickable(indication = null, interactionSource = null) {}
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (receiver != null) QrCode(receiver.url, Modifier.size(220.dp))
-            Column(Modifier.widthIn(max = 380.dp).weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                when {
-                    started == null -> Note("Starting…")
-                    receiver == null -> Note("Connect to Wi-Fi first: your phone sends the key over your own network.")
-                    else -> {
-                        Note(
-                            "1. Scan the code with your phone's camera (same Wi-Fi as this device).\n" +
-                                "2. Your phone warns the connection isn't private: expected for a page on your own network. " +
-                                "iPhone: Show Details → visit this website. Android: Advanced → Proceed.\n" +
-                                "3. Press Paste key (or paste into the box) and Send.",
-                        )
-                        Text(receiver.url, color = Lh.colors.textMuted, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                        Text("Certificate ${receiver.fingerprint}…", color = Lh.colors.textMuted, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                        Note("Waiting for your phone…")
-                    }
-                }
-                PillButton("Cancel", Modifier.focusRequester(close), onClick = onClose)
-            }
-        }
-    }
-    FocusOnAppear(close, Unit)
-}
-
-@Composable
-private fun QrCode(text: String, modifier: Modifier = Modifier) {
-    val matrix = remember(text) { com.google.zxing.qrcode.QRCodeWriter().encode(text, com.google.zxing.BarcodeFormat.QR_CODE, 0, 0) }
-    androidx.compose.foundation.Canvas(modifier.background(Color.White, RoundedCornerShape(8.dp))) {
-        val quiet = 2 // modules of white border inside the white box
-        val cells = matrix.width + quiet * 2
-        val cell = size.minDimension / cells
-        for (y in 0 until matrix.height) for (x in 0 until matrix.width) {
-            if (matrix[x, y]) drawRect(Color.Black, androidx.compose.ui.geometry.Offset((x + quiet) * cell, (y + quiet) * cell), androidx.compose.ui.geometry.Size(cell + 0.5f, cell + 0.5f))
-        }
+        SettingRow("Find missing covers", null, note = "Searches online for every game that has no cover yet.") { vm.covers.findMissing() }
+        SettingRow("Re-download all covers", null, note = "Replaces downloaded covers. Your own images and covers you picked stay.") { vm.covers.redownloadAll() }
     }
 }
 

@@ -99,14 +99,14 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val (btEpoch, bumpBt) = rememberBtEpoch()
     val requestBt = rememberBluetoothPermissionRequest(onResult = bumpBt)
     val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
-    val coverJob by vm.coverJob.collectAsStateWithLifecycle()
+    val coverJob by vm.covers.job.collectAsStateWithLifecycle()
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
-    val pickerFor by vm.pickerFor.collectAsStateWithLifecycle()
+    val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
     val settings = io.cttech.lighthouse.system.LocalAppSettings.current
     var setupOpen by remember { mutableStateOf(!settings.setupDone) } // first-run setup (or "Run setup again")
-    val coverOffer by vm.coverOffer.collectAsStateWithLifecycle()
+    val coverOffer by vm.covers.offer.collectAsStateWithLifecycle()
     val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
     val busy = accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || setupOpen
     val showCoverOffer = coverOffer.isNotEmpty() && !busy
@@ -118,8 +118,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     BackHandler(enabled = true) {
         when {
             setupOpen -> return@BackHandler // setup has its own Back handling
-            showCoverOffer -> vm.answerCoverOffer(fetch = false)
-            pickerFor != null -> vm.closeCoverPicker()
+            showCoverOffer -> vm.covers.answerOffer(fetch = false)
+            pickerFor != null -> vm.covers.closePicker()
             optionsFor != null -> vm.closeOptions()
             drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
@@ -137,7 +137,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             menuOpen = false
             drawerOpen = false
             vm.closeOptions()
-            vm.closeCoverPicker()
+            vm.covers.closePicker()
             vm.dismissLaunchIssue()
             refocusToken++
         }
@@ -277,7 +277,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 onClose = { vm.closeOptions(); refocusToken++ },
             )
         }
-        pickerFor?.let { g -> CoverPicker(g, vm) { vm.closeCoverPicker(); refocusToken++ } }
+        pickerFor?.let { g -> CoverPicker(g, vm) { vm.covers.closePicker(); refocusToken++ } }
         if (drawerOpen) AppDrawer(
             hiddenState = { pkg ->
                 val key = io.cttech.lighthouse.data.db.gameKey(io.cttech.lighthouse.library.PlatformCatalog.ANDROID, pkg)
@@ -299,9 +299,9 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             CoverOfferDialog(
                 count = coverOffer.size,
                 hasKey = settings.steamGridDbKey.isNotBlank(),
-                onFind = { vm.answerCoverOffer(fetch = true); refocusToken++ },
-                onAlways = { vm.answerCoverOffer(fetch = true, always = true); refocusToken++ },
-                onNotNow = { vm.answerCoverOffer(fetch = false); refocusToken++ },
+                onFind = { vm.covers.answerOffer(fetch = true); refocusToken++ },
+                onAlways = { vm.covers.answerOffer(fetch = true, always = true); refocusToken++ },
+                onNotNow = { vm.covers.answerOffer(fetch = false); refocusToken++ },
             )
         }
         if (setupOpen) {

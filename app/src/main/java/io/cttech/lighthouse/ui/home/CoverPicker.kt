@@ -85,15 +85,15 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
     var status by remember { mutableStateOf<String?>(null) }
     val firstGrid = remember { FocusRequester() }
     val searchBox = remember { FocusRequester() }
-    val hasKey = remember { vm.hasSteamGridDbKey() }
+    val hasKey = remember { vm.covers.hasSteamGridDbKey() }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch { if (!vm.applyCoverImage(game, uri)) status = "Couldn't read that image" }
+        if (uri != null) scope.launch { if (!vm.covers.applyCoverImage(game, uri)) status = "Couldn't read that image" }
     }
 
     fun loadGrids(gameId: Int? = null, steamAppId: Int? = null) {
         status = "Loading covers…"
         scope.launch {
-            grids = vm.coverGrids(gameId, steamAppId)
+            grids = vm.covers.coverGrids(gameId, steamAppId)
             status = if (grids.isEmpty()) "No covers for this one: try another result or search" else null
             if (grids.isNotEmpty()) runCatching { firstGrid.requestFocus() }
         }
@@ -104,14 +104,14 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
         if (!hasKey) { status = "Add your SteamGridDB API key in Settings to search"; return }
         status = "Searching…"
         scope.launch {
-            hits = vm.searchCovers(query)
+            hits = vm.covers.searchCovers(query)
             selected = hits.firstOrNull()?.id
             if (hits.isEmpty()) { grids = emptyList(); status = "No matches for \"$query\"" } else loadGrids(gameId = hits.first().id)
         }
     }
 
     LaunchedEffect(game.key) {
-        val appId = vm.steamAppIdFor(game)
+        val appId = vm.covers.steamAppIdFor(game)
         when {
             !hasKey -> { status = "Add your SteamGridDB API key in Settings to search"; runCatching { searchBox.requestFocus() } }
             appId != null -> loadGrids(steamAppId = appId) // exact match for Steam shortcuts
@@ -161,7 +161,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onClose: () -> Unit) {
                 itemsIndexed(grids, key = { _, g -> g.url }) { i, grid ->
                     GridChoice(grid, if (i == 0) Modifier.focusRequester(firstGrid) else Modifier) {
                         status = "Applying…"
-                        scope.launch { if (!vm.applyCover(game, grid.url)) status = "Download failed: try another" }
+                        scope.launch { if (!vm.covers.applyCover(game, grid.url)) status = "Download failed: try another" }
                     }
                 }
             }

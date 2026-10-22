@@ -65,7 +65,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
     fun finish() { settings.setupStep = 0; onFinish() }
     val overlay = remember { OverlayHost() }
     val info by vm.settingsInfo.collectAsStateWithLifecycle()
-    val library by vm.libraryInfo.collectAsStateWithLifecycle()
+    val library by vm.library.info.collectAsStateWithLifecycle()
     val themes by vm.themes.collectAsStateWithLifecycle()
     LifecycleResumeEffect(Unit) { vm.refreshSettingsInfo(); onPauseOrDispose { } }
     val currentFirst = remember { arrayOf(FocusRequester()) }
@@ -136,7 +136,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                 3 -> {
                                     Title("Covers")
                                     CoversSection(vm, firstMod, full = false)
-                                    SettingRow("Find covers now", null, note = "Runs in the background; you can carry on.") { vm.findMissingCovers() }
+                                    SettingRow("Find covers now", null, note = "Runs in the background; you can carry on.") { vm.covers.findMissing() }
                                 }
                                 4 -> {
                                     Title("Look & buttons")
