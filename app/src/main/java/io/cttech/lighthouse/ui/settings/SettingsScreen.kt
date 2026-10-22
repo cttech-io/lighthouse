@@ -175,7 +175,7 @@ fun SettingsScreen(
                     }
                 }
                 HintBar(
-                    hints = listOf("L1" to "", "R1" to "Section", "B" to "Close", "A" to "Select"),
+                    hints = listOf("L1 R1" to "Section", "B" to "Close", "A" to "Select"),
                     onTap = { b -> when (b) { "L1" -> move(-1); "R1" -> move(+1); "B" -> onClose() } },
                 )
             }

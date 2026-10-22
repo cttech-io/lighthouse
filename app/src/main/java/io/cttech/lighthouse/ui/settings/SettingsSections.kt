@@ -152,7 +152,7 @@ internal fun FoldersSection(vm: HomeViewModel, info: LibraryInfo, hasAccess: Boo
                 label = row.source.path.prettyPath(),
                 value = "${row.platformLabel} · ${row.count}",
                 modifier = (if (i == 0) first else Modifier).focusRequester(r),
-                note = if (row.source.autoDetected) "Found automatically" else "Added by you",
+                note = if (row.source.autoDetected) null else "Added by you",
             ) {
                 overlay.show(r) {
                     OptionPicker(
@@ -261,7 +261,7 @@ internal fun PlatformsSection(vm: HomeViewModel, info: LibraryInfo, first: Modif
                     onSubmit = { vm.library.renamePlatform(row.def.id, name) },
                 )
                 Text(
-                    (if (row.def.id == PlatformCatalog.ANDROID) "apps" else "${row.count} games") + if (row.hidden) " · hidden" else "",
+                    (if (row.def.id == PlatformCatalog.ANDROID) "${row.count} apps" else "${row.count} games") + if (row.hidden) " · hidden" else "",
                     color = Lh.colors.textMuted, fontSize = 14.sp, modifier = Modifier.width(130.dp),
                 )
                 PillButton(if (row.hidden) "Show" else "Hide") { vm.library.setPlatformHidden(row.def.id, !row.hidden) }
@@ -291,6 +291,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
             val r = remember { FocusRequester() }
             val active = p.options.firstOrNull { it.profile.id == p.activeId }
             val installed = p.options.filter { it.pkg != null }
+            val ready = active?.pkg != null && active.storageOk && active.corePresent != false
             SectionTitle(p.label)
             SettingRow(
                 label = "Emulator",
@@ -298,7 +299,8 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                 modifier = (if (i == 0) first else Modifier).focusRequester(r),
                 note = when {
                     active == null -> "Install one of: ${p.options.joinToString { it.profile.displayName }}"
-                    installed.size > 1 -> "A to choose between ${installed.size} installed emulators"
+                    installed.size > 1 -> (if (ready) "Ready · " else "") + "A to choose between ${installed.size} installed emulators"
+                    ready -> "Ready"
                     else -> null
                 },
             ) {
@@ -330,7 +332,6 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                     null -> Note("Core: can't check without root (it lives in the emulator's private storage).")
                     true -> Unit
                 }
-                if (active.storageOk && active.corePresent != false) Note("Ready")
             }
         }
     }
@@ -456,16 +457,17 @@ private fun ThemeCard(theme: LhTheme, selected: Boolean, modifier: Modifier = Mo
                 .fillMaxWidth()
                 .height(99.dp)
                 .background(Brush.linearGradient(listOf(theme.colors.accent.copy(alpha = 0.5f), theme.colors.background)), RoundedCornerShape(10.dp))
-                .border(if (focused) 3.dp else if (selected) 2.dp else 0.dp, if (focused) Color.White else theme.colors.accent, RoundedCornerShape(10.dp)),
+                .then(if (focused || selected) Modifier.border(3.dp, if (focused) Color.White else theme.colors.accent, RoundedCornerShape(10.dp)) else Modifier),
         ) {
             theme.backgroundFor("home")?.let { bg ->
                 coil3.compose.AsyncImage(
                     model = bg, contentDescription = null, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().padding(if (focused) 3.dp else if (selected) 2.dp else 0.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.fillMaxSize().padding(if (focused || selected) 3.dp else 0.dp).clip(RoundedCornerShape(8.dp)),
                 )
             }
         }
-        Text((if (selected) "● " else "") + theme.name + if (theme.userTheme) " (yours)" else "", color = Color.White, fontSize = 14.sp, maxLines = 1)
+        Text(theme.name + if (theme.userTheme) " (yours)" else "", color = Color.White, fontSize = 14.sp, maxLines = 1)
+        if (selected) Text("Current", color = theme.colors.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -534,12 +536,15 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
     val settings = LocalAppSettings.current
     val context = LocalContext.current
     HomeAppSection(first)
-    ToggleRow(
-        "Root extras", settings.rootExtrasEnabled,
+    val rootOn = settings.rootExtrasEnabled
+    SettingRow(
+        "Root extras",
+        if (!rootOn) "Off" else if (info.rootAvailable) "On" else "On · no root",
         note = "Uses root, when the device has it, to switch Wi-Fi, Bluetooth and battery saver silently, read the Wi-Fi name, " +
-            "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device." +
-            if (settings.rootExtrasEnabled && !info.rootAvailable) " (Root isn't available right now.)" else "",
-    ) { settings.setRootExtras(it) }
+            "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device.",
+        onLeft = { settings.setRootExtras(!rootOn) },
+        onRight = { settings.setRootExtras(!rootOn) },
+    ) { settings.setRootExtras(!rootOn) }
     ChoiceRow(
         label = "Wi-Fi network name",
         options = WifiNameSource.entries,

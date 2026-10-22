@@ -138,11 +138,11 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                 }
                                 1 -> {
                                     Title("Your games")
+                                    val total = library.platforms.filter { it.def.id != io.cttech.lighthouse.library.PlatformCatalog.ANDROID }.sumOf { it.count }
+                                    if (info.storageAccess) Note("Found $total games so far. Check each folder's platform below; A on a folder changes it.")
                                     StorageSection(vm, info.storageAccess, firstMod)
                                     FoldersSection(vm, library, info.storageAccess)
                                     LibraryAppsSection(vm, library, info.storageAccess)
-                                    val total = library.platforms.filter { it.def.id != io.cttech.lighthouse.library.PlatformCatalog.ANDROID }.sumOf { it.count }
-                                    if (info.storageAccess) Note("Found $total games so far. Check each folder's platform; A on a folder changes it.")
                                 }
                                 2 -> {
                                     Title("Emulators")
@@ -190,7 +190,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                     }
                 }
                 HintBar(
-                    hints = buildList { add("L1" to ""); add("R1" to "Step"); if (step > 0) add("B" to "Back"); add("A" to "Select") },
+                    hints = buildList { add("L1 R1" to "Step"); if (step > 0) add("B" to "Back"); add("A" to "Select") },
                     onTap = { b -> when (b) { "L1", "B" -> back(); "R1" -> if (step < last) step++ } },
                 )
             }

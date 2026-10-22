@@ -10,6 +10,7 @@
 - **No "N games have no cover" pop-up straight after setup.** Setup's Covers step has just asked; games added later are still offered.
 - **Game and app menus are an even list.** Full-width rows instead of pills of different widths, with Hide (or Remove shortcut) set apart at the bottom.
 - **Remove cover and Remove shortcut ask first.** The first A changes the button to "Press A again to remove…"; moving away or waiting a few seconds cancels. Both deleted something straight away before. The cover picker only offers Remove cover when there is one.
+- **Settings and setup polish.** One "L1 R1 Section" (or "Step") hint instead of a bare L1 chip; theme tiles only outline the current theme, now labelled "Current"; Root extras says "On · no root" when root isn't available; Platforms shows how many Android apps there are; an emulator's "Ready" sits in its row like the other statuses; ROM folders only mark the ones you added; setup's "Check each folder's platform" note is above the folders it refers to.
 - **Grid layout: the focused row is always whole.** Moving down scrolls the row to the top, and the row below fades out at the bottom edge instead of looking cut off by the button hints.
 
 **Fixed**

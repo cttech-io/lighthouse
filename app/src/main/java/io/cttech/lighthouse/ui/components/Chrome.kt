@@ -131,12 +131,17 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
         modifier = modifier.fillMaxWidth().height(HintBarHeight).padding(horizontal = 16.dp),
         content = {
             hints.forEach { (button, label) ->
-                // Tappable for touch users (not focusable: the controller uses the real buttons).
+                // Tappable for touch users (not focusable: the controller uses the real buttons). A hint for a pair
+                // ("L1 R1") shows both glyphs; each one taps as itself, the label as the last.
+                val buttons = button.split(' ')
                 Row(
-                    Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(button) } }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(buttons.last()) } }.padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ButtonGlyph(button, round = true)
+                    buttons.forEachIndexed { i, b ->
+                        if (i > 0) Spacer(Modifier.width(4.dp))
+                        Box(if (buttons.size > 1) Modifier.pointerInput(b) { detectTapGestures { onTap(b) } } else Modifier) { ButtonGlyph(b, round = true) }
+                    }
                     Spacer(Modifier.width(6.dp))
                     Text(label, color = Color.White, fontSize = 14.sp, maxLines = 1, softWrap = false)
                 }
