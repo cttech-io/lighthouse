@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -101,7 +103,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = if (all) 24.dp else 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Lighthouse setup", color = Color.White, fontSize = if (all) 20.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         Spacer(Modifier.width(if (all) 20.dp else 14.dp))
-                        ButtonGlyph("L1")
+                        ButtonGlyph("L1", decorative = true)
                         Spacer(Modifier.width(8.dp))
                         if (all) Steps.forEachIndexed { i, s ->
                             Text(
@@ -115,7 +117,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         Spacer(Modifier.width(8.dp))
-                        ButtonGlyph("R1")
+                        ButtonGlyph("R1", decorative = true)
                     }
                 }
                 key(step) {
@@ -200,4 +202,4 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
 }
 
 @Composable
-private fun Title(text: String) = Text(text, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+private fun Title(text: String) = Text(text, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })

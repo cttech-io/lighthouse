@@ -32,6 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -450,6 +453,7 @@ private fun ThemeCard(theme: LhTheme, selected: Boolean, modifier: Modifier = Mo
             .width(176.dp)
             .onFocusChanged { focused = it.isFocused }
             .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key == Key.ButtonA) { onSelect(); true } else false }
+            .semantics { this.selected = selected } // TalkBack says "selected" rather than reading out "Current"
             .clickable(onClick = onSelect),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -468,7 +472,7 @@ private fun ThemeCard(theme: LhTheme, selected: Boolean, modifier: Modifier = Mo
             }
         }
         Text(theme.name + if (theme.userTheme) " (yours)" else "", color = Color.White, fontSize = 14.sp, maxLines = 1)
-        if (selected) Text("Current", color = theme.colors.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        if (selected) Text("Current", color = theme.colors.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clearAndSetSemantics {})
     }
 }
 

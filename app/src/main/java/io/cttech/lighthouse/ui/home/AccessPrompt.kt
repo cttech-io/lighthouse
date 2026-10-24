@@ -27,6 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,7 +59,7 @@ fun AccessPrompt(onGrant: () -> Unit, onDismiss: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
         ) {
-            Text("Find your games", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("Find your games", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.height(12.dp))
             Text(
                 "Lighthouse needs \"All files access\" to find ROM folders (like Games/PS2 on your SD card) " +

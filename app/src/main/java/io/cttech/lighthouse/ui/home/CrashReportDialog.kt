@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -80,7 +82,7 @@ fun CrashReportDialog(report: CrashReports.Report, afterCrash: Boolean, onDelete
             Modifier.popupWidth(760.dp).background(Lh.colors.surface, RoundedCornerShape(18.dp)).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(if (afterCrash) "Lighthouse closed unexpectedly" else "Last crash report", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(if (afterCrash) "Lighthouse closed unexpectedly" else "Last crash report", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(
                 "This report was saved on this device and hasn't been sent anywhere. To help fix it, send it one of these ways; " +
                     "you'll see it again before it goes. Report on GitHub needs a GitHub account" +

@@ -42,6 +42,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -122,7 +124,7 @@ fun AppDrawer(hiddenState: (String) -> Boolean?, onSetHidden: (String, Boolean) 
     ) {
         Column(Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 18.dp, bottom = HintBarHeight), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("All apps", color = Lh.colors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text("All apps", color = Lh.colors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
                 ControllerTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -191,7 +193,7 @@ private fun AppMenu(app: DrawerApp, hidden: Boolean?, onOpen: () -> Unit, onSetH
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(app.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+            Text(app.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, modifier = Modifier.semantics { heading() })
             // Same full-width rows as the game menu.
             val row = Modifier.fillMaxWidth()
             PillButton("Open", row.focusRequester(first).onFocusChanged { if (it.isFocused) opened = true }, onClick = onOpen)
@@ -255,7 +257,7 @@ private fun AppTile(app: DrawerApp, modifier: Modifier, onMenu: () -> Unit, onOp
                     else -> false
                 }
             }
-            .combinedClickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onLongClick = onMenu, onClick = onOpen)
+            .combinedClickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = "Open", onLongClickLabel = "Options", onLongClick = onMenu, onClick = onOpen)
             .padding(vertical = 10.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),

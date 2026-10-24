@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -97,7 +99,7 @@ fun LaunchIssueDialog(
                 is LaunchResult.Failed -> "Couldn't start the game" to issue.message
                 LaunchResult.Started -> "" to ""
             }
-            Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(body, color = Lh.colors.text.copy(alpha = 0.85f), fontSize = 16.sp, lineHeight = 22.sp)
             // Somewhere to get it, not just its name. RetroArch profiles share one site, so one button each.
             val gets = (issue as? LaunchResult.EmulatorMissing)?.apps.orEmpty().filter { it.website != null }.distinctBy { it.website }.take(3)

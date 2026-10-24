@@ -47,6 +47,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,6 +120,15 @@ fun CoverCard(
                 }
                 focused = it.isFocused
             }
+            // TalkBack: the title once (not the artwork, monogram and title in turn), with X as an action. No
+            // mergeDescendants here: the clickable below already merges, and a second boundary splits the card in two.
+            .semantics {
+                contentDescription = game.title
+                if (isFavourite) stateDescription = "Favourite"
+                customActions = listOf(
+                    CustomAccessibilityAction(if (isFavourite) "Remove from favourites" else "Add to favourites") { onToggleFavourite(); true },
+                )
+            }
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when (event.key) {
@@ -127,6 +142,8 @@ fun CoverCard(
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
+                onClickLabel = "Play",
+                onLongClickLabel = "Options",
                 onLongClick = onOptions,
                 onClick = onLaunch,
             ),
@@ -144,7 +161,7 @@ fun CoverCard(
                 }
                 AsyncImage(
                     model = request,
-                    contentDescription = game.title,
+                    contentDescription = null, // the card says the title
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -158,7 +175,7 @@ fun CoverCard(
             // Small cards (side cards on 4:3 handhelds are ~60dp wide) only fit the initials, smaller and centred.
             val tiny = maxWidth < 90.dp
             Column(
-                Modifier.fillMaxSize().padding(if (tiny) 4.dp else 10.dp),
+                Modifier.fillMaxSize().clearAndSetSemantics {}.padding(if (tiny) 4.dp else 10.dp),
                 verticalArrangement = if (tiny) androidx.compose.foundation.layout.Arrangement.Center else androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                 horizontalAlignment = if (tiny) Alignment.CenterHorizontally else Alignment.Start,
             ) {
@@ -184,7 +201,7 @@ fun CoverCard(
             }
         }
         if (isFavourite) {
-            Text("♥", color = Color(0xFFFF6A8A), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
+            Text("♥", color = Color(0xFFFF6A8A), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).clearAndSetSemantics {}.padding(8.dp))
         }
     }
 }

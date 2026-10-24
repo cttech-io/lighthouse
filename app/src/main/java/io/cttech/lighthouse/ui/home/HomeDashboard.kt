@@ -41,6 +41,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -106,7 +108,7 @@ internal fun HomeDashboard(
                     color = Lh.colors.textMuted,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 32.dp, top = 8.dp),
+                    modifier = Modifier.padding(start = 32.dp, top = 8.dp).semantics { heading() },
                 )
                 val rowState = rememberLazyListState()
                 val targetItem = row.items.indexOfFirst { homePosition(row, it) == target }

@@ -22,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -73,7 +75,7 @@ internal fun FolderBrowser(roots: List<File>, onPick: (File) -> Unit, onClose: (
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(Modifier.popupWidth(760.dp).padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Choose a ROM folder", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text("Choose a ROM folder", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(dir?.absolutePath ?: "Storage", color = Lh.colors.textMuted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.StartEllipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 dir?.takeUnless { atRoot }?.let { d -> PillButton("Use this folder", Modifier.focusRequester(useButton)) { onPick(d) } }

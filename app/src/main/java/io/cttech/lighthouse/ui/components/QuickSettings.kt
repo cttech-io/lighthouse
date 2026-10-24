@@ -37,6 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -85,19 +92,20 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
     val battery = rememberBatteryState()
     val compact = LocalCompactChrome.current
     Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        StatusButton(requesters.getValue(QuickPanel.Wifi), { onOpen(QuickPanel.Wifi) }) { tint ->
+        StatusButton(requesters.getValue(QuickPanel.Wifi), wifiDescription(wifi.enabled, wifi.connected, wifi.level), { onOpen(QuickPanel.Wifi) }) { tint ->
             WifiGlyph(wifi.enabled, wifi.connected, wifi.level, tint)
         }
         if (bt.available) {
-            StatusButton(requesters.getValue(QuickPanel.Bluetooth), { onOpen(QuickPanel.Bluetooth) }) { tint ->
-                BluetoothGlyph(bt.enabled, !bt.connectedDevices.isNullOrEmpty(), tint)
+            val btConnected = !bt.connectedDevices.isNullOrEmpty()
+            StatusButton(requesters.getValue(QuickPanel.Bluetooth), bluetoothDescription(bt.enabled, btConnected), { onOpen(QuickPanel.Bluetooth) }) { tint ->
+                BluetoothGlyph(bt.enabled, btConnected, tint)
             }
         }
-        StatusButton(requesters.getValue(QuickPanel.Volume), { onOpen(QuickPanel.Volume) }) { tint ->
+        StatusButton(requesters.getValue(QuickPanel.Volume), volumeDescription(vol.level, vol.max, vol.muted), { onOpen(QuickPanel.Volume) }) { tint ->
             VolumeGlyph(vol.level, vol.max, vol.muted, tint)
         }
         if (battery.level >= 0) {
-            StatusButton(requesters.getValue(QuickPanel.Battery), { onOpen(QuickPanel.Battery) }, wide = true) { tint ->
+            StatusButton(requesters.getValue(QuickPanel.Battery), batteryDescription(battery.level, battery.plugged, battery.powerSave), { onOpen(QuickPanel.Battery) }, wide = true) { tint ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     BatteryGlyph(battery.level, battery.plugged, battery.powerSave, tint)
                     if (!compact) Text("${battery.level}%", color = tint, fontSize = 15.sp, fontWeight = FontWeight.Medium)
@@ -108,10 +116,12 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
 }
 
 @Composable
-private fun StatusButton(requester: FocusRequester, onClick: () -> Unit, wide: Boolean = false, glyph: @Composable (Color) -> Unit) {
+private fun StatusButton(requester: FocusRequester, description: String, onClick: () -> Unit, wide: Boolean = false, glyph: @Composable (Color) -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Box(
         Modifier
+            // The glyph is a drawing (and the battery's "80%" would be read twice), so the button says it all.
+            .clearAndSetSemantics { contentDescription = description; role = Role.Button; onClick { onClick(); true } }
             .then(if (wide) Modifier.height(36.dp).padding(horizontal = 0.dp) else Modifier.size(if (LocalCompactChrome.current) 30.dp else 36.dp))
             .clip(if (wide) RoundedCornerShape(50) else CircleShape)
             .then(if (wide) Modifier.background(Color.Transparent).padding(horizontal = 0.dp) else Modifier)
@@ -339,7 +349,7 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
 }
 
 @Composable
-private fun PanelTitle(text: String) = Text(text, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+private fun PanelTitle(text: String) = Text(text, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
 
 @Composable
 private fun StatusLine(text: String, color: Color = Lh.colors.textMuted) = Text(text, color = color, fontSize = 15.sp, lineHeight = 20.sp)

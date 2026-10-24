@@ -132,6 +132,30 @@ fun BatteryGlyph(level: Int, plugged: Boolean, powerSave: Boolean, tint: Color) 
     }
 }
 
+// What TalkBack says for each status icon: the same facts the glyph draws, in words.
+
+fun wifiDescription(enabled: Boolean, connected: Boolean, level: Int): String = when {
+    !enabled -> "Wi-Fi off"
+    !connected -> "Wi-Fi on, not connected"
+    else -> "Wi-Fi connected, signal ${level.coerceIn(1, 4)} of 4"
+}
+
+fun bluetoothDescription(enabled: Boolean, connected: Boolean): String = when {
+    !enabled -> "Bluetooth off"
+    connected -> "Bluetooth on, device connected"
+    else -> "Bluetooth on"
+}
+
+fun volumeDescription(level: Int, max: Int, muted: Boolean): String =
+    if (muted || level == 0) "Volume muted" else "Volume ${if (max > 0) level * 100 / max else level} percent"
+
+fun batteryDescription(level: Int, plugged: Boolean, powerSave: Boolean): String =
+    "Battery $level percent" + when {
+        plugged -> ", charging"
+        powerSave -> ", battery saver on"
+        else -> ""
+    }
+
 /** Speaker with 0–2 waves by level; a cross when muted or at zero. */
 @Composable
 fun VolumeGlyph(level: Int, max: Int, muted: Boolean, tint: Color, size: Dp = 22.dp) {

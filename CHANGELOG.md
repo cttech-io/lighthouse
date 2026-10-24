@@ -5,6 +5,9 @@
 **New**
 - **Opt-in crash reports.** If Lighthouse closes unexpectedly, it saves a report on the device and asks about it next time: read it, then **Report on GitHub** (a pre-filled issue in your browser), **Email it** (to lighthouse@cttech.io, from your own email app), **Share log**, or **Delete**. Nothing is ever sent automatically, and storage paths (which can contain your folder names) are removed from the report. The latest report stays in Settings → About.
 
+**Improved**
+- **TalkBack basics** (#27). The status icons say what they show ("Battery 80 percent, charging", "Wi-Fi connected, signal 3 of 4"); a game is read once by its title, with "Favourite" and an add/remove favourite action; each button hint is one announcement ("Select, A button"); tabs are announced as tabs, with the current one selected; settings rows read their value as their state (on/off rows as switches), and the current choice in a list or theme is "selected"; section, row and pop-up titles are headings, so TalkBack can jump between them. While Settings or a pop-up is open, TalkBack stays in it instead of wandering into HOME behind.
+
 ## 0.1.8 (2026-10-22)
 
 **Changed**

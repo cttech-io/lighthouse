@@ -10,6 +10,13 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import io.cttech.lighthouse.theme.Lh
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -81,7 +88,7 @@ fun TopBar(
         ) {
             // L1 · tabs · R1 take all the room the status icons leave (a weighted spacer used to claim half of it).
             Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
-                ButtonGlyph("L1")
+                ButtonGlyph("L1", decorative = true)
                 Spacer(Modifier.width(10.dp))
                 val listState = rememberLazyListState()
                 LaunchedEffect(selected) { listState.animateScrollToItem((selected - 1).coerceAtLeast(0)) }
@@ -101,6 +108,7 @@ fun TopBar(
                                 .background(bg)
                                 // Tap to switch tabs. Not focusable: the controller uses L1/R1.
                                 .pointerInput(i) { detectTapGestures { onSelect(i) } }
+                                .clearAndSetSemantics { contentDescription = tab.label; role = Role.Tab; this.selected = active; onClick { onSelect(i); true } }
                                 .padding(horizontal = tabPad, vertical = 6.dp),
                         ) {
                             Text(tab.label.uppercase(), color = fg, fontSize = tabFont, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, letterSpacing = 0.6.sp, maxLines = 1)
@@ -108,7 +116,7 @@ fun TopBar(
                     }
                 }
                 Spacer(Modifier.width(10.dp))
-                ButtonGlyph("R1")
+                ButtonGlyph("R1", decorative = true)
             }
             // Always a clear gap between R1 and the status icons, however many tabs there are.
             Spacer(Modifier.width(if (big) 40.dp else if (compact) 12.dp else 24.dp))
@@ -135,7 +143,12 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
                 // ("L1 R1") shows both glyphs; each one taps as itself, the label as the last.
                 val buttons = button.split(' ')
                 Row(
-                    Modifier.clip(RoundedCornerShape(50)).pointerInput(button) { detectTapGestures { onTap(buttons.last()) } }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .pointerInput(button) { detectTapGestures { onTap(buttons.last()) } }
+                        // One announcement per hint ("Select, A button"), not the letters and label separately.
+                        .clearAndSetSemantics { contentDescription = hintDescription(button, label); role = Role.Button; onClick { onTap(buttons.last()); true } }
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     buttons.forEachIndexed { i, b ->
@@ -164,6 +177,17 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
             }
         }
     }
+}
+
+/** What TalkBack says for a hint: "Select, A button", or "Section, L1 or R1 button" for a pair. */
+fun hintDescription(button: String, label: String): String =
+    "$label, ${button.split(' ').joinToString(" or ") { spokenButton(it) }} button"
+
+/** The symbol glyphs by name, so TalkBack doesn't read "trigram for heaven". */
+private fun spokenButton(glyph: String) = when (glyph) {
+    "☰" -> "Start"
+    "⧉" -> "Select"
+    else -> glyph
 }
 
 /** Height of [HintBar]; full-screen pop-ups leave this much room at the bottom so the bar never covers them. */
@@ -231,9 +255,11 @@ fun Modifier.fadingEdges(
 val LocalCompactChrome = compositionLocalOf { false }
 
 @Composable
-fun ButtonGlyph(label: String, round: Boolean = false) {
+fun ButtonGlyph(label: String, round: Boolean = false, decorative: Boolean = false) {
     Box(
         Modifier
+            // Next to tabs or steps the glyph only says "this button moves along"; TalkBack has its own way to move.
+            .then(if (decorative) Modifier.clearAndSetSemantics {} else Modifier.semantics { contentDescription = "${spokenButton(label)} button" })
             .then(if (round) Modifier.size(22.dp) else Modifier.height(22.dp))
             .background(Color.White, if (round) CircleShape else RoundedCornerShape(6.dp))
             .padding(horizontal = if (round) 0.dp else 5.dp),

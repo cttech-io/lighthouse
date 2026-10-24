@@ -41,6 +41,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -149,7 +151,7 @@ fun CoverPicker(game: Game, vm: HomeViewModel, onSetUpKey: () -> Unit, onClose: 
             },
     ) {
         Column(Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 20.dp, bottom = HintBarHeight), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Choose cover: ${game.title}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text("Choose cover: ${game.title}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.semantics { heading() })
             if (hasKey) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ControllerTextField(
                     value = query,
@@ -268,7 +270,7 @@ fun GameOptionsSheet(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+            Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, modifier = Modifier.semantics { heading() })
             game.subtitle?.let { Text(it, color = Lh.colors.textMuted, fontSize = 14.sp) }
             // Full-width rows read as a menu (and keep a steady focus target); Hide/Remove sits apart at the bottom.
             val row = Modifier.fillMaxWidth()
@@ -307,7 +309,7 @@ fun CoverOfferDialog(count: Int, hasKey: Boolean, onFind: () -> Unit, onAlways: 
             Modifier.popupWidth(520.dp).background(Lh.colors.surface, RoundedCornerShape(18.dp)).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(if (count == 1) "1 game has no cover" else "$count games have no cover", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(if (count == 1) "1 game has no cover" else "$count games have no cover", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(
                 "None of your own images matched. Look for covers online?" +
                     if (hasKey) " (SteamGridDB, then libretro box art.)" else " (libretro box art; add a SteamGridDB key in Settings → Covers for more.)",

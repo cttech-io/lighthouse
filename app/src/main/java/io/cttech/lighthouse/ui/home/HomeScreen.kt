@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -194,7 +195,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             },
     ) {
         ThemeBackground(tab.key)
-        Column(Modifier.fillMaxSize()) {
+        // Pop-ups and Settings are drawn over HOME; while one is open TalkBack shouldn't wander into HOME behind it.
+        Column(Modifier.fillMaxSize().then(if (overlay) Modifier.clearAndSetSemantics {} else Modifier)) {
             TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab) {
                 QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
             }

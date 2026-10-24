@@ -22,6 +22,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -140,7 +142,7 @@ private fun KeyFromPhoneDialog(onKey: (String) -> Unit, onClose: () -> Unit) {
         ) {
             if (receiver != null) QrCode(receiver.url, Modifier.size(220.dp))
             Column(Modifier.widthIn(max = 380.dp).weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Send the key from your phone", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
                 when {
                     started == null -> Note("Starting…")
                     receiver == null -> Note("Connect to Wi-Fi first: your phone sends the key over your own network.")

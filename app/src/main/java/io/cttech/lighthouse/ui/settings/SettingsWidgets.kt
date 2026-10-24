@@ -37,6 +37,16 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,7 +60,11 @@ private val RowShape = RoundedCornerShape(12.dp)
 @Composable
 internal fun SectionTitle(title: String) {
     Spacer(Modifier.height(8.dp))
-    Text(title.uppercase(), color = Lh.colors.textMuted.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    // Read as written, not letter by letter as all-caps can be, and a heading so TalkBack can jump between sections.
+    Text(
+        title.uppercase(), color = Lh.colors.textMuted.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+        modifier = Modifier.clearAndSetSemantics { contentDescription = title; heading() },
+    )
 }
 
 @Composable
@@ -68,6 +82,8 @@ internal fun SettingRow(
     modifier: Modifier = Modifier,
     note: String? = null,
     enabled: Boolean = true,
+    /** Marked "●" and reported as selected: the current choice in a picker. */
+    selected: Boolean = false,
     onLeft: (() -> Unit)? = null,
     onRight: (() -> Unit)? = null,
     onClick: () -> Unit,
@@ -75,6 +91,12 @@ internal fun SettingRow(
     var focused by remember { mutableStateOf(false) }
     Column(
         modifier
+            // One announcement (the clickable merges the row): label, value as the state ("Layout, Grid"), then the
+            // note. The ◀ ▶ arrows aren't read.
+            .semantics {
+                if (value != null) stateDescription = value
+                if (selected) this.selected = true
+            }
             .fillMaxWidth()
             .background(if (focused) Color.White.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.05f), RowShape)
             .border(if (focused) 2.dp else 0.dp, if (focused) Lh.colors.focus else Color.Transparent, RowShape)
@@ -93,12 +115,14 @@ internal fun SettingRow(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (selected) Text("● ", color = Color.White, fontSize = 16.sp, modifier = Modifier.clearAndSetSemantics {})
             Text(label, color = if (enabled) Color.White else Lh.colors.textMuted, fontSize = 16.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (value != null) {
                 val arrows = onLeft != null || onRight != null
                 Text(
                     if (arrows && focused) "◀  $value  ▶" else value,
                     color = if (focused) Color.White else Lh.colors.textMuted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                    modifier = Modifier.clearAndSetSemantics {},
                 )
             }
         }
@@ -108,7 +132,10 @@ internal fun SettingRow(
 
 @Composable
 internal fun ToggleRow(label: String, checked: Boolean, modifier: Modifier = Modifier, note: String? = null, onToggle: (Boolean) -> Unit) =
-    SettingRow(label, if (checked) "On" else "Off", modifier, note, onLeft = { onToggle(!checked) }, onRight = { onToggle(!checked) }) { onToggle(!checked) }
+    SettingRow(
+        label, if (checked) "On" else "Off", modifier.semantics { role = Role.Switch; toggleableState = ToggleableState(checked) }, note,
+        onLeft = { onToggle(!checked) }, onRight = { onToggle(!checked) },
+    ) { onToggle(!checked) }
 
 /** ◀ option ▶: A or D-pad right picks the next option, D-pad left the previous one. */
 @Composable
@@ -158,12 +185,13 @@ internal fun <T> OptionPicker(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             val focusIndex = options.indexOf(selected).coerceAtLeast(0)
             options.forEachIndexed { i, o ->
                 SettingRow(
-                    label = (if (o == selected) "● " else "") + label(o),
+                    label = label(o),
                     note = detail(o),
+                    selected = o == selected,
                     modifier = if (i == focusIndex) Modifier.focusRequester(first) else Modifier,
                 ) { onPick(o) }
             }

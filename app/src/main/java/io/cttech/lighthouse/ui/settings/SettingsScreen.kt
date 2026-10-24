@@ -35,6 +35,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -112,10 +120,10 @@ fun SettingsScreen(
                     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = if (narrow) 12.dp else 24.dp), verticalAlignment = Alignment.CenterVertically) {
                         // Small screens: the tabs need the room more than the title does.
                         if (!narrow) {
-                            Text("Settings", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Text("Settings", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
                             Spacer(Modifier.width(20.dp))
                         }
-                        ButtonGlyph("L1")
+                        ButtonGlyph("L1", decorative = true)
                         Spacer(Modifier.width(8.dp))
                         val tabsState = rememberLazyListState()
                         LaunchedEffect(tabIndex) { tabsState.animateScrollToItem((tabIndex - 1).coerceAtLeast(0)) }
@@ -126,6 +134,7 @@ fun SettingsScreen(
                                 Box(
                                     Modifier.clip(RoundedCornerShape(50)).background(bg)
                                         .pointerInput(i) { detectTapGestures { tabIndex = i } }
+                                        .clearAndSetSemantics { contentDescription = t.label; role = Role.Tab; selected = active; onClick { tabIndex = i; true } }
                                         .padding(horizontal = 11.dp, vertical = 6.dp),
                                 ) {
                                     Text(t.label.uppercase(), color = if (active) Color.White else Lh.colors.textMuted, fontSize = 13.sp,
@@ -134,7 +143,7 @@ fun SettingsScreen(
                             }
                         }
                         Spacer(Modifier.width(8.dp))
-                        ButtonGlyph("R1")
+                        ButtonGlyph("R1", decorative = true)
                     }
                 }
                 key(tab) {
