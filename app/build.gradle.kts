@@ -23,8 +23,8 @@ android {
         applicationId = "io.cttech.lighthouse"
         minSdk = 30
         targetSdk = 37
-        versionCode = 15
-        versionName = "0.1.9"
+        versionCode = 16
+        versionName = "0.2.0"
         resValue("string", "app_name", "Lighthouse")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
