@@ -88,7 +88,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun launch(game: Game) {
         viewModelScope.launch {
             when (val r = launcher.launch(game) { id -> !settings.coreHintShown(id) }) {
-                LaunchResult.Started -> repo.recordLaunch(game.key)
+                is LaunchResult.Started -> { repo.recordLaunch(game.key); r.pkg?.let { repo.startSession(game.key, it) } }
                 is LaunchResult.CoreUnchecked -> { settings.markCoreHintShown(r.profile.id); _launchIssue.value = r; pendingRetry = game }
                 else -> { _launchIssue.value = r; pendingRetry = game }
             }
@@ -225,6 +225,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Called from Activity.onResume: re-check permission (it may have just been granted) and rescan. */
     fun onResume() {
+        repo.finishSessions()
         reloadThemes()
         prefs.update { it.copy(hasAccess = repo.hasStorageAccess()) }
         repo.refreshAll()
@@ -286,6 +287,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun unhide(game: Game) = repo.setHidden(game.key, false)
 
     fun recordLaunch(game: Game) = repo.recordLaunch(game.key)
+
+    /** gameKey -> measured play time in ms, for the game menu. */
+    val playTime: StateFlow<Map<String, Long>> = repo.playTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Flips whether [game] counts as a game; back to automatic when it matches the guess. */
     fun toggleCountsAsGame(game: Game) {

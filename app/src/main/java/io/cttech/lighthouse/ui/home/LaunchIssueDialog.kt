@@ -97,7 +97,7 @@ fun LaunchIssueDialog(
                 }
                 is LaunchResult.CoreUnchecked -> "Check you have the core" to coreHintBody(issue)
                 is LaunchResult.Failed -> "Couldn't start the game" to issue.message
-                LaunchResult.Started -> "" to ""
+                is LaunchResult.Started -> "" to ""
             }
             Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(body, color = Lh.colors.text.copy(alpha = 0.85f), fontSize = 16.sp, lineHeight = 22.sp)

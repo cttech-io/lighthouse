@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+**New**
+- **Play time.** Games started from Lighthouse now count how long they were actually played, shown in the game's menu ("Played 3 h 20 min"). It uses Android's **Usage access**, which you allow in **Settings → Library → Play time**, so time asleep, with the screen off or in another app doesn't count. Without Usage access nothing is measured, and Continue playing works as before. The hours stay on the device.
+
 ## 0.1.9 (2026-10-26)
 
 **New**

@@ -13,8 +13,10 @@ import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.data.db.LibraryDao
 import io.cttech.lighthouse.data.db.PlayEntity
+import io.cttech.lighthouse.data.db.SessionEntity
 import io.cttech.lighthouse.data.db.SourceEntity
 import io.cttech.lighthouse.storage.StorageAccess
+import io.cttech.lighthouse.system.PlayTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,6 +52,8 @@ class LibraryRepository(
         dao.observeCovers().map { list -> list.filter { it.path.isNotEmpty() }.associate { it.gameKey to it.path } } // "none" = removed
     val favourites: Flow<List<String>> = dao.observeFavourites().map { list -> list.map { it.gameKey } }
     val plays: Flow<List<PlayEntity>> = dao.observePlays()
+    /** gameKey -> measured play time in ms (only games with some). */
+    val playTime: Flow<Map<String, Long>> = dao.observePlayTime().map { list -> list.associate { it.gameKey to it.playedMs } }
     val hidden: Flow<List<String>> = dao.observeHidden()
     /** Every known ROM folder, including ones the user switched off ([SourceEntity.ignored]). */
     val sources: Flow<List<SourceEntity>> = dao.observeSources()
@@ -129,6 +133,31 @@ class LibraryRepository(
 
     fun recordLaunch(key: String) {
         scope.launch { dao.recordLaunch(key, System.currentTimeMillis()) }
+    }
+
+    private val sessionLock = Mutex()
+
+    /** Opens a play session for [key]; [pkg] is the app that was started. Finished by [finishSessions]. */
+    fun startSession(key: String, pkg: String) {
+        val now = System.currentTimeMillis()
+        scope.launch { sessionLock.withLock { dao.insertSession(SessionEntity(gameKey = key, packageName = pkg, startedAt = now)) } }
+    }
+
+    /**
+     * Lighthouse is back in front: every open session ends now, with the time its app was really in front.
+     * Sessions left open by a restart of Lighthouse are finished the same way.
+     */
+    fun finishSessions() {
+        val now = System.currentTimeMillis()
+        scope.launch {
+            sessionLock.withLock {
+                for (s in dao.openSessions()) {
+                    val played = PlayTime.measure(app, s.packageName, s.startedAt, now)
+                    dao.finishSession(s.id, now, played)
+                    Log.i(TAG, "session ${s.gameKey}: ${played?.let { "${it / 1000} s" } ?: "not measured"}")
+                }
+            }
+        }
     }
 
     fun toggleFavourite(key: String) {

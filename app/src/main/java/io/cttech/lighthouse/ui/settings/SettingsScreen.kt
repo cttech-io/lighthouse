@@ -159,6 +159,7 @@ fun SettingsScreen(
                             when (tab) {
                                 SettingsTab.Library -> {
                                     StorageSection(vm, info.storageAccess, firstMod)
+                                    PlayTimeRow()
                                     FoldersSection(vm, library, info.storageAccess)
                                     LibraryAppsSection(vm, library, info.storageAccess)
                                     HiddenSection(hidden, onUnhide)

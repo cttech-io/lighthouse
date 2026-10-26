@@ -52,6 +52,18 @@ interface LibraryDao {
     @Query("INSERT INTO plays (gameKey, lastPlayedAt, launchCount) VALUES (:key, :at, 1) ON CONFLICT(gameKey) DO UPDATE SET lastPlayedAt = :at, launchCount = launchCount + 1")
     suspend fun recordLaunch(key: String, at: Long)
 
+    @Insert
+    suspend fun insertSession(session: SessionEntity): Long
+
+    @Query("SELECT * FROM sessions WHERE endedAt IS NULL")
+    suspend fun openSessions(): List<SessionEntity>
+
+    @Query("UPDATE sessions SET endedAt = :endedAt, playedMs = :playedMs WHERE id = :id")
+    suspend fun finishSession(id: Long, endedAt: Long, playedMs: Long?)
+
+    @Query("SELECT gameKey, SUM(playedMs) AS playedMs FROM sessions WHERE playedMs IS NOT NULL GROUP BY gameKey")
+    fun observePlayTime(): Flow<List<PlayTimeTotal>>
+
     @Query("SELECT * FROM covers")
     fun observeCovers(): Flow<List<CoverEntity>>
 

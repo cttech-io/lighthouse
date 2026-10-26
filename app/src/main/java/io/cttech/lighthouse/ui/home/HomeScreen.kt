@@ -106,6 +106,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val launchIssue by vm.launchIssue.collectAsStateWithLifecycle()
     val coverJob by vm.covers.job.collectAsStateWithLifecycle()
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
+    val playTime by vm.playTime.collectAsStateWithLifecycle()
     val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var settingsOnCovers by remember { mutableStateOf(false) }
@@ -262,6 +263,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             GameOptionsSheet(
                 game = g,
                 isFavourite = g.key in state.favourites,
+                playedMs = playTime[g.key],
                 onPlay = { vm.launch(g) },
                 onToggleFavourite = { vm.toggleFavourite(g) },
                 onChangeCover = { vm.openCoverPicker(g) },

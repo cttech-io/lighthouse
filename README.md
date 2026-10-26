@@ -36,6 +36,7 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 **Launching**
 - One button to play, using per-emulator launch profiles: **Eden** (Switch), **DuckStation** (PS1), **ARMSX2** (PS2), **PPSSPP** (PSP), **melonDS** (DS), **Azahar** (3DS), **Dolphin** (GameCube, Wii), **Flycast** (Dreamcast), **RetroArch** with PCSX ReARMed (PS1), mGBA (GBA/GBC), Mupen64Plus-Next (N64) and FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast and Stella (the 8- and 16-bit systems), **DroidDeck**, **GameNative**. You can choose the emulator per platform.
 - Clear fixes when something's missing: emulator not installed, no storage permission, RetroArch core not downloaded.
+- **Play time** per game (optional): how long the game was actually in front, so sleep and switching to other apps don't count. It needs Android's Usage access, which you allow in Settings → Library.
 
 **Covers**
 - Your own images first (a picture named like the ROM, or in `Lighthouse/covers/<platform>/`).
@@ -81,6 +82,8 @@ To check a download, see [Verifying a release](SECURITY.md#verifying-a-release).
 Lighthouse has no analytics, accounts, ads or tracking. It only goes online when you ask it to fetch covers (libretro, and SteamGridDB with your own key). "Send from phone" runs a short-lived HTTPS page on your local network, only while that screen is open.
 
 If Lighthouse crashes, it saves a crash report on the device and asks about it the next time it opens. Nothing is sent automatically: you can read the report, then send it yourself (a pre-filled GitHub issue, an email to lighthouse@cttech.io from your own email app, or the share sheet), or delete it. File paths under shared storage are removed from the report. The latest one stays in Settings → About until you delete it.
+
+Play time is optional and needs Android's **Usage access**. With it, Lighthouse looks only at the app a game was started in, between starting the game from Lighthouse and coming back, and keeps the hours on the device.
 
 ## Building
 

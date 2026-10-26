@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Lets the app drawer hand an app to the system uninstall dialog. -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Play time: Usage access, granted by the user in Android settings. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <!-- Cover art only (SteamGridDB, libretro thumbnails), and only when the user asks. No analytics. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Quick settings: read-only Wi-Fi/network state, Bluetooth device list (asked at runtime). -->

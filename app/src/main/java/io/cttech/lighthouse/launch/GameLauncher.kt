@@ -26,7 +26,8 @@ private const val MOONLIGHT_WEBSITE = "https://github.com/moonlight-stream/moonl
 
 /** What happened when we tried to start a game; anything but [Started] is shown to the user with a fix. */
 sealed interface LaunchResult {
-    data object Started : LaunchResult
+    /** [pkg]: the app that was started (the emulator, game or Moonlight), whose time in front is the play time. */
+    data class Started(val pkg: String?) : LaunchResult
     /** No profile for this platform has its app installed. [apps] are the ones that would work. */
     data class EmulatorMissing(val apps: List<MissingApp>) : LaunchResult
     /** e.g. RetroArch without storage permission: it can't open ROMs by path. */
@@ -82,7 +83,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         }
         if (game.platformId == PlatformCatalog.SHORTCUTS) {
             val (pkg, id) = game.key.substringAfter('|').split('/', limit = 2).takeIf { it.size == 2 } ?: return LaunchResult.Failed("Broken shortcut")
-            return if (io.cttech.lighthouse.library.PinnedShortcuts.launch(context, pkg, id)) LaunchResult.Started
+            return if (io.cttech.lighthouse.library.PinnedShortcuts.launch(context, pkg, id)) LaunchResult.Started(pkg)
             else LaunchResult.Failed("${game.title} couldn't be opened. Is Lighthouse still the default Home app?")
         }
         if (game.platformId == PlatformCatalog.MOONLIGHT) {
@@ -209,7 +210,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
 
     private fun start(intent: Intent): LaunchResult = try {
         context.startActivity(intent)
-        LaunchResult.Started
+        LaunchResult.Started(intent.component?.packageName ?: intent.`package`)
     } catch (e: ActivityNotFoundException) {
         LaunchResult.Failed("The emulator didn't accept the game (${e.message})")
     } catch (e: SecurityException) {

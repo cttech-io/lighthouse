@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import io.cttech.lighthouse.system.LocalAppSettings
+import io.cttech.lighthouse.system.PlayTime
 import io.cttech.lighthouse.system.WifiNameSource
 import io.cttech.lighthouse.theme.Lh
 import io.cttech.lighthouse.theme.LhTheme
@@ -122,6 +123,25 @@ internal fun StorageSection(vm: HomeViewModel, hasAccess: Boolean, first: Modifi
         SettingRow("All files access", "Grant…", first, note = "Needed to find ROM folders (like Games/PS2 on your SD card). Lighthouse only reads your game folders.") {
             vm.storageAccessIntent()?.let { runCatching { context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         }
+    }
+}
+
+/** Usage access, which play time needs. Rechecked on return from Android's settings. */
+@Composable
+internal fun PlayTimeRow() {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(PlayTime.hasAccess(context)) }
+    LifecycleResumeEffect(Unit) { allowed = PlayTime.hasAccess(context); onPauseOrDispose { } }
+    val open = {
+        runCatching { context.startActivity(PlayTime.settingsIntent(context)) }.onFailure { runCatching { context.startActivity(PlayTime.listIntent()) } }
+        Unit
+    }
+    if (allowed) {
+        SettingRow("Play time", "On", note = "Lighthouse counts how long each game you start from here is actually in front, using Android's Usage access. " +
+            "Sleep and other apps don't count. Turn it off in Android's Usage access settings.", onClick = open)
+    } else {
+        SettingRow("Play time", "Allow Usage access…", note = "To count play time, Lighthouse needs Android's Usage access. It only looks at the game's app, " +
+            "between starting a game and coming back to Lighthouse, and the hours stay on this device.", onClick = open)
     }
 }
 
@@ -596,7 +616,9 @@ internal fun AboutSection(first: Modifier = Modifier) {
             "This happens only when you allow it (Settings → Covers, or the \"find covers?\" prompt). Everything else stays on the device.\n" +
             "• \"Send from phone\" (Settings → Covers) opens a one-time HTTPS page on your own Wi-Fi while its QR code is showing, and closes once the key arrives.\n" +
             "• Crash reports are saved on the device and never sent automatically. After a crash Lighthouse asks; you can send one yourself " +
-            "(GitHub, email or the share sheet), and you see it first.",
+            "(GitHub, email or the share sheet), and you see it first.\n" +
+            "• Play time (with Usage access, Settings → Library) is worked out from when the game's app was in front. Only games " +
+            "started from Lighthouse are counted, and the hours stay on the device.",
     )
 }
 

@@ -239,6 +239,8 @@ private fun GridChoice(grid: SteamGridDb.Grid, modifier: Modifier, label: String
 fun GameOptionsSheet(
     game: Game,
     isFavourite: Boolean,
+    /** Measured play time in ms; null when none has been measured. */
+    playedMs: Long?,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
     onChangeCover: () -> Unit,
@@ -272,6 +274,7 @@ fun GameOptionsSheet(
         ) {
             Text(game.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, modifier = Modifier.semantics { heading() })
             game.subtitle?.let { Text(it, color = Lh.colors.textMuted, fontSize = 14.sp) }
+            playedMs?.let { Text("Played ${io.cttech.lighthouse.system.PlayTime.format(it)}", color = Lh.colors.textMuted, fontSize = 14.sp) }
             // Full-width rows read as a menu (and keep a steady focus target); Hide/Remove sits apart at the bottom.
             val row = Modifier.fillMaxWidth()
             PillButton("Play", row.focusRequester(first)) { onClose(); onPlay() }

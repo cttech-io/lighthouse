@@ -48,13 +48,30 @@ data class GameEntity(
 
 fun gameKey(platformId: String, locator: String) = "$platformId|$locator"
 
-/** Launch history, keyed like favourites. Drives "Continue playing" (and play-time tracking later). */
+/** Launch history, keyed like favourites. Drives "Continue playing"; play time is in [SessionEntity]. */
 @Entity(tableName = "plays")
 data class PlayEntity(
     @PrimaryKey val gameKey: String,
     val lastPlayedAt: Long,
     val launchCount: Int,
 )
+
+/**
+ * One play session: from a launch until Lighthouse is back in front. [packageName] is the app that was started;
+ * [playedMs] is how long it was really in front (Android's usage events), null while open or without Usage access.
+ */
+@Entity(tableName = "sessions", indices = [Index(value = ["gameKey"])])
+data class SessionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val gameKey: String,
+    val packageName: String,
+    val startedAt: Long,
+    val endedAt: Long? = null,
+    val playedMs: Long? = null,
+)
+
+/** Total measured play time for one game. */
+data class PlayTimeTotal(val gameKey: String, val playedMs: Long)
 
 /** Cover art for a game, keyed like favourites so rescans keep it. [source]: manual, steamgriddb, libretro. */
 @Entity(tableName = "covers")
