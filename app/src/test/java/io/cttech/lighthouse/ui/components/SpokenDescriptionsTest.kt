@@ -12,6 +12,13 @@ class SpokenDescriptionsTest {
         assertEquals("Wi-Fi connected, signal 1 of 4", wifiDescription(enabled = true, connected = true, level = 0)) // as drawn
     }
 
+    @Test fun network() {
+        assertEquals("Wi-Fi connected, signal 3 of 4", networkDescription(true, true, 3, ethernet = false, tailscale = false))
+        assertEquals("Ethernet connected", networkDescription(true, true, 3, ethernet = true, tailscale = false))
+        assertEquals("Ethernet connected, Tailscale on", networkDescription(false, false, 0, ethernet = true, tailscale = true))
+        assertEquals("Wi-Fi on, not connected, Tailscale on", networkDescription(true, false, 0, ethernet = false, tailscale = true))
+    }
+
     @Test fun bluetooth() {
         assertEquals("Bluetooth off", bluetoothDescription(enabled = false, connected = false))
         assertEquals("Bluetooth on", bluetoothDescription(enabled = true, connected = false))

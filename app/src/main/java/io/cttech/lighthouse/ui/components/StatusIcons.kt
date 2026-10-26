@@ -42,6 +42,29 @@ fun WifiGlyph(enabled: Boolean, connected: Boolean, level: Int, tint: Color, siz
     }
 }
 
+/** Wired network: a box on top joined to two below, like a network diagram. */
+@Composable
+fun EthernetGlyph(tint: Color, size: Dp = 22.dp) {
+    Canvas(Modifier.size(size)) {
+        val box = Size(u(6f), u(5f))
+        drawRect(tint, Offset(u(9f), u(3f)), box, style = stroke(2f))
+        drawRect(tint, Offset(u(3f), u(16f)), box, style = stroke(2f))
+        drawRect(tint, Offset(u(15f), u(16f)), box, style = stroke(2f))
+        drawLine(tint, Offset(u(12f), u(8f)), Offset(u(12f), u(12f)), strokeWidth = u(2f), cap = StrokeCap.Round)
+        drawLine(tint, Offset(u(6f), u(12f)), Offset(u(18f), u(12f)), strokeWidth = u(2f), cap = StrokeCap.Round)
+        drawLine(tint, Offset(u(6f), u(12f)), Offset(u(6f), u(16f)), strokeWidth = u(2f), cap = StrokeCap.Round)
+        drawLine(tint, Offset(u(18f), u(12f)), Offset(u(18f), u(16f)), strokeWidth = u(2f), cap = StrokeCap.Round)
+    }
+}
+
+/** Small filled dot in the top-right corner of a status glyph: Tailscale is on. */
+@Composable
+fun VpnBadge(tint: Color, size: Dp = 22.dp) {
+    Canvas(Modifier.size(size)) {
+        drawCircle(tint, radius = u(3.2f), center = Offset(u(20.5f), u(3.5f)))
+    }
+}
+
 /** Bluetooth rune; dots either side when a device is connected. */
 @Composable
 fun BluetoothGlyph(enabled: Boolean, connected: Boolean, tint: Color, size: Dp = 22.dp) {
@@ -139,6 +162,10 @@ fun wifiDescription(enabled: Boolean, connected: Boolean, level: Int): String = 
     !connected -> "Wi-Fi on, not connected"
     else -> "Wi-Fi connected, signal ${level.coerceIn(1, 4)} of 4"
 }
+
+/** The Network button: wired wins over Wi-Fi (Android prefers it too), then Tailscale if it's on. */
+fun networkDescription(wifiEnabled: Boolean, wifiConnected: Boolean, wifiLevel: Int, ethernet: Boolean, tailscale: Boolean): String =
+    (if (ethernet) "Ethernet connected" else wifiDescription(wifiEnabled, wifiConnected, wifiLevel)) + if (tailscale) ", Tailscale on" else ""
 
 fun bluetoothDescription(enabled: Boolean, connected: Boolean): String = when {
     !enabled -> "Bluetooth off"

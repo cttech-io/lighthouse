@@ -119,6 +119,24 @@ class AppSettings(context: Context) {
         prefs.edit().putString(KEY_WIFI_NAME, source.name).apply()
     }
 
+    /** Tailscale exit node offered in the Network panel, by its name in Tailscale. Empty = none offered. */
+    var tailscaleExitNode by mutableStateOf(prefs.getString(KEY_TS_EXIT_NODE, "").orEmpty())
+        private set
+
+    fun updateTailscaleExitNode(name: String) {
+        tailscaleExitNode = name
+        prefs.edit().putString(KEY_TS_EXIT_NODE, tailscaleExitNode).apply()
+    }
+
+    /** While using the exit node, still reach devices on the local network (Tailscale's "Allow LAN access"). */
+    var tailscaleExitNodeLan by mutableStateOf(prefs.getBoolean(KEY_TS_EXIT_LAN, true))
+        private set
+
+    fun updateTailscaleExitNodeLan(on: Boolean) {
+        tailscaleExitNodeLan = on
+        prefs.edit().putBoolean(KEY_TS_EXIT_LAN, on).apply()
+    }
+
     // --- Covers -----------------------------------------------------------------------------------
 
     /** The user's own SteamGridDB API key (cover art). Empty = SteamGridDB not used. */
@@ -311,6 +329,8 @@ class AppSettings(context: Context) {
         const val KEY_EMULATORS = "emulator_choice"
         const val KEY_GAME_OVERRIDES = "game_overrides"
         const val KEY_WIFI_NAME = "wifi_name_source"
+        const val KEY_TS_EXIT_NODE = "tailscale_exit_node"
+        const val KEY_TS_EXIT_LAN = "tailscale_exit_node_lan"
         const val KEY_CARD_SIZE = "card_size"
         const val KEY_LAYOUT = "layout"
         const val KEY_HOME_ORDER = "home_section_order"

@@ -61,6 +61,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.system.RootRadios
+import io.cttech.lighthouse.system.Tailscale
+import io.cttech.lighthouse.system.TailscaleState
+import io.cttech.lighthouse.system.rememberEthernetState
+import io.cttech.lighthouse.system.rememberTailscaleState
 import io.cttech.lighthouse.system.hasLocationPermission
 import io.cttech.lighthouse.system.isLocationOn
 import kotlinx.coroutines.launch
@@ -77,7 +81,7 @@ import io.cttech.lighthouse.system.rememberBluetoothState
 import io.cttech.lighthouse.system.rememberVolume
 import io.cttech.lighthouse.system.rememberWifiState
 
-enum class QuickPanel { Wifi, Bluetooth, Volume, Battery }
+enum class QuickPanel { Network, Bluetooth, Volume, Battery }
 
 
 /**
@@ -87,13 +91,19 @@ enum class QuickPanel { Wifi, Bluetooth, Volume, Battery }
 @Composable
 fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int, onOpen: (QuickPanel) -> Unit) {
     val wifi = rememberWifiState()
+    val ethernet = rememberEthernetState()
+    val tailscale = rememberTailscaleState()
     val bt = rememberBluetoothState(btEpoch)
     val (vol, _) = rememberVolume()
     val battery = rememberBatteryState()
     val compact = LocalCompactChrome.current
     Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        StatusButton(requesters.getValue(QuickPanel.Wifi), wifiDescription(wifi.enabled, wifi.connected, wifi.level), { onOpen(QuickPanel.Wifi) }) { tint ->
-            WifiGlyph(wifi.enabled, wifi.connected, wifi.level, tint)
+        val networkSays = networkDescription(wifi.enabled, wifi.connected, wifi.level, ethernet.connected, tailscale.connected)
+        StatusButton(requesters.getValue(QuickPanel.Network), networkSays, { onOpen(QuickPanel.Network) }) { tint ->
+            Box {
+                if (ethernet.connected) EthernetGlyph(tint) else WifiGlyph(wifi.enabled, wifi.connected, wifi.level, tint)
+                if (tailscale.connected) VpnBadge(tint)
+            }
         }
         if (bt.available) {
             val btConnected = !bt.connectedDevices.isNullOrEmpty()
@@ -165,7 +175,7 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             when (panel) {
-                QuickPanel.Wifi -> WifiPanel(first)
+                QuickPanel.Network -> NetworkPanel(first)
                 QuickPanel.Bluetooth -> BluetoothPanel(first, btEpoch, onBtPermission)
                 QuickPanel.Volume -> VolumePanel(first)
                 QuickPanel.Battery -> BatteryPanel(first)
@@ -175,14 +185,29 @@ fun QuickSettingsPanel(panel: QuickPanel, btEpoch: Int, onBtPermission: () -> Un
     FocusOnAppear(first, panel)
 }
 
+/** Wi-Fi, plus Ethernet when wired and Tailscale when it's installed. */
 @Composable
-private fun WifiPanel(first: FocusRequester) {
+private fun NetworkPanel(first: FocusRequester) {
+    val ethernet = rememberEthernetState()
+    val tailscale = rememberTailscaleState()
+    val sections = ethernet.connected || tailscale.installed
+    PanelTitle(if (sections) "Network" else "Wi-Fi")
+    if (ethernet.connected) {
+        PanelSubtitle("Ethernet")
+        StatusLine(ethernet.address?.let { "Connected · $it" } ?: "Connected", Color.White)
+    }
+    if (sections) PanelSubtitle("Wi-Fi")
+    WifiSection(first)
+    if (tailscale.installed) TailscaleSection(tailscale)
+}
+
+@Composable
+private fun WifiSection(first: FocusRequester) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var epoch by remember { mutableIntStateOf(0) }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { epoch++ }
     val wifi = rememberWifiState(resolveNameWithRoot = true, epoch = epoch)
-    PanelTitle("Wi-Fi")
     StatusLine(
         when {
             !wifi.enabled -> "Off"
@@ -215,6 +240,59 @@ private fun WifiPanel(first: FocusRequester) {
     }
     PillButton("Wi-Fi settings") { context.openFirst(Settings.ACTION_WIFI_SETTINGS) }
 }
+
+/**
+ * Tailscale on/off and the exit node from Settings → System, through Tailscale's own broadcasts. Tailscale doesn't
+ * report back, so Lighthouse watches the VPN appear or go, and says so if nothing happens.
+ */
+@Composable
+private fun TailscaleSection(ts: TailscaleState) {
+    val context = LocalContext.current
+    val settings = LocalAppSettings.current
+    /** The state just asked for, until the VPN matches it or [TAILSCALE_WAIT_MS] passes. */
+    var asked by remember { mutableStateOf<Boolean?>(null) }
+    var noResponse by remember { mutableStateOf(false) }
+    var exitNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(asked, ts.connected) {
+        val want = asked ?: return@LaunchedEffect
+        if (want == ts.connected) { asked = null; return@LaunchedEffect }
+        kotlinx.coroutines.delay(TAILSCALE_WAIT_MS)
+        noResponse = true
+        asked = null
+    }
+    PanelSubtitle("Tailscale")
+    StatusLine(
+        when {
+            asked == true -> "Connecting…"
+            asked == false -> "Disconnecting…"
+            ts.connected -> "On" + (ts.address?.let { " · $it" } ?: "")
+            else -> "Off"
+        },
+        if (ts.connected) Color.White else Lh.colors.textMuted,
+    )
+    if (noResponse) StatusLine("Tailscale didn't respond. Open it to sign in or allow its VPN; it may also have shown a notification.")
+    PillButton(if (ts.connected) "Turn Tailscale off" else "Turn Tailscale on") {
+        noResponse = false
+        exitNote = null
+        asked = !ts.connected
+        if (ts.connected) Tailscale.disconnect(context) else Tailscale.connect(context)
+    }
+    val exitNode = settings.tailscaleExitNode.trim()
+    if (ts.connected && exitNode.isNotEmpty()) {
+        PillButton("Use exit node $exitNode") {
+            Tailscale.useExitNode(context, exitNode, settings.tailscaleExitNodeLan)
+            exitNote = "Asked Tailscale to use $exitNode. If it can't, Tailscale shows a notification."
+        }
+        PillButton("Stop using exit node") {
+            Tailscale.useExitNode(context, null, allowLanAccess = false)
+            exitNote = "Asked Tailscale to stop using an exit node."
+        }
+    }
+    exitNote?.let { StatusLine(it) }
+    PillButton("Open Tailscale") { Tailscale.launchIntent(context)?.let { runCatching { context.startActivity(it) } } }
+}
+
+private const val TAILSCALE_WAIT_MS = 10_000L
 
 @Composable
 private fun BluetoothPanel(first: FocusRequester, btEpoch: Int, onPermission: () -> Unit) {
@@ -350,6 +428,9 @@ private fun VolumeSlider(level: Int, max: Int, muted: Boolean, modifier: Modifie
 
 @Composable
 private fun PanelTitle(text: String) = Text(text, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+
+@Composable
+private fun PanelSubtitle(text: String) = Text(text, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp).semantics { heading() })
 
 @Composable
 private fun StatusLine(text: String, color: Color = Lh.colors.textMuted) = Text(text, color = color, fontSize = 15.sp, lineHeight = 20.sp)

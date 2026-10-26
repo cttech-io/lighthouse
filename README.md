@@ -46,7 +46,7 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 **HOME and navigation**
 - HOME page rows: Favourites, Continue playing, Recently added, Streaming, On your PC, Platforms. Reorder or hide any of them.
 - Carousel or grid per tab, and three card sizes that scale with your screen.
-- Quick settings in the top bar (Wi-Fi, Bluetooth, volume, battery saver). With root, Wi-Fi, Bluetooth and battery saver switch silently.
+- Quick settings in the top bar (network, Bluetooth, volume, battery saver). With root, Wi-Fi, Bluetooth and battery saver switch silently. The network panel also shows a wired (Ethernet) connection, and if **Tailscale** is installed it turns Tailscale on and off and can switch to an exit node you name in Settings → System.
 - With root, a missing RetroArch core can be downloaded and installed from the "Core not installed" pop-up (from libretro's build server, only when you press the button).
 - Can be your **default Home app**: Back never leaves Lighthouse, and the Home button always returns to HOME.
 - Themes: four built in, or [write your own](docs/THEMES.md) with a `theme.json` and background images.
@@ -115,7 +115,7 @@ app/src/main/java/io/cttech/lighthouse/
   launch/        launch profiles (assets/launch_profiles.json) and the launcher
   covers/        cover sources (local, libretro, SteamGridDB) and storage
   data/db/       Room database; schemas in app/schemas/
-  system/        settings, Wi-Fi/Bluetooth/battery, optional root helper
+  system/        settings, network/Bluetooth/battery, Tailscale, optional root helper
   ui/            HOME, shelves, settings, setup, pop-ups, theming
 tools/themegen/  generator for the bundled theme backgrounds
 ```

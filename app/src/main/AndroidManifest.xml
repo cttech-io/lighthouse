@@ -27,6 +27,8 @@
     <queries>
         <!-- Moonlight: its PC games' box art (poster provider) and launch shortcut. -->
         <package android:name="com.limelight" />
+        <!-- Tailscale: the Network panel turns its VPN on and off through its exported receiver. -->
+        <package android:name="com.tailscale.ipn" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

@@ -72,6 +72,7 @@ import io.cttech.lighthouse.ui.components.trapFocus
 import io.cttech.lighthouse.ui.components.FocusOnAppear
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.system.PlayTime
+import io.cttech.lighthouse.system.Tailscale
 import io.cttech.lighthouse.system.WifiNameSource
 import io.cttech.lighthouse.theme.Lh
 import io.cttech.lighthouse.theme.LhTheme
@@ -578,12 +579,34 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
         note = "Android only tells apps the network name if they're allowed to use location (with Location on), or through root. " +
             "Automatic tries location first, then root. Shown in the Wi-Fi panel only; Lighthouse doesn't use your location for anything else.",
     ) { settings.updateWifiNameSource(it) }
+    TailscaleSettings()
     if (!info.network) {
         SettingRow("Network access", "Blocked · App info", note = "Lighthouse has no network access, so covers can't be downloaded. On LineageOS, allow it under App info → Mobile data & Wi-Fi.") {
             vm.openAppInfo(context.packageName)
         }
     }
     SettingRow("Run setup again", null, note = "The first-run walkthrough: folders, emulators, covers, look, Home app.", onClick = onRunSetup)
+}
+
+/** The exit node the Network panel offers (Tailscale can't be asked for its list). Only when Tailscale is installed. */
+@Composable
+private fun TailscaleSettings() {
+    val context = LocalContext.current
+    val settings = LocalAppSettings.current
+    if (!remember(context) { Tailscale.installed(context) }) return
+    SectionTitle("Tailscale")
+    Note("The Network panel turns Tailscale on and off. To switch an exit node from there too, enter its name as Tailscale shows it (e.g. \"home-server\").")
+    Text("Exit node", color = Color.White, fontSize = 16.sp)
+    ControllerTextField(
+        value = settings.tailscaleExitNode,
+        onValueChange = settings::updateTailscaleExitNode,
+        placeholder = "Not set: press A to enter",
+    )
+    ToggleRow(
+        "Allow local network access",
+        settings.tailscaleExitNodeLan,
+        note = "While using the exit node, still reach devices on the network you're connected to, like a printer or a PC.",
+    ) { settings.updateTailscaleExitNodeLan(it) }
 }
 
 @Composable

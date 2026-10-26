@@ -4,6 +4,7 @@
 
 **New**
 - **Play time.** Games started from Lighthouse now count how long they were actually played, shown in the game's menu ("Played 3 h 20 min"). It uses Android's **Usage access**, which you allow in **Settings → Library → Play time**, so time asleep, with the screen off or in another app doesn't count. Without Usage access nothing is measured, and Continue playing works as before. The hours stay on the device.
+- **Network panel: Ethernet and Tailscale.** The Wi-Fi icon in the top bar is now the network icon. On a wired connection (a USB-C dock or adapter) it shows Ethernet, and the panel shows its address. If Tailscale is installed, the panel shows whether it's on (with the device's tailnet address) and turns it on or off; a small dot on the icon means it's on. Name an exit node in **Settings → System → Tailscale** to switch to it, or stop using it, from the panel. This uses Tailscale's own connect and disconnect commands, so Tailscale must already be signed in and allowed as a VPN.
 
 ## 0.1.9 (2026-10-26)
 
