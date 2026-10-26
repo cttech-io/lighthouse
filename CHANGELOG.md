@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 (2026-10-26)
 
 **New**
 - **Opt-in crash reports.** If Lighthouse closes unexpectedly, it saves a report on the device and asks about it next time: read it, then **Report on GitHub** (a pre-filled issue in your browser), **Email it** (to lighthouse@cttech.io, from your own email app), **Share log**, or **Delete**. Nothing is ever sent automatically, and storage paths (which can contain your folder names) are removed from the report. The latest report stays in Settings → About.
