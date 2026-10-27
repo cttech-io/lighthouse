@@ -42,6 +42,15 @@ fun WifiGlyph(enabled: Boolean, connected: Boolean, level: Int, tint: Color, siz
     }
 }
 
+/** Magnifying glass: Search. */
+@Composable
+fun SearchGlyph(tint: Color, size: Dp = 22.dp) {
+    Canvas(Modifier.size(size)) {
+        drawCircle(tint, radius = u(6.5f), center = Offset(u(10.5f), u(10.5f)), style = stroke(2.2f))
+        drawLine(tint, Offset(u(15.5f), u(15.5f)), Offset(u(20.5f), u(20.5f)), strokeWidth = u(2.4f), cap = StrokeCap.Round)
+    }
+}
+
 /** Wired network: a box on top joined to two below, like a network diagram. */
 @Composable
 fun EthernetGlyph(tint: Color, size: Dp = 22.dp) {

@@ -125,6 +125,12 @@ fun QuickSettingsIcons(requesters: Map<QuickPanel, FocusRequester>, btEpoch: Int
     }
 }
 
+/** Opens Search; sits before the status icons so the D-pad reaches it the same way. */
+@Composable
+fun SearchButton(requester: FocusRequester, onClick: () -> Unit) {
+    StatusButton(requester, "Search", onClick) { tint -> SearchGlyph(tint) }
+}
+
 @Composable
 private fun StatusButton(requester: FocusRequester, description: String, onClick: () -> Unit, wide: Boolean = false, glyph: @Composable (Color) -> Unit) {
     var focused by remember { mutableStateOf(false) }

@@ -42,6 +42,8 @@ data class HomeState(
     val statusLine: String = "",
     val selectedTab: Int = 0,
     val favourites: Set<String> = emptySet(),
+    /** Keys of everything launched from Lighthouse at least once: Search's "Played" filter. */
+    val played: Set<String> = emptySet(),
     /** Last focused game per tab, so switching tabs (or a rescan) returns you to the same game. */
     val focusByTab: Map<String, FocusMemory> = emptyMap(),
     val gamesByTab: Map<String, List<Game>> = emptyMap(),
@@ -54,6 +56,9 @@ data class HomeState(
     val currentTab: HomeTab get() = tabs[selectedTab.coerceIn(0, tabs.lastIndex)]
 
     fun gamesFor(tab: HomeTab): List<Game> = gamesByTab[tab.key].orEmpty()
+
+    /** Everything on the shelves (not hidden items or hidden platforms), for Search. */
+    val library: List<Game> get() = gamesByTab.values.flatten()
 
     /** Index of the remembered game; if it has gone (deleted), its old position, clamped. */
     fun focusIndexFor(tab: HomeTab): Int {
@@ -214,6 +219,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             // Home always has something (at least the Platforms row), so it is the natural starting tab.
             selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
             favourites = favKeys.toSet(),
+            played = plays.mapTo(HashSet()) { it.gameKey },
             focusByTab = p.focusByTab,
             gamesByTab = gamesByTab,
             tabDirection = p.tabDirection,

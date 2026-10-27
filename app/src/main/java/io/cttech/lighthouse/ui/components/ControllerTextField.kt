@@ -60,6 +60,8 @@ fun ControllerTextField(
     monospace: Boolean = false,
     imeAction: ImeAction = ImeAction.Done,
     onSubmit: () -> Unit = {},
+    /** Raise it to start editing (and show the keyboard) without an A press; 0 leaves that to the user. */
+    editRequest: Int = 0,
 ) {
     var editing by remember { mutableStateOf(false) }
     var boxFocused by remember { mutableStateOf(false) }
@@ -119,6 +121,12 @@ fun ControllerTextField(
         if (value.isEmpty() && !editing) Text(placeholder, color = Lh.colors.textMuted.copy(alpha = 0.8f), fontSize = 16.sp)
         // While not editing, catch taps here so the inner field can't grab them (and focus) itself.
         if (!editing) Box(Modifier.matchParentSize().clickable(indication = null, interactionSource = null) { editing = true })
+    }
+
+    LaunchedEffect(editRequest) {
+        if (editRequest == 0) return@LaunchedEffect
+        withFrameNanos { } // after the field's first focus callback, which would end editing again
+        editing = true
     }
 
     LaunchedEffect(editing) {

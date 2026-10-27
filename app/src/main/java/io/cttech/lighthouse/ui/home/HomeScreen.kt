@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,6 +76,7 @@ import io.cttech.lighthouse.ui.components.fadingEdges
 import io.cttech.lighthouse.ui.components.QuickPanel
 import io.cttech.lighthouse.ui.components.QuickSettingsIcons
 import io.cttech.lighthouse.ui.components.QuickSettingsPanel
+import io.cttech.lighthouse.ui.components.SearchButton
 import io.cttech.lighthouse.ui.components.rememberBluetoothPermissionRequest
 import io.cttech.lighthouse.ui.components.rememberBtEpoch
 import io.cttech.lighthouse.ui.components.HintBarHeight
@@ -111,6 +113,10 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var settingsOnCovers by remember { mutableStateOf(false) }
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
+    var searchOpen by remember { mutableStateOf(false) }
+    // The platform Search starts filtered to: the tab it was opened from (none from HOME).
+    var searchPlatform by remember { mutableStateOf<String?>(null) }
+    val searchIcon = remember { FocusRequester() }
     val settings = io.cttech.lighthouse.system.LocalAppSettings.current
     var setupOpen by remember { mutableStateOf(!settings.setupDone) } // first-run setup (or "Run setup again")
     val coverOffer by vm.covers.offer.collectAsStateWithLifecycle()
@@ -123,7 +129,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         }
     }
     val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
-    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || setupOpen
+    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || searchOpen || setupOpen
     val showCoverOffer = coverOffer.isNotEmpty() && !busy
     val overlay = busy || showCoverOffer
 
@@ -139,6 +145,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             optionsFor != null -> vm.closeOptions()
             drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
+            searchOpen -> searchOpen = false
             menuOpen -> menuOpen = false
             openPanel != null -> openPanel = null
             else -> return@BackHandler // nothing open: stay put (home app)
@@ -153,6 +160,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             crashReport = null
             menuOpen = false
             drawerOpen = false
+            searchOpen = false
             vm.closeOptions()
             vm.covers.closePicker()
             vm.dismissLaunchIssue()
@@ -167,6 +175,10 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     // Whenever the background itself ends up holding focus (after a restart or an update, or returning from
     // another app), hand it straight back to a card: otherwise A/X/Select do nothing until a D-pad press.
     LaunchedEffect(rootFocused) { if (rootFocused && !overlay) { kotlinx.coroutines.delay(150); refocusToken++ } }
+    fun openSearch() {
+        searchPlatform = (tab as? HomeTab.PlatformTab)?.platform?.id
+        searchOpen = true
+    }
     val hintHost = remember { HintHost() }
     CompositionLocalProvider(LocalRefocusToken provides refocusToken, LocalHintHost provides hintHost) {
     Box(
@@ -190,7 +202,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 when (event.key) {
                     Key.ButtonL1 -> { vm.moveTab(-1); true }
                     Key.ButtonR1 -> { vm.moveTab(+1); true }
-                    Key.ButtonY -> { if (tab !is HomeTab.Home) vm.toggleLayout(); true }
+                    // HOME has no layouts to switch, so Y searches there.
+                    Key.ButtonY -> { if (tab is HomeTab.Home) openSearch() else vm.toggleLayout(); true }
                     else -> false
                 }
             },
@@ -199,7 +212,10 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         // Pop-ups and Settings are drawn over HOME; while one is open TalkBack shouldn't wander into HOME behind it.
         Column(Modifier.fillMaxSize().then(if (overlay) Modifier.clearAndSetSemantics {} else Modifier)) {
             TopBar(state.tabs, state.selectedTab, onSelect = vm::selectTab) {
-                QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SearchButton(searchIcon, ::openSearch)
+                    QuickSettingsIcons(panelIcons, btEpoch) { openPanel = it }
+                }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val metrics = remember(settings.cardSize, maxWidth, maxHeight) { CardMetrics.of(settings.cardSize, maxWidth, maxHeight) }
@@ -259,35 +275,69 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             }
         }
         CoverJobPill(coverJob, Modifier.align(Alignment.BottomStart).padding(start = 24.dp, bottom = 52.dp))
-        optionsFor?.let { g ->
-            GameOptionsSheet(
-                game = g,
-                isFavourite = g.key in state.favourites,
-                playedMs = playTime[g.key],
-                onPlay = { vm.launch(g) },
-                onToggleFavourite = { vm.toggleFavourite(g) },
-                onChangeCover = { vm.openCoverPicker(g) },
-                onRemoveCover = { vm.removeCover(g); refocusToken++ },
-                onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
-                onHide = {
-                    if (g.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) {
-                        vm.removeShortcut(g); refocusToken++
-                        Toast.makeText(context, "${g.title} removed", Toast.LENGTH_SHORT).show()
-                    } else {
-                        vm.hide(g); refocusToken++
-                        Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
-                    }
-                },
-                onClose = { vm.closeOptions(); refocusToken++ },
-            )
+        // The game menu, cover picker and launch problem dialog open from a card: inside Search while it's open,
+        // since Search keeps focus to itself.
+        val launchIssueDialog: @Composable () -> Unit = {
+            launchIssue?.let { issue ->
+                LaunchIssueDialog(
+                    issue = issue,
+                    onDismiss = { vm.dismissLaunchIssue(); refocusToken++ },
+                    onGrantWithRoot = vm::grantStorageAndRetry,
+                    onOpenAppInfo = vm::openAppInfo,
+                    onOpenApp = vm::openApp,
+                    onPlayAnyway = vm::playPending,
+                )
+            }
         }
-        pickerFor?.let { g ->
-            CoverPicker(
-                g, vm,
-                onSetUpKey = { vm.covers.closePicker(); settingsOnCovers = true; menuOpen = true },
-                onClose = { vm.covers.closePicker(); refocusToken++ },
-            )
+        val gameMenus: @Composable () -> Unit = {
+            optionsFor?.let { g ->
+                GameOptionsSheet(
+                    game = g,
+                    isFavourite = g.key in state.favourites,
+                    playedMs = playTime[g.key],
+                    onPlay = { vm.launch(g) },
+                    onToggleFavourite = { vm.toggleFavourite(g) },
+                    onChangeCover = { vm.openCoverPicker(g) },
+                    onRemoveCover = { vm.removeCover(g); refocusToken++ },
+                    onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
+                    onHide = {
+                        if (g.platformId == io.cttech.lighthouse.library.PlatformCatalog.SHORTCUTS) {
+                            vm.removeShortcut(g); refocusToken++
+                            Toast.makeText(context, "${g.title} removed", Toast.LENGTH_SHORT).show()
+                        } else {
+                            vm.hide(g); refocusToken++
+                            Toast.makeText(context, "${g.title} hidden. Unhide it in Settings → Library.", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onClose = { vm.closeOptions(); refocusToken++ },
+                )
+            }
+            pickerFor?.let { g ->
+                CoverPicker(
+                    g, vm,
+                    // Settings draws over everything, so Search (which keeps focus to itself) closes first.
+                    onSetUpKey = { vm.covers.closePicker(); searchOpen = false; settingsOnCovers = true; menuOpen = true },
+                    onClose = { vm.covers.closePicker(); refocusToken++ },
+                )
+            }
         }
+        if (searchOpen) SearchScreen(
+            games = remember(state.gamesByTab) { state.library },
+            platforms = state.tabs.mapNotNull { (it as? HomeTab.PlatformTab)?.platform },
+            favourites = state.favourites,
+            played = state.played,
+            initialPlatform = searchPlatform,
+            actions = CardActions(
+                accent = NeutralAccent,
+                favourites = state.favourites,
+                onFocused = {},
+                onLaunch = vm::launch,
+                onToggleFavourite = vm::toggleFavourite,
+                onOptions = vm::openOptions,
+            ),
+            onClose = { searchOpen = false; refocusToken++ },
+        ) { gameMenus(); launchIssueDialog() }
+        else gameMenus()
         if (drawerOpen) AppDrawer(
             hiddenState = { pkg ->
                 val key = io.cttech.lighthouse.data.db.gameKey(io.cttech.lighthouse.library.PlatformCatalog.ANDROID, pkg)
@@ -334,16 +384,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 refocusToken++
             }
         }
-        launchIssue?.let { issue ->
-            LaunchIssueDialog(
-                issue = issue,
-                onDismiss = { vm.dismissLaunchIssue(); refocusToken++ },
-                onGrantWithRoot = vm::grantStorageAndRetry,
-                onOpenAppInfo = vm::openAppInfo,
-                onOpenApp = vm::openApp,
-                onPlayAnyway = vm::playPending,
-            )
-        }
+        if (!searchOpen) launchIssueDialog()
         if (accessPrompt) {
             AccessPrompt(
                 onGrant = { vm.storageAccessIntent()?.let { runCatching { context.startActivity(it) } } },
@@ -358,12 +399,12 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 when (b) {
                     "B" -> drawerOpen = true
                     "☰" -> { vm.refreshSettingsInfo(); menuOpen = true }
-                    "Y" -> if (tab !is HomeTab.Home) vm.toggleLayout()
+                    "Y" -> if (tab is HomeTab.Home) openSearch() else vm.toggleLayout()
                 }
             },
             hints = buildList {
                 add("B" to "Apps")
-                if (tab !is HomeTab.Home) add("Y" to if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
+                add("Y" to if (tab is HomeTab.Home) "Search" else if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
                 add("☰" to "Settings")
                 add("⧉" to "Options")
                 add("X" to "Favourite")
