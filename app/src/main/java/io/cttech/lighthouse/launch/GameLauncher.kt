@@ -15,6 +15,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.system.Root
+import io.cttech.lighthouse.system.startActivityOnHomeDisplay
 import io.cttech.lighthouse.system.readIdText
 import io.cttech.lighthouse.library.PlatformCatalog
 import java.io.File
@@ -209,7 +210,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
         .replace("{ime}", Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD).orEmpty())
 
     private fun start(intent: Intent): LaunchResult = try {
-        context.startActivity(intent)
+        context.startActivityOnHomeDisplay(intent)
         LaunchResult.Started(intent.component?.packageName ?: intent.`package`)
     } catch (e: ActivityNotFoundException) {
         LaunchResult.Failed("The emulator didn't accept the game (${e.message})")

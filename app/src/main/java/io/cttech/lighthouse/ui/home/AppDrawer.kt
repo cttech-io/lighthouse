@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.widthIn
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import io.cttech.lighthouse.system.startActivityOnHomeDisplay
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -227,7 +228,7 @@ private fun openApp(context: Context, app: DrawerApp) {
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         .setComponent(ComponentName(app.packageName, app.activity))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-    runCatching { context.startActivity(intent) }
+    runCatching { context.startActivityOnHomeDisplay(intent) }
 }
 
 /** Android refuses to uninstall system apps (an updated one can be rolled back, which counts). */

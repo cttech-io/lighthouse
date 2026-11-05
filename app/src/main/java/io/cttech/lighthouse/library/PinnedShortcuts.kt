@@ -34,7 +34,7 @@ object PinnedShortcuts {
     }
 
     fun launch(context: Context, pkg: String, id: String): Boolean = runCatching {
-        launcherApps(context).startShortcut(pkg, id, null, null, Process.myUserHandle()); true
+        launcherApps(context).startShortcut(pkg, id, null, io.cttech.lighthouse.system.DesktopMode.launchOptions(), Process.myUserHandle()); true
     }.onFailure { Log.w(TAG, "launch $pkg/$id failed", it) }.getOrDefault(false)
 
     /** Unpins one shortcut (the others from that app stay pinned). */

@@ -2,6 +2,8 @@ package io.cttech.lighthouse
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
+import android.view.Display
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -11,7 +13,19 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import io.cttech.lighthouse.system.DesktopMode
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.cttech.lighthouse.theme.LocalLhTheme
@@ -20,18 +34,27 @@ import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.home.HomeScreen
 import io.cttech.lighthouse.ui.home.HomeViewModel
 
-class MainActivity : ComponentActivity() {
+open class MainActivity : ComponentActivity() {
     private val home: HomeViewModel by viewModels()
+
+    /** In a desktop window (or any multi-window mode) the system draws its own title bar and taskbar: don't hide them. */
+    private var windowed by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        hideSystemBars()
+        syncWindowState()
         val settings = (application as LighthouseApp).settings
         setContent {
             val themes by home.themes.collectAsStateWithLifecycle()
             val theme = themes.firstOrNull { it.id == settings.themeId } ?: themes.firstOrNull() ?: ThemeRepository.Fallback
-            CompositionLocalProvider(LocalAppSettings provides settings, LocalLhTheme provides theme) { HomeScreen(home) }
+            CompositionLocalProvider(LocalAppSettings provides settings, LocalLhTheme provides theme) {
+                // Full screen draws edge to edge under the (hidden) bars; a window keeps clear of its caption and taskbar.
+                Box(
+                    Modifier.fillMaxSize().background(theme.colors.background)
+                        .then(if (windowed) Modifier.windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.captionBar)) else Modifier),
+                ) { HomeScreen(home) }
+            }
         }
     }
 
@@ -68,7 +91,7 @@ class MainActivity : ComponentActivity() {
     /** singleTask: pressing Home while Lighthouse is the home app delivers a new HOME intent here. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.hasCategory(Intent.CATEGORY_HOME)) home.onHomePressed()
+        if (intent.hasCategory(Intent.CATEGORY_HOME) || intent.hasCategory(CATEGORY_SECONDARY_HOME)) home.onHomePressed()
     }
 
     override fun onResume() {
@@ -79,18 +102,38 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
+        if (hasFocus) syncWindowState()
     }
 
-    /** Console-style full screen; Lighthouse draws its own clock and battery. Swipe reveals the bars briefly. */
-    private fun hideSystemBars() {
+    // Declared in configChanges, so moving or resizing a window, or dragging it to another display, lands here
+    // instead of recreating the activity (which would drop the open pop-up and the focused card).
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        syncWindowState()
+    }
+
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        syncWindowState()
+    }
+
+    /** Remembers which display we're on (so games open there) and whether we're a window or the whole screen. */
+    private fun syncWindowState() {
+        DesktopMode.displayId = display?.displayId ?: Display.DEFAULT_DISPLAY
+        windowed = isInMultiWindowMode
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            if (windowed) {
+                show(WindowInsetsCompat.Type.systemBars())
+            } else {
+                // Console-style full screen; Lighthouse draws its own clock and battery. Swipe reveals the bars briefly.
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
         }
     }
 
     private companion object {
+        const val CATEGORY_SECONDARY_HOME = "android.intent.category.SECONDARY_HOME"
         val DPAD_KEYS = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT)
     }
 }

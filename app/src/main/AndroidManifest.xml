@@ -55,7 +55,15 @@
             android:stateNotNeeded="true"
             android:excludeFromRecents="true"
             android:resumeWhilePausing="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode">
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|fontScale|colorMode|keyboard|keyboardHidden|navigation|uiMode">
+            <!-- Desktop windowing: a sensible first window size, and no smaller than the layout can handle. -->
+            <layout
+                android:defaultWidth="1100dp"
+                android:defaultHeight="700dp"
+                android:minWidth="480dp"
+                android:minHeight="320dp"
+                android:gravity="center" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -64,6 +72,23 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- The home screen of an external display (desktop mode); the phone keeps MainActivity. -->
+        <activity
+            android:name=".SecondaryHomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:excludeFromRecents="true"
+            android:resumeWhilePausing="true"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|fontScale|colorMode|keyboard|keyboardHidden|navigation|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SECONDARY_HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
