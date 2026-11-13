@@ -42,6 +42,15 @@ object Root {
         su != null
     }
 
+    /**
+     * Forgets the cached answer and asks su again. A grant is cached for the life of the process, so without this a
+     * grant revoked in Magisk would still read as granted and Magisk would never get the chance to prompt.
+     */
+    suspend fun recheck(): Boolean {
+        lock.withLock { su = null; denied = false }
+        return available()
+    }
+
     /** True when su exists but refused Lighthouse at the last check; only the root manager can undo that. */
     @Volatile var denied: Boolean = false
         private set

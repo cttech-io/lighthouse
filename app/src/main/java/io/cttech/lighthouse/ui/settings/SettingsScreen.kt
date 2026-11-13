@@ -91,7 +91,7 @@ fun SettingsScreen(
     val info by vm.settingsInfo.collectAsStateWithLifecycle()
     val library by vm.library.info.collectAsStateWithLifecycle()
     val themes by vm.themes.collectAsStateWithLifecycle()
-    LifecycleResumeEffect(Unit) { vm.refreshSettingsInfo(); onPauseOrDispose { } } // e.g. back from granting access
+    LifecycleResumeEffect(Unit) { vm.refreshSettingsInfo(recheckRoot = true); onPauseOrDispose { } } // e.g. back from granting access
     fun move(d: Int) { tabIndex = (tabIndex + d).mod(SettingsTab.entries.size) }
     val currentFirst = remember { arrayOf(FocusRequester()) } // plain holder: not state, written during composition
 

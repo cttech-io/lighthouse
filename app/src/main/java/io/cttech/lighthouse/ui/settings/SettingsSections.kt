@@ -566,7 +566,7 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
     val toggleRoot = {
         settings.setRootExtras(!rootOn)
         // Turning it on asks straight away, so Magisk's prompt appears while the user is looking at it.
-        vm.refreshSettingsInfo()
+        vm.refreshSettingsInfo(recheckRoot = true)
     }
     SettingRow(
         "Root extras",
@@ -585,8 +585,8 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
     ) {
         when {
             !rootOn || info.rootAvailable -> toggleRoot()
-            info.rootDenied -> if (!vm.openRootManager()) vm.refreshSettingsInfo()
-            else -> vm.refreshSettingsInfo() // Not granted yet: asking again brings up the prompt.
+            info.rootDenied -> if (!vm.openRootManager()) vm.refreshSettingsInfo(recheckRoot = true)
+            else -> vm.refreshSettingsInfo(recheckRoot = true) // Not granted yet: asking again brings up the prompt.
         }
     }
     ChoiceRow(

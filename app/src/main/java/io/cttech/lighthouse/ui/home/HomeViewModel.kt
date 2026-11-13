@@ -145,12 +145,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _settingsInfo = MutableStateFlow(SettingsInfo())
     val settingsInfo: StateFlow<SettingsInfo> = _settingsInfo
 
-    fun refreshSettingsInfo() {
+    /** [recheckRoot] asks su again instead of trusting a cached grant (Settings, and the Root extras switch). */
+    fun refreshSettingsInfo(recheckRoot: Boolean = false) {
         viewModelScope.launch {
             _settingsInfo.value = SettingsInfo(
                 network = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { coverService.hasNetwork() },
                 storageAccess = repo.hasStorageAccess(),
-                rootAvailable = io.cttech.lighthouse.system.Root.available(),
+                rootAvailable = io.cttech.lighthouse.system.Root.let { if (recheckRoot) it.recheck() else it.available() },
                 rootDenied = io.cttech.lighthouse.system.Root.denied,
             )
         }
