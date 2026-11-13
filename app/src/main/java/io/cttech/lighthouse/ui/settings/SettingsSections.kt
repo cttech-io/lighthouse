@@ -557,6 +557,17 @@ internal fun HomeAppSection(first: Modifier = Modifier) {
     }
 }
 
+/** Magisk 31.1 dropped su request prompts, so nothing Lighthouse does can make it ask. */
+internal const val MAGISK_NO_PROMPT_NOTE =
+    "This Magisk (31.1 or later) no longer asks apps for root: open it, go to Superuser, switch Lighthouse on, then come back."
+
+/** Setup's nudge to allow root ahead of time on Magisk 31.1+, where no prompt will ever appear. */
+@Composable
+internal fun MagiskGrantRow(vm: HomeViewModel, info: HomeViewModel.SettingsInfo) {
+    if (!LocalAppSettings.current.rootExtrasEnabled || info.rootAvailable || !info.rootGrantInManager) return
+    SettingRow("Root extras", "Allow in Magisk", note = MAGISK_NO_PROMPT_NOTE) { vm.openRootManager() }
+}
+
 @Composable
 internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, onRunSetup: () -> Unit, first: Modifier = Modifier) {
     val settings = LocalAppSettings.current
@@ -573,19 +584,21 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
         when {
             !rootOn -> "Off"
             info.rootAvailable -> "On"
+            info.rootGrantInManager -> "On · allow in Magisk"
             info.rootDenied -> "On · denied · Open Magisk"
             else -> "On · no root · Ask again"
         },
         note = "Uses root, when the device has it, to switch Wi-Fi, Bluetooth and battery saver silently, read the Wi-Fi name, " +
             "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device." +
-            if (rootOn && info.rootDenied) " Magisk is remembering a refusal (or a prompt that timed out), so it won't ask again: " +
+            if (rootOn && !info.rootAvailable && info.rootGrantInManager) " $MAGISK_NO_PROMPT_NOTE"
+            else if (rootOn && info.rootDenied) " Magisk is remembering a refusal (or a prompt that timed out), so it won't ask again: " +
                 "allow Lighthouse in Magisk's Superuser list, then come back." else "",
         onLeft = toggleRoot,
         onRight = toggleRoot,
     ) {
         when {
             !rootOn || info.rootAvailable -> toggleRoot()
-            info.rootDenied -> if (!vm.openRootManager()) vm.refreshSettingsInfo(recheckRoot = true)
+            info.rootGrantInManager || info.rootDenied -> if (!vm.openRootManager()) vm.refreshSettingsInfo(recheckRoot = true)
             else -> vm.refreshSettingsInfo(recheckRoot = true) // Not granted yet: asking again brings up the prompt.
         }
     }

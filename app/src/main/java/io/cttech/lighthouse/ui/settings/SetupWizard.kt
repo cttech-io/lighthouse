@@ -150,6 +150,7 @@ fun SetupWizard(vm: HomeViewModel, onFinish: () -> Unit) {
                                     Title("Emulators")
                                     Note("The emulator each platform uses. If one's missing, install it and come back; Lighthouse notices.")
                                     EmulatorsSection(vm, info.rootAvailable, firstMod)
+                                    MagiskGrantRow(vm, info)
                                 }
                                 3 -> {
                                     Title("Covers")

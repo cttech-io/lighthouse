@@ -29,6 +29,8 @@
         <package android:name="com.limelight" />
         <!-- Tailscale: the Network panel turns its VPN on and off through its exported receiver. -->
         <package android:name="com.tailscale.ipn" />
+        <!-- Magisk: its version decides whether root can be asked for (31.1 removed the prompt) or must be allowed in its app. -->
+        <package android:name="com.topjohnwu.magisk" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

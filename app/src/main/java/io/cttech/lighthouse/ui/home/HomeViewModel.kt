@@ -141,6 +141,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val rootAvailable: Boolean = false,
         /** su exists but refused Lighthouse (Magisk remembers that and won't prompt again). */
         val rootDenied: Boolean = false,
+        /** Magisk 31.1+, which never prompts: apps are allowed ahead of time in its Superuser tab. */
+        val rootGrantInManager: Boolean = false,
     )
     private val _settingsInfo = MutableStateFlow(SettingsInfo())
     val settingsInfo: StateFlow<SettingsInfo> = _settingsInfo
@@ -153,9 +155,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 storageAccess = repo.hasStorageAccess(),
                 rootAvailable = io.cttech.lighthouse.system.Root.let { if (recheckRoot) it.recheck() else it.available() },
                 rootDenied = io.cttech.lighthouse.system.Root.denied,
+                rootGrantInManager = magiskWithoutPrompts(),
             )
         }
     }
+
+    /** Magisk v31.1 (versionCode 31100) removed su request prompts; it also dropped hiding, so the package name is reliable. */
+    private fun magiskWithoutPrompts(): Boolean = runCatching {
+        androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(
+            getApplication<Application>().packageManager.getPackageInfo(ROOT_MANAGERS.first(), 0),
+        ) >= 31100
+    }.getOrDefault(false)
 
     /** Opens Magisk's app (its Superuser list is where a denial is undone); false if it isn't installed under its usual name. */
     fun openRootManager(): Boolean {
