@@ -135,7 +135,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val covers = CoversController(app, coverService, settings, viewModelScope)
     val library = LibrarySettingsModel(app, repo, settings, launcher, viewModelScope, ::shortcutSource)
     /** Facts shown on the Settings page. */
-    data class SettingsInfo(val network: Boolean = true, val storageAccess: Boolean = true, val rootAvailable: Boolean = false)
+    data class SettingsInfo(
+        val network: Boolean = true,
+        val storageAccess: Boolean = true,
+        val rootAvailable: Boolean = false,
+        /** su exists but refused Lighthouse (Magisk remembers that and won't prompt again). */
+        val rootDenied: Boolean = false,
+    )
     private val _settingsInfo = MutableStateFlow(SettingsInfo())
     val settingsInfo: StateFlow<SettingsInfo> = _settingsInfo
 
@@ -145,8 +151,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 network = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { coverService.hasNetwork() },
                 storageAccess = repo.hasStorageAccess(),
                 rootAvailable = io.cttech.lighthouse.system.Root.available(),
+                rootDenied = io.cttech.lighthouse.system.Root.denied,
             )
         }
+    }
+
+    /** Opens Magisk's app (its Superuser list is where a denial is undone); false if it isn't installed under its usual name. */
+    fun openRootManager(): Boolean {
+        val pm = getApplication<Application>().packageManager
+        val pkg = ROOT_MANAGERS.firstOrNull { pm.getLaunchIntentForPackage(it) != null } ?: return false
+        openApp(pkg)
+        return true
     }
 
     // --- Game options (Select / long-press) ---------------------------------------------------------
@@ -395,3 +410,6 @@ private fun formatSize(bytes: Long): String = when {
     bytes >= 1L shl 20 -> String.format(Locale.UK, "%.0f MB", bytes / (1L shl 20).toDouble())
     else -> String.format(Locale.UK, "%.0f KB", bytes / 1024.0)
 }
+
+/** Root manager apps whose Superuser list can undo a denial: Magisk, KernelSU, APatch. A hidden (renamed) Magisk won't match. */
+private val ROOT_MANAGERS = listOf("com.topjohnwu.magisk", "me.weishu.kernelsu", "me.bmax.apatch")

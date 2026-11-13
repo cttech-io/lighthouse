@@ -26,12 +26,25 @@ object Root {
         if (!enabled) return@withLock false
         if (su == null) {
             // Generous timeout: the first call waits on the user answering Magisk's prompt.
-            su = withContext(Dispatchers.IO) { candidates.firstOrNull { exec(it, "id", timeoutSec = 30)?.contains("uid=0") == true } }
-            // Only success is cached; Magisk remembers a denial itself, so retries are cheap.
-            Log.i("LighthouseRoot", "root ${if (su != null) "available via $su" else "unavailable"}")
+            var refused = false
+            su = withContext(Dispatchers.IO) {
+                candidates.firstOrNull { path ->
+                    val (ok, out) = probe(path, "id", timeoutSec = 30) ?: return@firstOrNull false
+                    if (!ok && out.contains("Permission denied", ignoreCase = true)) refused = true
+                    ok && out.contains("uid=0")
+                }
+            }
+            // Only success is cached. Magisk remembers a denial (including a prompt left to time out) and won't
+            // ask again, so the denial is surfaced instead: Settings points the user at Magisk's Superuser list.
+            denied = su == null && refused
+            Log.i("LighthouseRoot", "root ${if (su != null) "available via $su" else if (denied) "denied" else "unavailable"}")
         }
         su != null
     }
+
+    /** True when su exists but refused Lighthouse at the last check; only the root manager can undo that. */
+    @Volatile var denied: Boolean = false
+        private set
 
     /** Single-quotes [s] for the shell, so file names with quotes or `$` can't break out of a root command. */
     fun quote(s: String): String = "'" + s.replace("'", "'\\''") + "'"
@@ -42,11 +55,15 @@ object Root {
         return withContext(Dispatchers.IO) { exec(su!!, command, timeoutSec) }
     }
 
-    private fun exec(suPath: String, command: String, timeoutSec: Long = 8): String? = runCatching {
+    private fun exec(suPath: String, command: String, timeoutSec: Long = 8): String? =
+        probe(suPath, command, timeoutSec)?.takeIf { it.first }?.second
+
+    /** Runs su; (exited 0, output), or null if it couldn't start or timed out. */
+    private fun probe(suPath: String, command: String, timeoutSec: Long = 8): Pair<Boolean, String>? = runCatching {
         val p = ProcessBuilder(suPath, "-c", command).redirectErrorStream(true).start()
         val out = p.inputStream.bufferedReader().readText()
         if (!p.waitFor(timeoutSec, TimeUnit.SECONDS)) { p.destroy(); return null }
-        if (p.exitValue() == 0) out else null
+        (p.exitValue() == 0) to out
     }.getOrNull()
 }
 

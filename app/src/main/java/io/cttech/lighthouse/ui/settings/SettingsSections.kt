@@ -563,14 +563,32 @@ internal fun SystemSection(vm: HomeViewModel, info: HomeViewModel.SettingsInfo, 
     val context = LocalContext.current
     HomeAppSection(first)
     val rootOn = settings.rootExtrasEnabled
+    val toggleRoot = {
+        settings.setRootExtras(!rootOn)
+        // Turning it on asks straight away, so Magisk's prompt appears while the user is looking at it.
+        vm.refreshSettingsInfo()
+    }
     SettingRow(
         "Root extras",
-        if (!rootOn) "Off" else if (info.rootAvailable) "On" else "On · no root",
+        when {
+            !rootOn -> "Off"
+            info.rootAvailable -> "On"
+            info.rootDenied -> "On · denied · Open Magisk"
+            else -> "On · no root · Ask again"
+        },
         note = "Uses root, when the device has it, to switch Wi-Fi, Bluetooth and battery saver silently, read the Wi-Fi name, " +
-            "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device.",
-        onLeft = { settings.setRootExtras(!rootOn) },
-        onRight = { settings.setRootExtras(!rootOn) },
-    ) { settings.setRootExtras(!rootOn) }
+            "check emulator cores and fix emulator permissions. Off behaves exactly like a non-rooted device." +
+            if (rootOn && info.rootDenied) " Magisk is remembering a refusal (or a prompt that timed out), so it won't ask again: " +
+                "allow Lighthouse in Magisk's Superuser list, then come back." else "",
+        onLeft = toggleRoot,
+        onRight = toggleRoot,
+    ) {
+        when {
+            !rootOn || info.rootAvailable -> toggleRoot()
+            info.rootDenied -> if (!vm.openRootManager()) vm.refreshSettingsInfo()
+            else -> vm.refreshSettingsInfo() // Not granted yet: asking again brings up the prompt.
+        }
+    }
     ChoiceRow(
         label = "Wi-Fi network name",
         options = WifiNameSource.entries,

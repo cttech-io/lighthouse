@@ -7,6 +7,9 @@
 - **Network panel: Ethernet and Tailscale.** The Wi-Fi icon in the top bar is now the network icon. On a wired connection (a USB-C dock or adapter) it shows Ethernet, and the panel shows its address. If Tailscale is installed, the panel shows whether it's on (with the device's tailnet address) and turns it on or off; a small dot on the icon means it's on. Name an exit node in **Settings → System → Tailscale** to switch to it, or stop using it, from the panel. This uses Tailscale's own connect and disconnect commands, so Tailscale must already be signed in and allowed as a VPN.
 - **Android desktop mode.** Lighthouse now works in Android's desktop windowing (Android 16+, DeX, a phone on an external display). In a window it can be resized and moved freely, shows the system title bar instead of hiding it, and keeps its place when dragged between displays. Set as the home app, it also becomes the home screen of an external display, and games, emulators and apps you start open on the display you're using rather than on the phone.
 
+**Fixed**
+- **Root extras asks for root, and says when it's been refused.** Magisk remembers a "deny" (including a prompt left to time out) and never asks again, so Settings used to show "On · no root" with no way forward. It now shows **On · denied · Open Magisk**, and A opens Magisk's app to allow Lighthouse; when root simply hasn't been answered yet, **Ask again** brings the prompt back. Turning Root extras on asks straight away.
+
 ## 0.1.9 (2026-10-26)
 
 **New**
