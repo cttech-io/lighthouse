@@ -9,6 +9,7 @@
 
 **Fixed**
 - **Root extras asks for root, and says when it's been refused.** Magisk remembers a "deny" (including a prompt left to time out) and never asks again, so Settings used to show "On · no root" with no way forward. It now shows **On · denied · Open Magisk**, and A opens Magisk's app to allow Lighthouse; when root simply hasn't been answered yet, **Ask again** brings the prompt back. Turning Root extras on asks straight away.
+- **The Wi-Fi name no longer blinks in the Network panel.** With root reading the name, every signal-strength update wiped it and looked it up again, and each time the panel opened it started blank. The name now stays put, and reopening the panel shows it straight away while it's refreshed in the background.
 
 ## 0.1.9 (2026-10-26)
 

@@ -52,6 +52,10 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
     val useLocation = source == WifiNameSource.Auto || source == WifiNameSource.Location
     val useRoot = source == WifiNameSource.Auto || source == WifiNameSource.Root
     var state by remember { mutableStateOf(WifiState(false, false, 0)) }
+    // Kept apart from [state]: every signal-strength callback republishes it without a name, which used to wipe
+    // the root-read name and re-run su, so the name blinked. Starts from the last lookup so reopening the panel
+    // shows it straight away instead of after another su round trip.
+    var rootName by remember { mutableStateOf(lastRootWifiName) }
     DisposableEffect(context, epoch, source) {
         val wifi = context.getSystemService(WifiManager::class.java)
         val cm = context.getSystemService(ConnectivityManager::class.java)
@@ -70,7 +74,7 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
                 name = info?.ssid?.cleanSsid() ?: name
                 publish()
             },
-            onLost = { connected = false; name = null; publish() },
+            onLost = { connected = false; name = null; rootName = null; lastRootWifiName = null; publish() },
         )
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) = publish()
@@ -85,14 +89,19 @@ fun rememberWifiState(resolveNameWithRoot: Boolean = false, epoch: Int = 0): Wif
     }
     // Root fallback for the name (panel only). Location permission is preferred: give its callback a
     // moment to deliver the SSID first, and never touch root when it already has.
+    // The cached name stays on screen while this refreshes it, and is only replaced by a real answer.
     LaunchedEffect(resolveNameWithRoot, state.connected, state.name == null, epoch, source) {
         if (resolveNameWithRoot && useRoot && state.connected && state.name == null) {
             if (useLocation && context.hasLocationPermission()) kotlinx.coroutines.delay(700)
-            if (state.name == null) RootRadios.wifiName()?.let { state = state.copy(name = it) }
+            if (state.name == null) RootRadios.wifiName()?.let { rootName = it; lastRootWifiName = it }
         }
     }
-    return state
+    val showRootName = useRoot && state.connected && state.name == null
+    return if (showRootName && rootName != null) state.copy(name = rootName) else state
 }
+
+/** Last network name read with root, shared across panel openings; cleared when Wi-Fi disconnects. */
+@Volatile private var lastRootWifiName: String? = null
 
 /** WifiInfo wraps SSIDs in quotes and reports "<unknown ssid>" without permission. */
 private fun String.cleanSsid(): String? = removeSurrounding("\"").takeIf { it.isNotBlank() && it != "<unknown ssid>" }
