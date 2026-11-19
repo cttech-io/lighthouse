@@ -243,6 +243,9 @@ fun GameOptionsSheet(
     playedMs: Long?,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
+    /** How many of the user's collections it's in, for the Collections row. */
+    collectionCount: Int,
+    onCollections: () -> Unit,
     onChangeCover: () -> Unit,
     onRemoveCover: () -> Unit,
     onToggleCountsAsGame: () -> Unit,
@@ -279,6 +282,10 @@ fun GameOptionsSheet(
             val row = Modifier.fillMaxWidth()
             PillButton("Play", row.focusRequester(first)) { onClose(); onPlay() }
             PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites", row) { onToggleFavourite(); onClose() }
+            PillButton(
+                when (collectionCount) { 0 -> "Add to a collection"; 1 -> "Collections: in 1"; else -> "Collections: in $collectionCount" },
+                row, onClick = onCollections,
+            )
             PillButton("Change cover", row, onClick = onChangeCover)
             // The image file is deleted, so it can't be undone: ask first.
             if (game.coverPath != null) ConfirmPillButton("Remove cover", "Press A again to remove the cover", row, onConfirm = onRemoveCover)

@@ -44,6 +44,8 @@ data class HomeState(
     val favourites: Set<String> = emptySet(),
     /** Keys of everything launched from Lighthouse at least once: Search's "Played" filter. */
     val played: Set<String> = emptySet(),
+    /** The user's collections, for the game menu's "Collections" and Settings. */
+    val collections: List<io.cttech.lighthouse.model.GameCollection> = emptyList(),
     /** Last focused game per tab, so switching tabs (or a rescan) returns you to the same game. */
     val focusByTab: Map<String, FocusMemory> = emptyMap(),
     val gamesByTab: Map<String, List<Game>> = emptyMap(),
@@ -185,6 +187,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun removeCover(game: Game) { covers.removeCover(game); _optionsFor.value = null }
 
+    // --- Collections ---------------------------------------------------------------------------------
+    private val _collectionsFor = MutableStateFlow<Game?>(null)
+    /** Game whose "Collections" pop-up is open (from its game menu). */
+    val collectionsFor: StateFlow<Game?> = _collectionsFor
+    fun openCollections(game: Game) { _optionsFor.value = null; _collectionsFor.value = game }
+    fun closeCollections() { _collectionsFor.value = null }
+    fun toggleInCollection(collectionId: Long, game: Game) = repo.toggleInCollection(collectionId, game.key)
+    /** A new collection (or the existing one with that name), with [game] in it when given. */
+    fun createCollection(name: String, game: Game? = null) = repo.addToNewCollection(name, game?.key)
+    fun renameCollection(id: Long, name: String) = repo.renameCollection(id, name)
+
+    /** Deletes the collection (its games stay in the library) and forgets its HOME row's place. */
+    fun deleteCollection(id: Long) {
+        val section = io.cttech.lighthouse.model.collectionSectionId(id)
+        repo.deleteCollection(id)
+        settings.updateHomeSectionOrder(settings.homeSectionOrder - section)
+        if (section in settings.hiddenHomeSections) settings.setHomeSectionHidden(section, false)
+    }
+
     // --- Themes ------------------------------------------------------------------------------------
     private val themeRepo = io.cttech.lighthouse.theme.ThemeRepository(app)
     private val _themes = MutableStateFlow<List<io.cttech.lighthouse.theme.LhTheme>>(emptyList())
@@ -203,12 +224,19 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
     private val prefs = MutableStateFlow(UiPrefs(hasAccess = repo.hasStorageAccess()))
 
-    private data class LibrarySnapshot(val games: List<GameEntity>, val covers: Map<String, String>, val hidden: Set<String>)
+    private data class LibrarySnapshot(
+        val games: List<GameEntity>,
+        val covers: Map<String, String>,
+        val hidden: Set<String>,
+        val collections: List<io.cttech.lighthouse.model.GameCollection>,
+    )
 
-    /** Games with covers and hidden keys; re-emits when tab/emulator/"counts as game" settings change. */
-    private val gamesAndCovers = combine(repo.games, repo.coverPaths, repo.hidden, settings.changes) { g, c, h, _ -> LibrarySnapshot(g, c, h.toSet()) }
+    /** Games with covers, hidden keys and collections; re-emits when tab/emulator/"counts as game" settings change. */
+    private val gamesAndCovers = combine(repo.games, repo.coverPaths, repo.hidden, repo.collections, settings.changes) { g, c, h, cs, _ ->
+        LibrarySnapshot(g, c, h.toSet(), cs)
+    }
 
-    val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (allGames, covers, hiddenKeys), favKeys, plays, scan, p ->
+    val state: StateFlow<HomeState> = combine(gamesAndCovers, repo.favourites, repo.plays, repo.scanInfo, prefs) { (allGames, covers, hiddenKeys, collections), favKeys, plays, scan, p ->
         val hiddenTabs = settings.hiddenTabs
         // Hidden items, and everything on a hidden platform, stay out of the shelves (the app drawer still has apps).
         val games = allGames.filter { it.key !in hiddenKeys && it.platformId !in hiddenTabs }
@@ -232,8 +260,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             recentlyPlayed = plays.map { it.gameKey }.filter { key -> byKey[key]?.isGame == true },
             recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
                 .sortedByDescending { it.addedAt }.map { it.key },
-            order = settings.homeSectionOrder,
+            order = io.cttech.lighthouse.system.withCollections(settings.homeSectionOrder, collections.map { it.sectionId }),
             hidden = settings.hiddenHomeSections,
+            collections = collections,
         )
         HomeState(
             tabs = tabs,
@@ -246,6 +275,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             selectedTab = tabs.indexOfFirst { it.key == (p.selectedKey ?: HomeTab.Home.key) }.coerceAtLeast(0),
             favourites = favKeys.toSet(),
             played = plays.mapTo(HashSet()) { it.gameKey },
+            collections = collections,
             focusByTab = p.focusByTab,
             gamesByTab = gamesByTab,
             tabDirection = p.tabDirection,
@@ -355,6 +385,7 @@ internal fun buildHomeRows(
     recentlyAdded: List<String>,
     order: List<String>,
     hidden: Set<String>,
+    collections: List<io.cttech.lighthouse.model.GameCollection> = emptyList(),
 ): List<HomeRow> {
     fun games(keys: List<String>, limit: Int) = keys.mapNotNull { byKey[it] }.take(limit).map { HomeItem.GameItem(it) }
     val streaming = STREAMING_PACKAGES.mapNotNull { pkg -> byKey["${PlatformCatalog.ANDROID}|$pkg"] }.map { HomeItem.GameItem(it) }
@@ -371,7 +402,11 @@ internal fun buildHomeRows(
             "moonlight", HOME_SECTION_TITLES.getValue("moonlight"),
             byPlatform[PlatformCatalog.MOONLIGHT].orEmpty().sortedBy { it.title.lowercase() }.take(30).map { HomeItem.GameItem(it) },
         ),
-    )
+    ) + collections.associate { c ->
+        // All of it (the row is lazy), alphabetical like the shelves; hidden games (not in [byKey]) are left out.
+        val items = c.keys.mapNotNull { byKey[it] }.sortedBy { io.cttech.lighthouse.library.TitleCleaner.sortKey(it.title) }
+        c.sectionId to HomeRow(c.sectionId, c.name, items.map { HomeItem.GameItem(it) })
+    }
     // The user's order (Settings → Appearance → Home sections); the first one shown gets the large covers.
     return order.filter { it !in hidden }.mapNotNull { rows[it] }.filter { it.items.isNotEmpty() }
         .mapIndexed { i, row -> if (i == 0 && row.id != "platforms") row.copy(hero = true) else row }

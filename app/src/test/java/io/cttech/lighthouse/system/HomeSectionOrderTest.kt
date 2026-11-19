@@ -28,4 +28,26 @@ class HomeSectionOrderTest {
     @Test fun unknownIdsAreDropped() {
         assertEquals(HOME_SECTIONS, mergeHomeSectionOrder(HOME_SECTIONS + "retired-section"))
     }
+
+    @Test fun savedCollectionsAreKept() {
+        val saved = listOf("favourites", "collection:3", "continue", "recent", "streaming", "moonlight", "platforms")
+        assertEquals(saved, mergeHomeSectionOrder(saved))
+    }
+
+    @Test fun deletedCollectionsLeaveAndNewOnesFollowTheLastCollection() {
+        val order = listOf("continue", "collection:1", "collection:2", "favourites", "platforms")
+        // 2 was deleted; 5 is new, so it goes where 1 is (the last collection still there).
+        assertEquals(
+            listOf("continue", "collection:1", "collection:5", "favourites", "platforms"),
+            withCollections(order, listOf("collection:1", "collection:5")),
+        )
+    }
+
+    @Test fun theFirstCollectionGoesAfterFavourites() {
+        assertEquals(
+            listOf("favourites", "collection:7", "continue", "recent", "streaming", "moonlight", "platforms"),
+            withCollections(HOME_SECTIONS, listOf("collection:7")),
+        )
+        assertEquals(HOME_SECTIONS, withCollections(HOME_SECTIONS + "collection:9", emptyList()))
+    }
 }

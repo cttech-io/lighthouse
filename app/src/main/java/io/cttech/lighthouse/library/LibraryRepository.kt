@@ -8,6 +8,8 @@ import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.storage.StorageManager
 import android.util.Log
+import io.cttech.lighthouse.data.db.CollectionEntity
+import io.cttech.lighthouse.data.db.CollectionItemEntity
 import io.cttech.lighthouse.data.db.FavouriteEntity
 import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
@@ -15,6 +17,7 @@ import io.cttech.lighthouse.data.db.LibraryDao
 import io.cttech.lighthouse.data.db.PlayEntity
 import io.cttech.lighthouse.data.db.SessionEntity
 import io.cttech.lighthouse.data.db.SourceEntity
+import io.cttech.lighthouse.model.GameCollection
 import io.cttech.lighthouse.storage.StorageAccess
 import io.cttech.lighthouse.system.PlayTime
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -55,6 +59,11 @@ class LibraryRepository(
     /** gameKey -> measured play time in ms (only games with some). */
     val playTime: Flow<Map<String, Long>> = dao.observePlayTime().map { list -> list.associate { it.gameKey to it.playedMs } }
     val hidden: Flow<List<String>> = dao.observeHidden()
+    /** The user's collections, oldest first, each with its games in the order they were added. */
+    val collections: Flow<List<GameCollection>> = combine(dao.observeCollections(), dao.observeCollectionItems()) { cs, items ->
+        val byCollection = items.groupBy({ it.collectionId }, { it.gameKey })
+        cs.map { GameCollection(it.id, it.name, byCollection[it.id].orEmpty()) }
+    }
     /** Every known ROM folder, including ones the user switched off ([SourceEntity.ignored]). */
     val sources: Flow<List<SourceEntity>> = dao.observeSources()
 
@@ -165,6 +174,31 @@ class LibraryRepository(
             if (dao.isFavourite(key) > 0) dao.removeFavourite(key)
             else dao.addFavourite(FavouriteEntity(key, System.currentTimeMillis()))
         }
+    }
+
+    /** Adds [key] to the collection called [name], creating it if there's none by that name (any case). */
+    fun addToNewCollection(name: String, key: String?) {
+        val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
+        scope.launch {
+            val id = dao.collectionNamed(clean) ?: dao.insertCollection(CollectionEntity(name = clean, createdAt = System.currentTimeMillis()))
+            if (key != null) dao.addToCollection(CollectionItemEntity(id, key, System.currentTimeMillis()))
+        }
+    }
+
+    fun toggleInCollection(id: Long, key: String) {
+        scope.launch {
+            if (dao.inCollection(id, key) > 0) dao.removeFromCollection(id, key)
+            else dao.addToCollection(CollectionItemEntity(id, key, System.currentTimeMillis()))
+        }
+    }
+
+    fun renameCollection(id: Long, name: String) {
+        val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
+        scope.launch { dao.renameCollection(id, clean) }
+    }
+
+    fun deleteCollection(id: Long) {
+        scope.launch { dao.deleteCollection(id) }
     }
 
     // --- internals (call with [lock] held) -------------------------------------------------------

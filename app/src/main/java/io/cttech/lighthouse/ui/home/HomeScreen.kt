@@ -110,6 +110,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val optionsFor by vm.optionsFor.collectAsStateWithLifecycle()
     val playTime by vm.playTime.collectAsStateWithLifecycle()
     val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
+    val collectionsFor by vm.collectionsFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var settingsOnCovers by remember { mutableStateOf(false) }
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
@@ -129,7 +130,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         }
     }
     val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
-    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || drawerOpen || searchOpen || setupOpen
+    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || collectionsFor != null || drawerOpen || searchOpen || setupOpen
     val showCoverOffer = coverOffer.isNotEmpty() && !busy
     val overlay = busy || showCoverOffer
 
@@ -142,6 +143,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             crashReport != null -> crashReport = null
             showCoverOffer -> vm.covers.answerOffer(fetch = false)
             pickerFor != null -> vm.covers.closePicker()
+            collectionsFor != null -> vm.closeCollections()
             optionsFor != null -> vm.closeOptions()
             drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
@@ -163,6 +165,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             searchOpen = false
             vm.closeOptions()
             vm.covers.closePicker()
+            vm.closeCollections()
             vm.dismissLaunchIssue()
             refocusToken++
         }
@@ -275,7 +278,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             }
         }
         CoverJobPill(coverJob, Modifier.align(Alignment.BottomStart).padding(start = 24.dp, bottom = 52.dp))
-        // The game menu, cover picker and launch problem dialog open from a card: inside Search while it's open,
+        // The game menu, collections, cover picker and launch problem dialog open from a card: inside Search while it's open,
         // since Search keeps focus to itself.
         val launchIssueDialog: @Composable () -> Unit = {
             launchIssue?.let { issue ->
@@ -297,6 +300,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     playedMs = playTime[g.key],
                     onPlay = { vm.launch(g) },
                     onToggleFavourite = { vm.toggleFavourite(g) },
+                    collectionCount = state.collections.count { g.key in it.keys },
+                    onCollections = { vm.openCollections(g) },
                     onChangeCover = { vm.openCoverPicker(g) },
                     onRemoveCover = { vm.removeCover(g); refocusToken++ },
                     onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
@@ -310,6 +315,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                         }
                     },
                     onClose = { vm.closeOptions(); refocusToken++ },
+                )
+            }
+            collectionsFor?.let { g ->
+                CollectionsPicker(
+                    game = g,
+                    collections = state.collections,
+                    onToggle = { id -> vm.toggleInCollection(id, g) },
+                    onCreate = { name -> vm.createCollection(name, g) },
+                    onClose = { vm.closeCollections(); refocusToken++ },
                 )
             }
             pickerFor?.let { g ->
@@ -351,6 +365,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 vm = vm,
                 hidden = state.hidden,
                 onUnhide = vm::unhide,
+                collections = state.collections,
                 onRunSetup = { menuOpen = false; setupOpen = true },
                 onClose = { menuOpen = false; settingsOnCovers = false; refocusToken++ },
                 openOnCovers = settingsOnCovers,

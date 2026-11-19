@@ -37,6 +37,15 @@ sealed interface HomeTab {
 
 enum class HomeLayout { Carousel, Grid }
 
+/** One of the user's own shelves; [keys] are its games in the order they were added. */
+data class GameCollection(val id: Long, val name: String, val keys: List<String>) {
+    /** Its id in the HOME section order (Settings → Appearance → Home sections). */
+    val sectionId: String get() = collectionSectionId(id)
+}
+
+fun collectionSectionId(id: Long) = "$COLLECTION_SECTION_PREFIX$id"
+const val COLLECTION_SECTION_PREFIX = "collection:"
+
 /** One row on the Home dashboard. [hero] rows use larger covers. */
 data class HomeRow(val id: String, val title: String, val items: List<HomeItem>, val hero: Boolean = false)
 

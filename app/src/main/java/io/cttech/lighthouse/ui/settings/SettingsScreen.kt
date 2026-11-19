@@ -81,6 +81,7 @@ fun SettingsScreen(
     vm: io.cttech.lighthouse.ui.home.HomeViewModel,
     hidden: List<Game>,
     onUnhide: (Game) -> Unit,
+    collections: List<io.cttech.lighthouse.model.GameCollection>,
     onRunSetup: () -> Unit,
     onClose: () -> Unit,
     openOnCovers: Boolean = false, // from the cover picker's "Set up key"
@@ -162,13 +163,14 @@ fun SettingsScreen(
                                     PlayTimeRow()
                                     FoldersSection(vm, library, info.storageAccess)
                                     LibraryAppsSection(vm, library, info.storageAccess)
+                                    CollectionsSection(vm, collections)
                                     HiddenSection(hidden, onUnhide)
                                     GameAppsSection(vm, library.apps)
                                 }
                                 SettingsTab.Platforms -> PlatformsSection(vm, library, firstMod)
                                 SettingsTab.Emulators -> EmulatorsSection(vm, info.rootAvailable, firstMod)
                                 SettingsTab.Covers -> CoversSection(vm, firstMod)
-                                SettingsTab.Appearance -> { ThemeSection(themes, firstMod); ShelfSection(); HomeSectionsSection() }
+                                SettingsTab.Appearance -> { ThemeSection(themes, firstMod); ShelfSection(); HomeSectionsSection(collections) }
                                 SettingsTab.Controls -> ControlsSection(firstMod)
                                 SettingsTab.System -> SystemSection(vm, info, onRunSetup, firstMod)
                                 SettingsTab.About -> AboutSection(firstMod)

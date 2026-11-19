@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import io.cttech.lighthouse.model.COLLECTION_SECTION_PREFIX
 import io.cttech.lighthouse.model.HomeLayout
 import org.json.JSONObject
 
@@ -31,10 +32,24 @@ val HOME_SECTIONS = listOf("favourites", "continue", "recent", "streaming", "moo
  * its default neighbour rather than at the end of the saved order.
  */
 internal fun mergeHomeSectionOrder(saved: List<String>): List<String> =
-    HOME_SECTIONS.filter { it !in saved }.fold(saved.filter { it in HOME_SECTIONS }) { order, id ->
+    // Collections are kept as saved; [withCollections] drops deleted ones once the database is read.
+    HOME_SECTIONS.filter { it !in saved }.fold(saved.filter { it in HOME_SECTIONS || it.startsWith(COLLECTION_SECTION_PREFIX) }) { order, id ->
         val before = HOME_SECTIONS.subList(0, HOME_SECTIONS.indexOf(id)).lastOrNull { it in order }
         order.toMutableList().apply { add(if (before == null) 0 else indexOf(before) + 1, id) }
     }
+
+/**
+ * The section order with the user's collections in it: deleted ones leave, and a new one goes after the last
+ * collection already placed (or after Favourites, for the first), so it shows up near the top, not under Platforms.
+ */
+internal fun withCollections(order: List<String>, collectionSections: List<String>): List<String> {
+    val result = order.filter { !it.startsWith(COLLECTION_SECTION_PREFIX) || it in collectionSections }.toMutableList()
+    for (id in collectionSections.filter { it !in result }) {
+        val anchor = result.indexOfLast { it.startsWith(COLLECTION_SECTION_PREFIX) }.takeIf { it >= 0 } ?: result.indexOf("favourites")
+        result.add(anchor + 1, id) // no Favourites in the order (never happens) puts it first
+    }
+    return result
+}
 
 /**
  * Small user preferences. Backed by SharedPreferences; exposed as Compose state so the UI reacts instantly,

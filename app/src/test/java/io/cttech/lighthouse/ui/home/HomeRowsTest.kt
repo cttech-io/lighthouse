@@ -2,6 +2,7 @@ package io.cttech.lighthouse.ui.home
 
 import io.cttech.lighthouse.library.PlatformCatalog
 import io.cttech.lighthouse.model.Game
+import io.cttech.lighthouse.model.GameCollection
 import io.cttech.lighthouse.model.HomeItem
 import io.cttech.lighthouse.model.HomeTab
 import io.cttech.lighthouse.system.HOME_SECTIONS
@@ -25,7 +26,8 @@ class HomeRowsTest {
         recentlyAdded: List<String> = emptyList(),
         order: List<String> = HOME_SECTIONS,
         hidden: Set<String> = emptySet(),
-    ) = buildHomeRows(tabs, byKey, byPlatform, favKeys, recentlyPlayed, recentlyAdded, order, hidden)
+        collections: List<GameCollection> = emptyList(),
+    ) = buildHomeRows(tabs, byKey, byPlatform, favKeys, recentlyPlayed, recentlyAdded, order, hidden, collections)
 
     @Test fun emptyRowsAreSkipped() {
         // Nothing favourited, played or recently added: only the Platforms row has content.
@@ -75,5 +77,22 @@ class HomeRowsTest {
         val other = Game(key = "android|com.example", platformId = "android", title = "Example", packageName = "com.example")
         val result = buildHomeRows(tabs, byKey + (moonlight.key to moonlight) + (other.key to other), byPlatform, emptyList(), emptyList(), emptyList(), listOf("streaming"), emptySet())
         assertEquals(listOf("android|com.limelight"), result.single().items.map { it.key })
+    }
+
+    @Test fun collectionsAreRowsInTheirPlaceAlphabetical() {
+        val coop = GameCollection(4, "Co-op", listOf("ps1|g3", "ps1|gone", "ps1|g1"))
+        val result = rows(order = listOf("collection:4", "platforms"), collections = listOf(coop))
+        assertEquals(listOf("collection:4", "platforms"), result.map { it.id })
+        assertEquals("Co-op", result[0].title)
+        assertTrue(result[0].hero) // first row shown, so large covers
+        // Alphabetical, and a game no longer in the library ("gone") is skipped.
+        assertEquals(listOf("ps1|g1", "ps1|g3"), result[0].items.map { it.key })
+    }
+
+    @Test fun emptyOrHiddenCollectionsAreLeftOut() {
+        val empty = GameCollection(1, "Empty", emptyList())
+        val rpgs = GameCollection(2, "RPGs", listOf("ps1|g2"))
+        val result = rows(order = listOf("collection:1", "collection:2", "platforms"), hidden = setOf("collection:2"), collections = listOf(empty, rpgs))
+        assertEquals(listOf("platforms"), result.map { it.id })
     }
 }

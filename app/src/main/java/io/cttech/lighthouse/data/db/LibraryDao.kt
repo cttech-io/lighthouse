@@ -110,6 +110,39 @@ interface LibraryDao {
     @Query("SELECT * FROM sources WHERE path = :path")
     suspend fun sourceByPath(path: String): SourceEntity?
 
+    @Query("SELECT * FROM collections ORDER BY id")
+    fun observeCollections(): Flow<List<CollectionEntity>>
+
+    @Query("SELECT * FROM collection_items ORDER BY addedAt")
+    fun observeCollectionItems(): Flow<List<CollectionItemEntity>>
+
+    @Insert
+    suspend fun insertCollection(c: CollectionEntity): Long
+
+    @Query("UPDATE collections SET name = :name WHERE id = :id")
+    suspend fun renameCollection(id: Long, name: String)
+
+    @Query("DELETE FROM collections WHERE id = :id")
+    suspend fun deleteCollectionRow(id: Long)
+
+    @Query("DELETE FROM collection_items WHERE collectionId = :id")
+    suspend fun clearCollection(id: Long)
+
+    @Transaction
+    suspend fun deleteCollection(id: Long) { clearCollection(id); deleteCollectionRow(id) }
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun addToCollection(item: CollectionItemEntity)
+
+    @Query("DELETE FROM collection_items WHERE collectionId = :id AND gameKey = :key")
+    suspend fun removeFromCollection(id: Long, key: String)
+
+    @Query("SELECT COUNT(*) FROM collection_items WHERE collectionId = :id AND gameKey = :key")
+    suspend fun inCollection(id: Long, key: String): Int
+
+    @Query("SELECT id FROM collections WHERE name = :name COLLATE NOCASE LIMIT 1")
+    suspend fun collectionNamed(name: String): Long?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addFavourite(f: FavouriteEntity)
 

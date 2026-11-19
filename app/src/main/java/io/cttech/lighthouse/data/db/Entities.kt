@@ -89,6 +89,22 @@ data class HiddenEntity(
     val hiddenAt: Long,
 )
 
+/** A shelf of the user's own ("Co-op", "Pokémon"), shown as a HOME row. */
+@Entity(tableName = "collections")
+data class CollectionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long,
+)
+
+/** A game in a collection, keyed like favourites so rescans keep it. */
+@Entity(tableName = "collection_items", primaryKeys = ["collectionId", "gameKey"], indices = [Index(value = ["gameKey"])])
+data class CollectionItemEntity(
+    val collectionId: Long,
+    val gameKey: String,
+    val addedAt: Long,
+)
+
 @Entity(tableName = "favourites")
 data class FavouriteEntity(
     @PrimaryKey val gameKey: String,

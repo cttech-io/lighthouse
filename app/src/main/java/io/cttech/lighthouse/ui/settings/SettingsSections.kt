@@ -247,6 +247,38 @@ internal fun LibraryAppsSection(vm: HomeViewModel, info: LibraryInfo, hasAccess:
     }
 }
 
+/** The user's collections: rename, delete, or start a new one (games go in from their options). */
+@Composable
+internal fun CollectionsSection(vm: HomeViewModel, collections: List<io.cttech.lighthouse.model.GameCollection>) {
+    SectionTitle("Collections")
+    Note("Your own shelves, each a row on HOME (order and hide them in Appearance → Home sections). Add games from their options: Select, or long-press. Rename one with A on its name.")
+    collections.forEach { c ->
+        key(c.id) {
+            var name by remember(c.name) { mutableStateOf(c.name) }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ControllerTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = c.name,
+                    modifier = Modifier.width(260.dp),
+                    onSubmit = { vm.renameCollection(c.id, name) },
+                )
+                Text(if (c.keys.size == 1) "1 game" else "${c.keys.size} games", color = Lh.colors.textMuted, fontSize = 14.sp, modifier = Modifier.width(90.dp))
+                // Only the collection goes: its games stay in the library.
+                io.cttech.lighthouse.ui.components.ConfirmPillButton("Delete", "Press A again to delete") { vm.deleteCollection(c.id) }
+            }
+        }
+    }
+    var newName by remember { mutableStateOf("") }
+    ControllerTextField(
+        value = newName,
+        onValueChange = { newName = it },
+        placeholder = "New collection: type a name",
+        modifier = Modifier.width(360.dp),
+        onSubmit = { vm.createCollection(newName); newName = "" },
+    )
+}
+
 @Composable
 internal fun HiddenSection(hidden: List<Game>, onUnhide: (Game) -> Unit) {
     SectionTitle("Hidden")
@@ -427,7 +459,7 @@ internal fun ShelfSection() {
 
 /** The HOME page's sections: their order and which are shown. A on one: move up/down, hide/show. */
 @Composable
-internal fun HomeSectionsSection() {
+internal fun HomeSectionsSection(collections: List<io.cttech.lighthouse.model.GameCollection>) {
     val settings = LocalAppSettings.current
     val overlay = LocalOverlayHost.current
     SectionTitle("Home sections")
@@ -436,12 +468,13 @@ internal fun HomeSectionsSection() {
         "Library stats", settings.showHomeStats,
         note = "A line at the top of HOME: games, apps, free space and when the library was last scanned.",
     ) { settings.updateShowHomeStats(it) }
-    val order = settings.homeSectionOrder
+    val order = io.cttech.lighthouse.system.withCollections(settings.homeSectionOrder, collections.map { it.sectionId })
+    val names = collections.associate { it.sectionId to it.name }
     order.forEachIndexed { i, id ->
         key(id) {
             val r = remember { FocusRequester() }
             val hidden = id in settings.hiddenHomeSections
-            val title = io.cttech.lighthouse.ui.home.HOME_SECTION_TITLES[id] ?: id
+            val title = io.cttech.lighthouse.ui.home.HOME_SECTION_TITLES[id] ?: names[id]?.let { "$it (collection)" } ?: id
             fun move(delta: Int) {
                 val j = (i + delta).coerceIn(0, order.lastIndex)
                 if (j != i) settings.updateHomeSectionOrder(order.toMutableList().apply { add(j, removeAt(i)) })
