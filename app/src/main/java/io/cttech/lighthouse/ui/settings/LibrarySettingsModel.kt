@@ -126,10 +126,14 @@ class LibrarySettingsModel(
     fun guessPlatform(path: String): String? = FolderDetector.guessPlatform(File(path))
     fun storageRoots(): List<File> = repo.storageRoots()
 
-    /** Emulator status for every ROM platform that has games or folders. Checks cores with root, so it suspends. */
+    /**
+     * Emulator status for every platform with games or folders that starts through a launch profile. Android apps,
+     * Moonlight and Shortcuts start themselves, so there's no emulator to show. Checks cores with root, so it suspends.
+     */
     suspend fun emulatorStatus(): List<PlatformEmulators> = withContext(Dispatchers.IO) {
-        info.value.platforms.filter { it.def.id != PlatformCatalog.ANDROID }.map { row ->
-            PlatformEmulators(row.def.id, row.def.tabLabel, launcher.status(row.def.id), launcher.activeProfile(row.def.id)?.first?.id)
+        info.value.platforms.mapNotNull { row ->
+            val options = launcher.status(row.def.id).ifEmpty { return@mapNotNull null }
+            PlatformEmulators(row.def.id, row.def.tabLabel, options, launcher.activeProfile(row.def.id)?.first?.id)
         }
     }
 

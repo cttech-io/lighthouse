@@ -9,6 +9,7 @@ import io.cttech.lighthouse.data.db.GameEntity
 import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.data.db.gameKey
 import io.cttech.lighthouse.launch.GameLauncher
+import io.cttech.lighthouse.launch.LaunchProfile
 import io.cttech.lighthouse.launch.LaunchResult
 import io.cttech.lighthouse.library.PlatformCatalog
 import kotlinx.coroutines.launch
@@ -29,6 +30,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.io.File
 import java.util.Locale
+
+/** A game's emulator choice: the [installed] ones, the platform's ([platformDefault]) and the game's own ([chosen], if any). */
+data class EmulatorChoices(val installed: List<LaunchProfile>, val platformDefault: LaunchProfile, val chosen: LaunchProfile?) {
+    /** The one its next launch uses. */
+    val active: LaunchProfile get() = chosen ?: platformDefault
+}
 
 data class HomeState(
     val tabs: List<HomeTab> = listOf(HomeTab.Home),
@@ -86,7 +93,7 @@ private data class UiPrefs(
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LighthouseApp).repository
     private val settings = (app as LighthouseApp).settings
-    private val launcher = GameLauncher(app) { platformId -> settings.emulatorChoice[platformId] }
+    private val launcher = GameLauncher(app, { platformId -> settings.emulatorChoice[platformId] }, { key -> settings.gameEmulators[key] })
 
     private val _launchIssue = MutableStateFlow<LaunchResult?>(null)
     /** A launch that didn't start (missing emulator, permission, core…), shown as a dialog with a fix. */
@@ -186,6 +193,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun openCoverPicker(game: Game) { _optionsFor.value = null; covers.openPicker(game) }
 
     fun removeCover(game: Game) { covers.removeCover(game); _optionsFor.value = null }
+
+    // --- Per-game emulator ----------------------------------------------------------------------------
+    private val _emulatorFor = MutableStateFlow<Game?>(null)
+    /** Game whose "Emulator" pop-up is open (from its game menu). */
+    val emulatorFor: StateFlow<Game?> = _emulatorFor
+    fun openEmulatorPicker(game: Game) { _optionsFor.value = null; _emulatorFor.value = game }
+    fun closeEmulatorPicker() { _emulatorFor.value = null }
+
+    /** What the game's Emulator row and pop-up show; null when there's nothing to choose (fewer than two installed). */
+    fun emulatorChoices(game: Game): EmulatorChoices? {
+        if (game.path == null) return null // apps, Moonlight and shortcuts start themselves
+        val installed = launcher.installedProfiles(game.platformId).map { it.first }.takeIf { it.size > 1 } ?: return null
+        val platformDefault = launcher.activeProfile(game.platformId)?.first ?: return null
+        val chosen = settings.gameEmulators[game.key]?.let { id -> installed.firstOrNull { it.id == id } }
+        return EmulatorChoices(installed, platformDefault, chosen)
+    }
+
+    /** [profileId] null: back to the platform's emulator (Settings → Emulators). */
+    fun setGameEmulator(game: Game, profileId: String?) = settings.updateGameEmulator(game.key, profileId)
 
     // --- Collections ---------------------------------------------------------------------------------
     private val _collectionsFor = MutableStateFlow<Game?>(null)
@@ -374,7 +400,13 @@ private const val RECENT_WINDOW_MS = 30L * 24 * 60 * 60 * 1000
  * Game-streaming clients grouped into the Streaming row (Sunshine host apps join this in v0.3).
  * Not PC emulators: DroidDeck, GameNative and GameHub run games locally and have their own tabs.
  */
-private val STREAMING_PACKAGES = listOf("com.limelight", "com.valvesoftware.steamlink")
+private val STREAMING_PACKAGES = listOf(
+    "com.limelight", "com.valvesoftware.steamlink",
+    // Cloud: GeForce NOW, and the Xbox app (Xbox Cloud Gaming and Xbox remote play)
+    "com.nvidia.geforcenow", "com.microsoft.xboxone.smartglass",
+    // PlayStation remote play: Sony's own app and PXPlay (the same package from Play and from GitHub)
+    "com.playstation.remoteplay", "psplay.grill.com",
+)
 
 internal fun buildHomeRows(
     tabs: List<HomeTab>,

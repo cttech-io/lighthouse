@@ -246,6 +246,9 @@ fun GameOptionsSheet(
     /** How many of the user's collections it's in, for the Collections row. */
     collectionCount: Int,
     onCollections: () -> Unit,
+    /** The Emulator row's text; null hides it (fewer than two emulators installed for the platform). */
+    emulatorLabel: String?,
+    onEmulator: () -> Unit,
     onChangeCover: () -> Unit,
     onRemoveCover: () -> Unit,
     onToggleCountsAsGame: () -> Unit,
@@ -286,6 +289,7 @@ fun GameOptionsSheet(
                 when (collectionCount) { 0 -> "Add to a collection"; 1 -> "Collections: in 1"; else -> "Collections: in $collectionCount" },
                 row, onClick = onCollections,
             )
+            emulatorLabel?.let { PillButton(it, row, onClick = onEmulator) }
             PillButton("Change cover", row, onClick = onChangeCover)
             // The image file is deleted, so it can't be undone: ask first.
             if (game.coverPath != null) ConfirmPillButton("Remove cover", "Press A again to remove the cover", row, onConfirm = onRemoveCover)

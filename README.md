@@ -31,6 +31,7 @@ Lighthouse puts your emulated games, Android games, PC games and streaming in on
 **PC games and streaming**
 - **DroidDeck** and **GameNative**: both apps keep a folder of one-file-per-game shortcuts in sync, and Lighthouse lists those games on their own tabs and launches them directly (Steam, Epic, GOG, Amazon and custom games).
 - **Moonlight**: the games on your PCs (Sunshine/GameStream) get a Moonlight tab and an "On your PC" HOME row, with box art from your PC. A launches straight into the stream, and Moonlight wakes the PC first if needed. Reading the game list needs root; without root, use Moonlight's own "Create shortcut" on a game.
+- **Streaming apps**: Moonlight, Steam Link, GeForce NOW, the Xbox app (Xbox Cloud Gaming), PS Remote Play and PXPlay are gathered in a Streaming row on HOME when installed.
 - **Shortcuts from any app**: "Create shortcut" / "Add to home screen" lands on a Shortcuts tab.
 
 **Launching**

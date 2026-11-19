@@ -53,16 +53,29 @@ data class EmulatorStatus(
     val corePresent: Boolean?,
 )
 
-/** [preferredProfile]: platform id -> the profile id the user chose in Settings, if any. */
-class GameLauncher(private val context: Context, private val preferredProfile: (String) -> String? = { null }) {
+/**
+ * [preferredProfile]: platform id -> the profile id the user chose in Settings, if any.
+ * [gameProfile]: game key -> the profile id chosen for that one game in its options, if any.
+ */
+class GameLauncher(
+    private val context: Context,
+    private val preferredProfile: (String) -> String? = { null },
+    private val gameProfile: (String) -> String? = { null },
+) {
     private val pm = context.packageManager
 
-    /** Installed profile used for [platformId]: the user's choice if installed, else the first installed one. */
-    fun activeProfile(platformId: String): Pair<LaunchProfile, String>? {
-        val installed = LaunchProfiles.forPlatform(context, platformId)
-            .mapNotNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
-        val chosen = preferredProfile(platformId)
-        return installed.firstOrNull { it.first.id == chosen } ?: installed.firstOrNull()
+    /** The platform's profiles whose emulator is installed, with the installed package, in profile order. */
+    fun installedProfiles(platformId: String): List<Pair<LaunchProfile, String>> =
+        LaunchProfiles.forPlatform(context, platformId).mapNotNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
+
+    /**
+     * Installed profile used for [platformId]: the one chosen for the game with [gameKey], else the platform's, else the
+     * first installed one. A choice whose emulator has been uninstalled is skipped.
+     */
+    fun activeProfile(platformId: String, gameKey: String? = null): Pair<LaunchProfile, String>? {
+        val installed = installedProfiles(platformId)
+        val chosen = listOfNotNull(gameKey?.let(gameProfile), preferredProfile(platformId))
+        return chosen.firstNotNullOfOrNull { id -> installed.firstOrNull { it.first.id == id } } ?: installed.firstOrNull()
     }
 
     /** Every known emulator for [platformId], installed or not, for Settings → Emulators. */
@@ -99,7 +112,7 @@ class GameLauncher(private val context: Context, private val preferredProfile: (
             return start(MoonlightSource.launchIntent(app))
         }
         val path = game.path ?: return LaunchResult.Failed("No file for ${game.title}")
-        val (profile, pkg) = activeProfile(game.platformId)
+        val (profile, pkg) = activeProfile(game.platformId, game.key)
             ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { MissingApp(it.displayName, it.website) })
 
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)

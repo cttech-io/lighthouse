@@ -79,6 +79,13 @@ class HomeRowsTest {
         assertEquals(listOf("android|com.limelight"), result.single().items.map { it.key })
     }
 
+    @Test fun cloudAndRemotePlayAppsJoinTheStreamingRow() {
+        val apps = listOf("com.nvidia.geforcenow", "com.microsoft.xboxone.smartglass", "com.playstation.remoteplay", "psplay.grill.com")
+            .map { Game(key = "android|$it", platformId = "android", title = it, packageName = it) }
+        val result = buildHomeRows(tabs, byKey + apps.associateBy { it.key }, byPlatform, emptyList(), emptyList(), emptyList(), listOf("streaming"), emptySet())
+        assertEquals(apps.map { it.key }, result.single().items.map { it.key })
+    }
+
     @Test fun collectionsAreRowsInTheirPlaceAlphabetical() {
         val coop = GameCollection(4, "Co-op", listOf("ps1|g3", "ps1|gone", "ps1|g1"))
         val result = rows(order = listOf("collection:4", "platforms"), collections = listOf(coop))

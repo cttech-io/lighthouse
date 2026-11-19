@@ -10,7 +10,8 @@ import android.content.pm.ApplicationInfo
 object AppClassifier {
     private val playPackages = setOf(
         // Streaming clients
-        "com.limelight", "com.valvesoftware.steamlink",
+        "com.limelight", "com.valvesoftware.steamlink", "com.nvidia.geforcenow", "com.microsoft.xboxone.smartglass",
+        "com.playstation.remoteplay", "psplay.grill.com",
         // Emulators
         "dev.eden.eden_emulator", "com.armsx2", "org.ppsspp.ppsspp", "org.ppsspp.ppssppgold",
         "org.dolphinemu.dolphinemu", "com.github.stenzek.duckstation", "io.github.lime3ds.android",

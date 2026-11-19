@@ -71,6 +71,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.cttech.lighthouse.model.Game
 import io.cttech.lighthouse.model.HomeLayout
 import io.cttech.lighthouse.model.HomeTab
+import io.cttech.lighthouse.ui.components.ProvideHints
+import io.cttech.lighthouse.ui.components.popupHints
 import io.cttech.lighthouse.ui.components.CoverCard
 import io.cttech.lighthouse.ui.components.fadingEdges
 import io.cttech.lighthouse.ui.components.QuickPanel
@@ -111,6 +113,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val playTime by vm.playTime.collectAsStateWithLifecycle()
     val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
     val collectionsFor by vm.collectionsFor.collectAsStateWithLifecycle()
+    val emulatorFor by vm.emulatorFor.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var settingsOnCovers by remember { mutableStateOf(false) }
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
@@ -130,7 +133,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         }
     }
     val accessPrompt = state.showAccessPrompt && !setupOpen // setup asks for access itself
-    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || collectionsFor != null || drawerOpen || searchOpen || setupOpen
+    val busy = crashReport != null || accessPrompt || openPanel != null || launchIssue != null || menuOpen || optionsFor != null || pickerFor != null || collectionsFor != null || emulatorFor != null || drawerOpen || searchOpen || setupOpen
     val showCoverOffer = coverOffer.isNotEmpty() && !busy
     val overlay = busy || showCoverOffer
 
@@ -144,6 +147,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             showCoverOffer -> vm.covers.answerOffer(fetch = false)
             pickerFor != null -> vm.covers.closePicker()
             collectionsFor != null -> vm.closeCollections()
+            emulatorFor != null -> vm.closeEmulatorPicker()
             optionsFor != null -> vm.closeOptions()
             drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
@@ -166,6 +170,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             vm.closeOptions()
             vm.covers.closePicker()
             vm.closeCollections()
+            vm.closeEmulatorPicker()
             vm.dismissLaunchIssue()
             refocusToken++
         }
@@ -302,6 +307,11 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     onToggleFavourite = { vm.toggleFavourite(g) },
                     collectionCount = state.collections.count { g.key in it.keys },
                     onCollections = { vm.openCollections(g) },
+                    // Read here, so a choice made in its pop-up shows when the menu is opened again.
+                    emulatorLabel = remember(g.key, settings.gameEmulators, settings.emulatorChoice) { vm.emulatorChoices(g) }?.let { c ->
+                        if (c.chosen != null) "Emulator: ${c.active.displayName}" else "Emulator: ${c.active.displayName} (platform's)"
+                    },
+                    onEmulator = { vm.openEmulatorPicker(g) },
                     onChangeCover = { vm.openCoverPicker(g) },
                     onRemoveCover = { vm.removeCover(g); refocusToken++ },
                     onToggleCountsAsGame = { vm.toggleCountsAsGame(g) },
@@ -325,6 +335,25 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     onCreate = { name -> vm.createCollection(name, g) },
                     onClose = { vm.closeCollections(); refocusToken++ },
                 )
+            }
+            emulatorFor?.let { g ->
+                val choices = remember(g.key, settings.gameEmulators) { vm.emulatorChoices(g) }
+                if (choices == null) {
+                    // Nothing left to choose between (an emulator was uninstalled): close instead of showing one option.
+                    LaunchedEffect(Unit) { vm.closeEmulatorPicker(); refocusToken++ }
+                } else {
+                    ProvideHints(popupHints()) { if (it == "B") { vm.closeEmulatorPicker(); refocusToken++ } }
+                    // null: the platform's emulator, so the game follows Settings → Emulators again.
+                    io.cttech.lighthouse.ui.settings.OptionPicker(
+                        title = "${g.title}: emulator",
+                        options = listOf<io.cttech.lighthouse.launch.LaunchProfile?>(null) + choices.installed,
+                        selected = choices.chosen,
+                        label = { it?.displayName ?: "Platform's emulator (${choices.platformDefault.displayName})" },
+                        detail = { if (it == null) "Follows Settings → Emulators" else null },
+                        onPick = { vm.setGameEmulator(g, it?.id); vm.closeEmulatorPicker(); refocusToken++ },
+                        onClose = { vm.closeEmulatorPicker(); refocusToken++ },
+                    )
+                }
             }
             pickerFor?.let { g ->
                 CoverPicker(

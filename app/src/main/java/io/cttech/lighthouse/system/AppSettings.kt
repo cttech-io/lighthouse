@@ -298,6 +298,16 @@ class AppSettings(context: Context) {
         changed()
     }
 
+    /** Game key -> launch profile id, overriding [emulatorChoice] for that one game (picked in its options). */
+    var gameEmulators by mutableStateOf(readMap(KEY_GAME_EMULATORS))
+        private set
+
+    fun updateGameEmulator(key: String, profileId: String?) {
+        gameEmulators = if (profileId == null) gameEmulators - key else gameEmulators + (key to profileId)
+        writeMap(KEY_GAME_EMULATORS, gameEmulators)
+        changed()
+    }
+
     // --- "Counts as a game" overrides ---------------------------------------------------------------
 
     /** Game key -> true/false, overriding the automatic guess for Continue playing. */
@@ -342,6 +352,7 @@ class AppSettings(context: Context) {
         const val KEY_CORE_HINTS = "core_hints_shown"
         const val KEY_TAB_LABELS = "tab_labels"
         const val KEY_EMULATORS = "emulator_choice"
+        const val KEY_GAME_EMULATORS = "game_emulator_choice"
         const val KEY_GAME_OVERRIDES = "game_overrides"
         const val KEY_WIFI_NAME = "wifi_name_source"
         const val KEY_TS_EXIT_NODE = "tailscale_exit_node"
