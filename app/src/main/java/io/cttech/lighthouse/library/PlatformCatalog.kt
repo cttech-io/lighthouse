@@ -90,6 +90,13 @@ object PlatformCatalog {
             skipUpdatesAndDlc = true,
         ),
         PlatformDef(
+            "peanuts", "Peanuts", Color(0xFFD9A55B),
+            // Switch games rebuilt to run natively by Peanuts Native, which alone opens a .nup: its own tab, so the
+            // Switch emulator choice never hands one to Eden. No update skipping: every .nup is named "[v<version>]".
+            extensions = setOf("nup"),
+            folderNames = setOf("peanuts", "peanuts native", "peanutsnative", "peanut roms", "peanuts roms"),
+        ),
+        PlatformDef(
             "gbc", "GBC", Color(0xFF26C6A6),
             extensions = setOf("gbc", "gb", "zip", "7z"),
             folderNames = setOf("gbc", "gb", "game boy color", "gameboy color", "game boy", "gameboy"),

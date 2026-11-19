@@ -42,6 +42,14 @@ class LaunchProfilesAssetTest {
             .forEach { assertTrue(it, it.startsWith("https://")) }
     }
 
+    @Test fun peanutsGetsTheNupPathThroughItsFrontendAlias() {
+        // Peanuts Native's documented frontend contract: the build-stable alias, the .nup's path in the "game" extra.
+        val p = profiles.single { it.getString("id") == "peanuts-native" }
+        assertEquals("dev.peanuts.launch.LaunchActivity", p.getString("activity"))
+        assertEquals("extras", p.getString("rom"))
+        assertEquals("{path}", p.getJSONObject("extras").getString("game"))
+    }
+
     @Test fun retroArchProfilesReadAsOneAppWithACore() {
         val p = LaunchProfile("x", "RetroArch · mGBA", setOf("gba"), emptyList(), null, "", RomDelivery.EXTRAS, null, false, emptyList(), emptyMap())
         assertEquals("RetroArch (mGBA core)", p.displayName)

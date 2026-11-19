@@ -35,6 +35,17 @@
       "mime": "application/octet-stream"
     },
     {
+      "id": "peanuts-native",
+      "label": "Peanuts Native",
+      "website": "https://github.com/igawa6/peanuts-native/releases",
+      "platforms": ["peanuts"],
+      "packages": ["dev.nxnative.android.peanuts"],
+      "activity": "dev.peanuts.launch.LaunchActivity",
+      "action": "android.intent.action.MAIN",
+      "rom": "extras",
+      "extras": {"game": "{path}"}
+    },
+    {
       "id": "armsx3",
       "label": "ARMSX3",
       "website": "https://github.com/ARMSX2/ARMSX3/releases",

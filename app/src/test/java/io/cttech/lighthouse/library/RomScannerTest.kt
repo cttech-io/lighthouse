@@ -56,6 +56,19 @@ class RomScannerTest {
         assertEquals(setOf("ps2", "gamenative", "switch"), found)
     }
 
+    @Test fun peanutsListsEveryNupDespiteItsVersionTag() {
+        // Peanuts Native's layout: one folder per title ID, the built pack beside the .nup, the builder's icon next to it.
+        touch("Peanut Roms/01006BB00C6F0000/The Legend of Zelda- Link's Awakening [01006BB00C6F0000][v131072].nup")
+        touch("Peanut Roms/01006BB00C6F0000/The Legend of Zelda- Link's Awakening [01006BB00C6F0000][v131072].png")
+        touch("Peanut Roms/01006BB00C6F0000/01006BB00C6F0000-work/android-pack/main")
+        touch("Peanut Roms/010093801237C000/Metroid Dread [010093801237C000][v131072].nup")
+        touch("Peanut Roms/Mario.nsp")  // a dump Peanuts builds from, not something it plays
+        val titles = RomScanner.scan(platform("peanuts"), listOf(File(tmp.root, "Peanut Roms"))).map { it.title }
+        assertEquals(listOf("The Legend of Zelda: Link's Awakening", "Metroid Dread"), titles)
+        assertEquals(listOf("peanuts"), FolderDetector.detect(listOf(tmp.root)).map { it.platformId })
+        assertEquals("peanuts", FolderDetector.guessPlatform(File(tmp.root, "Peanut Roms")))
+    }
+
     @Test fun pspFolderAndFormats() {
         File(tmp.root, "sd/ROMs/Sony - PlayStation Portable").mkdirs()
         assertEquals(listOf("psp"), FolderDetector.detect(listOf(File(tmp.root, "sd"))).map { it.platformId })

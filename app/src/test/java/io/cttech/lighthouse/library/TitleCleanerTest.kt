@@ -15,6 +15,11 @@ class TitleCleanerTest {
 
     @Test fun underscoreStandsInForColon() = check("Halo_ The Master Chief Collection.steam", "Halo: The Master Chief Collection")
 
+    @Test fun dashStandsInForColon() =
+        check("The Legend of Zelda- Link's Awakening [01006BB00C6F0000][v131072].nup", "The Legend of Zelda: Link's Awakening")
+
+    @Test fun hyphenatedWordsStay() = check("Spider-Man - Web of Shadows (USA).iso", "Spider-Man: Web of Shadows")
+
     @Test fun trademarkStripped() = check("Life is Strange™.steam", "Life is Strange")
 
     @Test fun plainName() = check("The Legend of Zelda Breath of the Wild.xci", "The Legend of Zelda Breath of the Wild")

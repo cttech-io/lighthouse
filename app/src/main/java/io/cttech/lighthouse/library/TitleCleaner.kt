@@ -8,10 +8,12 @@ object TitleCleaner {
     private val tagGroups = Regex("""\s*[(\[{][^)\]}]*[)\]}]""")
     private val trailingArticle = Regex("""^(.+?), (The|A|An)\b(.*)$""", RegexOption.IGNORE_CASE)
     private val spaces = Regex("""\s+""")
+    private val dashForColon = Regex("""(?<=[\p{L}\p{N}])- """)
 
     fun clean(fileName: String): String {
         var t = fileName.substringBeforeLast('.', fileName)
         t = t.replace("_ ", ": ")            // file systems can't store ':' -> "Halo_ The Master Chief"
+        t = t.replace(dashForColon, ": ")     // ...or Peanuts Native's "Metroid- Samus Returns" (not " - ", handled below)
         t = t.replace(tagGroups, "")          // (USA) (v3.00) [!] [01007EF00011E800]
         t = t.replace('™', ' ').replace('®', ' ')
         t = t.replace(spaces, " ").trim()
