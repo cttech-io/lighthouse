@@ -15,6 +15,7 @@ object AppClassifier {
         "dev.eden.eden_emulator", "com.armsx2", "org.ppsspp.ppsspp", "org.ppsspp.ppssppgold",
         "org.dolphinemu.dolphinemu", "com.github.stenzek.duckstation", "io.github.lime3ds.android",
         "org.azahar_emu.azahar", "org.vita3k.emulator", "info.cemu.cemu", "xyz.aethersx2.android",
+        "dev.eden.eden_emulator.nightly", "dev.lemon.lemon_emulator", "com.armsx3", "com.armsx3.play", "xendroid.compose.fork",
         // PC runners
         "com.droiddeck.launcher", "app.gamenative", "com.xiaoji.egggame", "com.winlator",
     )

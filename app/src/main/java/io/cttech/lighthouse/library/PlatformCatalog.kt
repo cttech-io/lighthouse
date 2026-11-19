@@ -45,6 +45,19 @@ object PlatformCatalog {
             folderNames = setOf("psp", "playstation portable", "sony - playstation portable"),
         ),
         PlatformDef(
+            "ps3", "PS3", Color(0xFF5C6BC0),
+            // .ps3: a title id, one per installed (.pkg) game, written by ARMSX3's Frontend Export. Folder games
+            // (PS3_GAME/USRDIR/EBOOT.BIN) aren't listed: every one would be called "EBOOT".
+            extensions = setOf("iso", "chd", "ps3"),
+            folderNames = setOf("ps3", "playstation 3", "playstation3", "sony - playstation 3"),
+        ),
+        PlatformDef(
+            "xbox360", "Xbox 360", Color(0xFF52B043),
+            // Not .xex (always default.xex) or extensionless GOD/STFS containers: neither has a usable name.
+            extensions = setOf("iso", "zar"),
+            folderNames = setOf("xbox360", "xbox 360", "x360", "microsoft - xbox 360"),
+        ),
+        PlatformDef(
             "nes", "NES", Color(0xFFE53935),
             extensions = setOf("nes", "unf", "unif", "fds", "zip", "7z"),
             folderNames = setOf("nes", "famicom", "nintendo entertainment system", "nintendo - nintendo entertainment system"),
@@ -71,7 +84,8 @@ object PlatformCatalog {
         ),
         PlatformDef(
             "switch", "Switch", Color(0xFFFF4554),
-            extensions = setOf("xci", "nsp", "nca", "nro"),
+            // .nsz/.xcz: compressed dumps, which Lemon opens.
+            extensions = setOf("xci", "nsp", "nca", "nro", "nsz", "xcz"),
             folderNames = setOf("switch", "ns", "nintendo switch"),
             skipUpdatesAndDlc = true,
         ),

@@ -13,6 +13,50 @@
       "mime": "application/octet-stream"
     },
     {
+      "id": "eden-nightly",
+      "label": "Eden Nightly",
+      "website": "https://git.eden-emu.dev/eden-ci/nightly/releases",
+      "platforms": ["switch"],
+      "packages": ["dev.eden.eden_emulator.nightly"],
+      "activity": "org.yuzu.yuzu_emu.activities.EmulationActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "lemon",
+      "label": "Lemon",
+      "website": "https://github.com/Ghael-V/Lemon-Project/releases",
+      "platforms": ["switch"],
+      "packages": ["dev.lemon.lemon_emulator"],
+      "activity": "dev.lemon.lemon_emu.activities.EmulationActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "armsx3",
+      "label": "ARMSX3",
+      "website": "https://github.com/ARMSX2/ARMSX3/releases",
+      "platforms": ["ps3"],
+      "packages": ["com.armsx3", "com.armsx3.play"],
+      "activity": "com.armsx2.BootSplashActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
+      "id": "xendroid-plus",
+      "label": "Xendroid+",
+      "website": "https://github.com/phforner0/Xendroid-Plus/releases",
+      "platforms": ["xbox360"],
+      "packages": ["xendroid.compose.fork"],
+      "activity": "xendroid.compose.EmulatorHostActivity",
+      "action": "android.intent.action.VIEW",
+      "rom": "content",
+      "mime": "application/octet-stream"
+    },
+    {
       "id": "armsx2",
       "label": "ARMSX2",
       "website": "https://github.com/ARMSX2/ARMSX2/releases",

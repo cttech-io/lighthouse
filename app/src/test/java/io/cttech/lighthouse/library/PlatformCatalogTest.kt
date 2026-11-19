@@ -26,6 +26,9 @@ class PlatformCatalogTest {
         assertEquals("wii", PlatformCatalog.matchFolder("Nintendo Wii")?.id)
         assertEquals("nds", PlatformCatalog.matchFolder("Nintendo DS")?.id)
         assertEquals("dreamcast", PlatformCatalog.matchFolder("Dreamcast")?.id)
+        assertEquals("ps3", PlatformCatalog.matchFolder("PlayStation 3")?.id)
+        assertEquals("xbox360", PlatformCatalog.matchFolder("Xbox 360")?.id)
+        assertEquals("xbox360", PlatformCatalog.matchFolder("Microsoft - Xbox 360")?.id)
         assertNull(PlatformCatalog.matchFolder("Saturn"))
     }
 
@@ -48,7 +51,7 @@ class PlatformCatalogTest {
 
     @Test fun relatedSystemsAreInReleaseOrder() {
         fun inOrder(vararg ids: String) = ids.map(PlatformCatalog::order).let { o -> assertEquals(o.sorted(), o) }
-        inOrder("ps1", "ps2", "psp")
+        inOrder("ps1", "ps2", "psp", "ps3")
         inOrder("nes", "snes", "n64", "gamecube", "wii", "switch")
         inOrder("gbc", "gba", "nds", "3ds")
         inOrder("mastersystem", "megadrive", "gamegear", "dreamcast")

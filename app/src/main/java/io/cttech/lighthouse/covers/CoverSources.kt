@@ -118,6 +118,8 @@ object LibretroThumbnails {
         "ps1" to listOf("Sony - PlayStation"),
         "ps2" to listOf("Sony - PlayStation 2"),
         "psp" to listOf("Sony - PlayStation Portable"),
+        "ps3" to listOf("Sony - PlayStation 3"),
+        "xbox360" to listOf("Microsoft - Xbox 360"),
         "nes" to listOf("Nintendo - Nintendo Entertainment System"),
         "snes" to listOf("Nintendo - Super Nintendo Entertainment System"),
         "megadrive" to listOf("Sega - Mega Drive - Genesis"),
