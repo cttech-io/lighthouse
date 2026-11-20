@@ -9,8 +9,8 @@ class ButtonGlyphsTest {
     private fun glyphs(style: GlyphStyle, swapAB: Boolean = false) =
         listOf("A", "B", "X", "Y", "L1", "R1", START, SELECT).map { ButtonGlyphs.glyph(it, style, swapAB) }
 
-    @Test fun odinPrintsPlayAndStopOnStartAndSelect() =
-        assertEquals(listOf("A", "B", "X", "Y", "L1", "R1", "▶", "■"), glyphs(GlyphStyle.Odin))
+    @Test fun odinPrintsOutlinedPlayAndSquareOnStartAndSelect() =
+        assertEquals(listOf("A", "B", "X", "Y", "L1", "R1", "▷", "▢"), glyphs(GlyphStyle.Odin))
 
     @Test fun standardIsWhatLighthouseAlwaysShowed() =
         assertEquals(listOf("A", "B", "X", "Y", "L1", "R1", "☰", "⧉"), glyphs(GlyphStyle.Standard))

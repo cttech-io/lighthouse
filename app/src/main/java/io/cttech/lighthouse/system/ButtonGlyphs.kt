@@ -11,7 +11,7 @@ import androidx.compose.runtime.setValue
 enum class GlyphStyle(val label: String) {
     Auto("Automatic"),
     Standard("Standard (A B X Y, ☰ ⧉)"),
-    Odin("AYN Odin (A B X Y, ▶ ■)"),
+    Odin("AYN Odin (A B X Y, ▷ ▢)"),
     Xbox("Xbox (A B X Y, LB RB, ☰ ⧉)"),
     PlayStation("PlayStation (✕ ○ □ △)"),
     Nintendo("Nintendo (B A Y X, L R, + −)"),
@@ -33,7 +33,7 @@ object ButtonGlyphs {
     /** The style of the controller last used, for [GlyphStyle.Auto]; set by the activity as keys arrive. */
     var detected by mutableStateOf(GlyphStyle.Standard)
 
-    /** Built-in controls: AYN's Odin handhelds print ▶ and ■ on Start and Select. */
+    /** Built-in controls: AYN's Odin handhelds print an outlined ▷ on Start and ▢ on Select. */
     fun forDevice(manufacturer: String, model: String): GlyphStyle =
         if (manufacturer.contains("AYN", ignoreCase = true) && model.contains("odin", ignoreCase = true)) GlyphStyle.Odin else GlyphStyle.Standard
 
@@ -59,7 +59,7 @@ object ButtonGlyphs {
         if (key == LEFT_RIGHT) return "◀ ▶"
         return when (style) {
             GlyphStyle.Auto, GlyphStyle.Standard -> when (key) { START -> "☰"; SELECT -> "⧉"; else -> key }
-            GlyphStyle.Odin -> when (key) { START -> "▶"; SELECT -> "■"; else -> key }
+            GlyphStyle.Odin -> when (key) { START -> "▷"; SELECT -> "▢"; else -> key }
             GlyphStyle.Xbox -> when (key) { START -> "☰"; SELECT -> "⧉"; "L1" -> "LB"; "R1" -> "RB"; else -> key }
             GlyphStyle.PlayStation -> when (key) {
                 "A" -> "✕"; "B" -> "○"; "X" -> "□"; "Y" -> "△"; START -> "Options"; SELECT -> "Share"; else -> key
@@ -74,8 +74,8 @@ object ButtonGlyphs {
 
     /** What TalkBack calls the key, by the controller's own name for it. */
     fun spoken(button: String, style: GlyphStyle, swapAB: Boolean): String = when (val g = glyph(button, style, swapAB)) {
-        "☰", "▶", "+" -> if (style == GlyphStyle.Nintendo) "Plus" else "Start"
-        "⧉", "■", "−" -> if (style == GlyphStyle.Nintendo) "Minus" else "Select"
+        "☰", "▷", "+" -> if (style == GlyphStyle.Nintendo) "Plus" else "Start"
+        "⧉", "▢", "−" -> if (style == GlyphStyle.Nintendo) "Minus" else "Select"
         "✕" -> "Cross"
         "○" -> "Circle"
         "□" -> "Square"
