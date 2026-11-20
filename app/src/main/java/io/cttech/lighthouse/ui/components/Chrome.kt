@@ -187,6 +187,7 @@ fun hintDescription(button: String, label: String): String =
 private fun spokenButton(glyph: String) = when (glyph) {
     "☰" -> "Start"
     "⧉" -> "Select"
+    "◀ ▶" -> "Left or right"
     else -> glyph
 }
 

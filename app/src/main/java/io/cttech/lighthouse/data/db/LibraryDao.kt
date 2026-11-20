@@ -37,7 +37,7 @@ interface LibraryDao {
         val added = scanned.filter { it.locator !in existing }
         val changed = scanned.mapNotNull { s ->
             val old = existing[s.locator] ?: return@mapNotNull null
-            val merged = s.copy(id = old.id) // addedAt comes from the file/app itself, so it's stable
+            val merged = s.copy(id = old.id, addedAt = old.addedAt) // added once: a rescan doesn't make it new again
             if (merged != old) merged else null
         }
         // Only write when something changed: every write re-emits the observed queries.
@@ -151,4 +151,14 @@ interface LibraryDao {
 
     @Query("SELECT COUNT(*) FROM favourites WHERE gameKey = :key")
     suspend fun isFavourite(key: String): Int
+
+    @Query("SELECT gameKey FROM favourites ORDER BY addedAt")
+    suspend fun favouriteKeys(): List<String>
+
+    @Query("UPDATE favourites SET addedAt = :position WHERE gameKey = :key")
+    suspend fun setFavouritePosition(key: String, position: Long)
+
+    /** Favourites sort by addedAt, so a chosen order is stored as 0, 1, 2…; ones added later (a timestamp) go after. */
+    @Transaction
+    suspend fun setFavouriteOrder(keys: List<String>) = keys.forEachIndexed { i, key -> setFavouritePosition(key, i.toLong()) }
 }

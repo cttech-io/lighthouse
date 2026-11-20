@@ -214,6 +214,36 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     /** [profileId] null: back to the platform's emulator (Settings → Emulators). */
     fun setGameEmulator(game: Game, profileId: String?) = settings.updateGameEmulator(game.key, profileId)
 
+    // --- Reordering favourites -----------------------------------------------------------------------
+    private val _movingFavourite = MutableStateFlow<String?>(null)
+    /** Key of the favourite being moved along HOME's Favourites row (◀ ▶ move it, A or B puts it down), if any. */
+    val movingFavourite: StateFlow<String?> = _movingFavourite
+
+    private fun favouritesRow(): List<String> =
+        state.value.homeRows.firstOrNull { it.id == FAVOURITES_ROW }?.items?.map { it.key }.orEmpty()
+
+    /** Whether the game menu offers "Move in Favourites": the game is on HOME's Favourites row, with another to pass. */
+    fun canMoveFavourite(game: Game): Boolean = favouritesRow().let { game.key in it && it.size > 1 }
+
+    /** Closes the game menu and picks the card up on HOME's Favourites row (from any tab). */
+    fun startMovingFavourite(game: Game) {
+        _optionsFor.value = null
+        prefs.update {
+            it.copy(
+                selectedKey = HomeTab.Home.key, tabDirection = -1,
+                focusByTab = it.focusByTab + (HomeTab.Home.key to FocusMemory("$FAVOURITES_ROW|${game.key}", 0)),
+            )
+        }
+        _movingFavourite.value = game.key
+    }
+
+    fun moveFavourite(delta: Int) {
+        val key = _movingFavourite.value ?: return
+        repo.moveFavourite(key, delta, favouritesRow())
+    }
+
+    fun finishMovingFavourite() { _movingFavourite.value = null }
+
     // --- Collections ---------------------------------------------------------------------------------
     private val _collectionsFor = MutableStateFlow<Game?>(null)
     /** Game whose "Collections" pop-up is open (from its game menu). */
@@ -396,6 +426,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 private const val RECENT_WINDOW_MS = 30L * 24 * 60 * 60 * 1000
+private const val FAVOURITES_ROW = "favourites"
 
 /**
  * Game-streaming clients grouped into the Streaming row (Sunshine host apps join this in v0.3).

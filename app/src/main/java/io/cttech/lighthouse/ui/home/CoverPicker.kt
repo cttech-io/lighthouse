@@ -243,6 +243,8 @@ fun GameOptionsSheet(
     playedMs: Long?,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
+    /** Picks the card up on HOME's Favourites row to move it; null hides the row (not there, or alone there). */
+    onMoveInFavourites: (() -> Unit)?,
     /** How many of the user's collections it's in, for the Collections row. */
     collectionCount: Int,
     onCollections: () -> Unit,
@@ -285,6 +287,7 @@ fun GameOptionsSheet(
             val row = Modifier.fillMaxWidth()
             PillButton("Play", row.focusRequester(first)) { onClose(); onPlay() }
             PillButton(if (isFavourite) "Remove from favourites" else "Add to favourites", row) { onToggleFavourite(); onClose() }
+            onMoveInFavourites?.let { PillButton("Move in Favourites", row, onClick = it) }
             PillButton(
                 when (collectionCount) { 0 -> "Add to a collection"; 1 -> "Collections: in 1"; else -> "Collections: in $collectionCount" },
                 row, onClick = onCollections,

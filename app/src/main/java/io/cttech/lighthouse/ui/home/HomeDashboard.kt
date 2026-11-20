@@ -39,6 +39,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.heading
@@ -52,6 +53,7 @@ import io.cttech.lighthouse.model.HomeItem
 import io.cttech.lighthouse.model.HomeRow
 import io.cttech.lighthouse.system.LocalAppSettings
 import io.cttech.lighthouse.ui.components.CoverCard
+import io.cttech.lighthouse.ui.components.ProvideHints
 
 
 /**
@@ -67,8 +69,18 @@ internal fun HomeDashboard(
     onFocusedKey: (String) -> Unit,
     onOpenPlatform: (Int) -> Unit,
     refocus: Boolean,
+    /** Key of the favourite lifted to be moved along the Favourites row, if any. */
+    movingFavourite: String? = null,
+    onMoveFavourite: (delta: Int) -> Unit = {},
+    onDoneMoving: () -> Unit = {},
 ) {
     val requester = remember { FocusRequester() }
+    if (movingFavourite != null) {
+        ProvideHints(listOf("◀ ▶" to "Move", "A" to "Done")) { if (it == "A") onDoneMoving() }
+        // Unfavourited or hidden meanwhile (from another device, a rescan): nothing left to move.
+        val stillThere = rows.any { r -> r.id == FAVOURITES_ROW && r.items.any { it.key == movingFavourite } }
+        LaunchedEffect(stillThere) { if (!stillThere) onDoneMoving() }
+    }
     // The same game can sit in several rows (e.g. Favourites and Recently added), so Home positions are
     // "row|item". No memory (fresh start or Home button) = top-left: first item of the top row.
     val positions = rows.flatMap { row -> row.items.map { homePosition(row, it) } }
@@ -123,13 +135,18 @@ internal fun HomeDashboard(
                     items(row.items, key = { it.key }) { item ->
                         val position = homePosition(row, item)
                         val focusMod = if (position == target) Modifier.focusRequester(requester) else Modifier
+                        val lifted = row.id == FAVOURITES_ROW && item.key == movingFavourite
                         when (item) {
                             is HomeItem.GameItem -> CoverCard(
                                 game = item.game,
                                 accent = PlatformCatalog.byId(item.game.platformId)?.accent ?: actions.accent,
                                 isFavourite = item.game.key in actions.favourites,
-                                modifier = focusMod.width(if (row.hero) LocalCardMetrics.current.heroWidth else LocalCardMetrics.current.rowWidth),
-                                focusedScale = 1.07f,
+                                modifier = focusMod
+                                    .then(if (lifted) Modifier.liftedForMoving(onMoveFavourite, onDoneMoving) else Modifier)
+                                    // The others slide aside as a moved favourite passes them.
+                                    .then(if (row.id == FAVOURITES_ROW) Modifier.animateItem() else Modifier)
+                                    .width(if (row.hero) LocalCardMetrics.current.heroWidth else LocalCardMetrics.current.rowWidth),
+                                focusedScale = if (lifted) 1.14f else 1.07f,
                                 onFocused = { onFocusedKey(position) },
                                 onLaunch = { actions.onLaunch(item.game) },
                                 onToggleFavourite = { actions.onToggleFavourite(item.game) },
@@ -180,6 +197,24 @@ private fun PlatformTile(item: HomeItem.PlatformItem, modifier: Modifier, onFocu
         }
     }
 }
+
+private const val FAVOURITES_ROW = "favourites"
+
+/**
+ * A favourite picked up to move: drawn raised, and it takes every button so nothing else happens meanwhile (A would
+ * launch it, X unfavourite it, L1/R1 change tab). ◀ ▶ move it; A, B, Start or Select put it down.
+ */
+private fun Modifier.liftedForMoving(onMove: (Int) -> Unit, onDone: () -> Unit): Modifier = this
+    .graphicsLayer { translationY = -12.dp.toPx() }
+    .onPreviewKeyEvent { e ->
+        if (e.type == KeyEventType.KeyDown) when (e.key) {
+            Key.DirectionLeft -> onMove(-1)
+            Key.DirectionRight -> onMove(+1)
+            Key.ButtonA, Key.ButtonB, Key.ButtonStart, Key.ButtonSelect, Key.Enter, Key.Escape, Key.Back -> onDone()
+            else -> Unit
+        }
+        true
+    }
 
 /** Unique position of an item on Home: its row plus its key (a game may appear in more than one row). */
 private fun homePosition(row: HomeRow, item: HomeItem) = "${row.id}|${item.key}"

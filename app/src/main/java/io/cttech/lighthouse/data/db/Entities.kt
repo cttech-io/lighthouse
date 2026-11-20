@@ -108,5 +108,6 @@ data class CollectionItemEntity(
 @Entity(tableName = "favourites")
 data class FavouriteEntity(
     @PrimaryKey val gameKey: String,
+    /** Sort order: when it was favourited, or its place (0, 1, 2…) once favourites have been reordered. */
     val addedAt: Long,
 )

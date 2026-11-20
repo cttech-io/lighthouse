@@ -176,6 +176,20 @@ class LibraryRepository(
         }
     }
 
+    private val favouriteMoves = Mutex()
+
+    /**
+     * Moves the favourite [key] [delta] places along [shown] (HOME's Favourites row). Presses are applied one after the
+     * other against the stored order, so a quick run of presses all count.
+     */
+    fun moveFavourite(key: String, delta: Int, shown: List<String>) {
+        scope.launch {
+            favouriteMoves.withLock {
+                FavouriteOrder.move(dao.favouriteKeys(), shown, key, delta)?.let { dao.setFavouriteOrder(it) }
+            }
+        }
+    }
+
     /** Adds [key] to the collection called [name], creating it if there's none by that name (any case). */
     fun addToNewCollection(name: String, key: String?) {
         val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
@@ -290,27 +304,36 @@ class LibraryRepository(
 
     private suspend fun scanAllRomsLocked() {
         val byPlatform = activeSources().groupBy { it.platformId }
+        // A fresh library's games all arrive at once: date them by their files, or Recently added is all of them.
+        val firstScan = dao.allGames().none { it.kind == GameKind.ROM }
         // ROMs of a platform Lighthouse no longer has (0.2.0-rc10's Peanuts tab) would otherwise stay on HOME.
         dao.allGames().filter { it.kind == GameKind.ROM && PlatformCatalog.byId(it.platformId) == null }.map { it.id }
             .takeIf { it.isNotEmpty() }?.let { dao.deleteGames(it) }
         // Every ROM platform, even without folders: a platform whose last folder was removed must empty out.
         for (def in PlatformCatalog.all) {
-            if (def.id != PlatformCatalog.ANDROID) scanPlatformLocked(def.id, byPlatform[def.id].orEmpty())
+            if (def.id != PlatformCatalog.ANDROID) scanPlatformLocked(def.id, byPlatform[def.id].orEmpty(), datedByFile = firstScan)
         }
         watcher.watch(byPlatform.mapValues { (_, s) -> s.map { File(it.path) } })
     }
 
     private suspend fun activeSources() = dao.sources().filter { !it.ignored }
 
-    private suspend fun scanPlatformLocked(platformId: String, sources: List<SourceEntity>) {
+    /**
+     * A game found for the first time is added now, not when its file was last changed: copying keeps a file's old date,
+     * so a game copied over today could count as months old and never be in Recently added. [datedByFile]: the first
+     * scan of a new library, whose games are dated by their files instead.
+     */
+    private suspend fun scanPlatformLocked(platformId: String, sources: List<SourceEntity>, datedByFile: Boolean = false) {
         val def = PlatformCatalog.byId(platformId) ?: return
         val roms = RomScanner.scan(def, sources.map { File(it.path) }.filter { it.isDirectory })
+        val now = System.currentTimeMillis()
         dao.replaceGames(
             platformId, GameKind.ROM,
             roms.map {
                 GameEntity(
                     platformId = platformId, kind = GameKind.ROM, locator = it.path, title = it.title,
-                    sortTitle = it.sortKey, sizeBytes = it.sizeBytes, modifiedAt = it.modifiedAt, addedAt = it.modifiedAt,
+                    sortTitle = it.sortKey, sizeBytes = it.sizeBytes, modifiedAt = it.modifiedAt,
+                    addedAt = if (datedByFile) it.modifiedAt.coerceAtMost(now) else now,
                 )
             },
         )

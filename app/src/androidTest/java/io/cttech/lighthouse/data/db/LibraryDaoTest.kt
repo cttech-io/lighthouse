@@ -57,6 +57,22 @@ class LibraryDaoTest {
     }
 
     @Test
+    fun replaceGames_keepsWhenAGameWasAdded() = runBlocking {
+        // A rescan's "now" mustn't make a game new again (Recently added).
+        dao.replaceGames("ps2", GameKind.ROM, listOf(rom("a.iso", addedAt = 100)))
+        dao.replaceGames("ps2", GameKind.ROM, listOf(rom("a.iso", addedAt = 999, size = 20)))
+        assertEquals(100L, dao.allGames().single().addedAt)
+    }
+
+    @Test
+    fun favouriteOrder_isKeptAndLaterOnesGoAfter() = runBlocking {
+        listOf("a", "b", "c").forEachIndexed { i, k -> dao.addFavourite(FavouriteEntity(k, 1_000L + i)) }
+        dao.setFavouriteOrder(listOf("c", "a", "b"))
+        dao.addFavourite(FavouriteEntity("d", System.currentTimeMillis()))
+        assertEquals(listOf("c", "a", "b", "d"), dao.favouriteKeys())
+    }
+
+    @Test
     fun replaceGames_leavesOtherPlatformsAndKindsAlone() = runBlocking {
         dao.insertGames(listOf(rom("keep.iso").copy(platformId = "psp"), rom("app").copy(kind = GameKind.APP)))
 

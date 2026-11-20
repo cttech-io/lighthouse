@@ -114,6 +114,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val pickerFor by vm.covers.pickerFor.collectAsStateWithLifecycle()
     val collectionsFor by vm.collectionsFor.collectAsStateWithLifecycle()
     val emulatorFor by vm.emulatorFor.collectAsStateWithLifecycle()
+    val movingFavourite by vm.movingFavourite.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) } // Settings page
     var settingsOnCovers by remember { mutableStateOf(false) }
     var drawerOpen by remember { mutableStateOf(false) } // all-apps drawer
@@ -149,6 +150,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             collectionsFor != null -> vm.closeCollections()
             emulatorFor != null -> vm.closeEmulatorPicker()
             optionsFor != null -> vm.closeOptions()
+            movingFavourite != null -> vm.finishMovingFavourite()
             drawerOpen -> drawerOpen = false
             launchIssue != null -> vm.dismissLaunchIssue()
             searchOpen -> searchOpen = false
@@ -171,6 +173,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             vm.covers.closePicker()
             vm.closeCollections()
             vm.closeEmulatorPicker()
+            vm.finishMovingFavourite()
             vm.dismissLaunchIssue()
             refocusToken++
         }
@@ -202,6 +205,8 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             .drawBehind { drawRect(Brush.verticalGradient(listOf(bgTop.value, themeBg))) }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || overlay) return@onPreviewKeyEvent false
+                // Moving a favourite: the lifted card takes every button (◀ ▶ move it, A or B put it down).
+                if (movingFavourite != null) return@onPreviewKeyEvent false
                 if (event.key == Key.ButtonStart) { vm.refreshSettingsInfo(); menuOpen = true; return@onPreviewKeyEvent true }
                 // B with nothing open: the app drawer (like a console's "all software" list).
                 if (event.key == Key.ButtonB) { drawerOpen = true; return@onPreviewKeyEvent true }
@@ -261,6 +266,9 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                             statusLine = state.statusLine, // cover progress shows in the pill instead
                             rememberedKey = state.focusByTab[HomeTab.Home.key]?.gameKey,
                             actions = actions,
+                            movingFavourite = movingFavourite,
+                            onMoveFavourite = vm::moveFavourite,
+                            onDoneMoving = vm::finishMovingFavourite,
                             onFocusedKey = vm::onHomeFocused,
                             onOpenPlatform = vm::selectTab,
                             refocus = accessPrompt, // quick-settings panels hand focus back to their icon instead
@@ -305,6 +313,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                     playedMs = playTime[g.key],
                     onPlay = { vm.launch(g) },
                     onToggleFavourite = { vm.toggleFavourite(g) },
+                    onMoveInFavourites = if (vm.canMoveFavourite(g)) ({ vm.startMovingFavourite(g); refocusToken++ }) else null,
                     collectionCount = state.collections.count { g.key in it.keys },
                     onCollections = { vm.openCollections(g) },
                     // Read here, so a choice made in its pop-up shows when the menu is opened again.
