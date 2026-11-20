@@ -29,6 +29,7 @@ Most emulators only need a launch profile in `app/src/main/assets/launch_profile
 ```
 
 - `rom`: how the game is passed. `content` passes a shareable URI, which is what most modern emulators want. `extras` passes it in intent extras, using `{path}` in `extras`.
+- `extensions`: for an app that opens only its own file type (Peanuts Native's `.nup` on Switch). Those files go only to it, and it gets no others.
 - `core` (RetroArch): the core's path, so Lighthouse can tell you when it's missing.
 - Test it on a real device. A pull request should say which device and emulator version you tested.
 

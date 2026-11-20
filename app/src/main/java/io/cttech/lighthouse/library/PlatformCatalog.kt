@@ -84,17 +84,11 @@ object PlatformCatalog {
         ),
         PlatformDef(
             "switch", "Switch", Color(0xFFFF4554),
-            // .nsz/.xcz: compressed dumps, which Lemon opens.
-            extensions = setOf("xci", "nsp", "nca", "nro", "nsz", "xcz"),
-            folderNames = setOf("switch", "ns", "nintendo switch"),
+            // .nsz/.xcz: compressed dumps, which Lemon opens. .nup: games built by Peanuts Native, which alone opens them
+            // (its launch profile claims the extension). "Peanut Roms" is its PC builder's folder on the device.
+            extensions = setOf("xci", "nsp", "nca", "nro", "nsz", "xcz", "nup"),
+            folderNames = setOf("switch", "ns", "nintendo switch", "peanuts", "peanuts native", "peanutsnative", "peanut roms"),
             skipUpdatesAndDlc = true,
-        ),
-        PlatformDef(
-            "peanuts", "Peanuts", Color(0xFFD9A55B),
-            // Switch games rebuilt to run natively by Peanuts Native, which alone opens a .nup: its own tab, so the
-            // Switch emulator choice never hands one to Eden. No update skipping: every .nup is named "[v<version>]".
-            extensions = setOf("nup"),
-            folderNames = setOf("peanuts", "peanuts native", "peanutsnative", "peanut roms", "peanuts roms"),
         ),
         PlatformDef(
             "gbc", "GBC", Color(0xFF26C6A6),

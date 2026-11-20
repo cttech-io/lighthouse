@@ -204,8 +204,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     /** What the game's Emulator row and pop-up show; null when there's nothing to choose (fewer than two installed). */
     fun emulatorChoices(game: Game): EmulatorChoices? {
         if (game.path == null) return null // apps, Moonlight and shortcuts start themselves
-        val installed = launcher.installedProfiles(game.platformId).map { it.first }.takeIf { it.size > 1 } ?: return null
-        val platformDefault = launcher.activeProfile(game.platformId)?.first ?: return null
+        val extension = File(game.path).extension // a .nup only ever opens in Peanuts Native, so it has no choice
+        val installed = launcher.installedProfiles(game.platformId, extension).map { it.first }.takeIf { it.size > 1 } ?: return null
+        val platformDefault = launcher.activeProfile(game.platformId, extension = extension)?.first ?: return null
         val chosen = settings.gameEmulators[game.key]?.let { id -> installed.firstOrNull { it.id == id } }
         return EmulatorChoices(installed, platformDefault, chosen)
     }

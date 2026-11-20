@@ -27,6 +27,11 @@ data class LaunchProfile(
     val extras: Map<String, Any>,
     /** Where to get the emulator; offered when it isn't installed. */
     val website: String? = null,
+    /**
+     * The only file types this profile opens, and no other profile does (Peanuts Native's .nup on Switch). Empty: the
+     * platform's other files.
+     */
+    val extensions: Set<String> = emptySet(),
 ) {
     /** For people: "RetroArch · mGBA" reads like two apps, so it's "RetroArch (mGBA core)". */
     val displayName: String get() = label.split(" · ").let { if (it.size == 2) "${it[0]} (${it[1]} core)" else label }
@@ -40,6 +45,15 @@ object LaunchProfiles {
 
     fun forPlatform(context: Context, platformId: String): List<LaunchProfile> =
         all(context).filter { platformId in it.platforms }
+
+    /**
+     * Which of a platform's [profiles] open a file with [extension]: the ones made for that type, else the general ones.
+     * With no extension (the platform's emulator in Settings), the general ones.
+     */
+    fun forExtension(profiles: List<LaunchProfile>, extension: String?): List<LaunchProfile> {
+        val ext = extension?.lowercase()
+        return profiles.filter { ext != null && ext in it.extensions }.ifEmpty { profiles.filter { it.extensions.isEmpty() } }
+    }
 
     private fun load(context: Context): List<LaunchProfile> {
         val root = JSONObject(context.assets.open("launch_profiles.json").bufferedReader().use { it.readText() })
@@ -67,6 +81,7 @@ object LaunchProfiles {
                     ?: listOfNotNull(o.optString("core").ifEmpty { null }),
                 extras = extras?.keys()?.asSequence()?.associateWith { k -> extras.get(k).let { v -> v as? Boolean ?: v.toString() } } ?: emptyMap(),
                 website = o.optString("website").ifEmpty { null },
+                extensions = o.optJSONArray("extensions")?.let { a -> List(a.length()) { a.getString(it).lowercase() }.toSet() } ?: emptySet(),
             )
         }
     }

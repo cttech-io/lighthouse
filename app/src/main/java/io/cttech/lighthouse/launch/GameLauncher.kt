@@ -64,23 +64,31 @@ class GameLauncher(
 ) {
     private val pm = context.packageManager
 
-    /** The platform's profiles whose emulator is installed, with the installed package, in profile order. */
-    fun installedProfiles(platformId: String): List<Pair<LaunchProfile, String>> =
-        LaunchProfiles.forPlatform(context, platformId).mapNotNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
+    /**
+     * The platform's profiles that open files with [extension] (see [LaunchProfiles.forExtension]); null for the
+     * platform's emulator as Settings shows it.
+     */
+    private fun profiles(platformId: String, extension: String?): List<LaunchProfile> =
+        LaunchProfiles.forExtension(LaunchProfiles.forPlatform(context, platformId), extension)
+
+    /** The platform's profiles for [extension] whose emulator is installed, with the installed package, in profile order. */
+    fun installedProfiles(platformId: String, extension: String? = null): List<Pair<LaunchProfile, String>> =
+        profiles(platformId, extension).mapNotNull { p -> p.packages.firstOrNull(::isInstalled)?.let { p to it } }
 
     /**
-     * Installed profile used for [platformId]: the one chosen for the game with [gameKey], else the platform's, else the
-     * first installed one. A choice whose emulator has been uninstalled is skipped.
+     * Installed profile used for [platformId] (and a file with [extension]): the one chosen for the game with [gameKey],
+     * else the platform's, else the first installed one. A choice whose emulator has been uninstalled, or that doesn't
+     * open this type of file, is skipped.
      */
-    fun activeProfile(platformId: String, gameKey: String? = null): Pair<LaunchProfile, String>? {
-        val installed = installedProfiles(platformId)
+    fun activeProfile(platformId: String, gameKey: String? = null, extension: String? = null): Pair<LaunchProfile, String>? {
+        val installed = installedProfiles(platformId, extension)
         val chosen = listOfNotNull(gameKey?.let(gameProfile), preferredProfile(platformId))
         return chosen.firstNotNullOfOrNull { id -> installed.firstOrNull { it.first.id == id } } ?: installed.firstOrNull()
     }
 
-    /** Every known emulator for [platformId], installed or not, for Settings → Emulators. */
-    suspend fun status(platformId: String): List<EmulatorStatus> =
-        LaunchProfiles.forPlatform(context, platformId).map { p ->
+    /** Every known emulator for [platformId] (and files with [extension]), installed or not, for Settings → Emulators. */
+    suspend fun status(platformId: String, extension: String? = null): List<EmulatorStatus> =
+        profiles(platformId, extension).map { p ->
             val pkg = p.packages.firstOrNull(::isInstalled)
             val core = if (p.cores.isEmpty()) true else if (pkg != null) findCore(p.cores.map { it.replace("{package}", pkg) }).second else null
             EmulatorStatus(p, pkg, storageOk = pkg == null || !p.needsStorage || canReadStorage(pkg), corePresent = core)
@@ -112,8 +120,9 @@ class GameLauncher(
             return start(MoonlightSource.launchIntent(app))
         }
         val path = game.path ?: return LaunchResult.Failed("No file for ${game.title}")
-        val (profile, pkg) = activeProfile(game.platformId, game.key)
-            ?: return LaunchResult.EmulatorMissing(LaunchProfiles.forPlatform(context, game.platformId).map { MissingApp(it.displayName, it.website) })
+        val extension = File(path).extension
+        val (profile, pkg) = activeProfile(game.platformId, game.key, extension)
+            ?: return LaunchResult.EmulatorMissing(profiles(game.platformId, extension).map { MissingApp(it.displayName, it.website) })
 
         if (profile.needsStorage && !canReadStorage(pkg)) return LaunchResult.NeedsStoragePermission(profile, pkg)
         val core = if (profile.cores.isEmpty()) null else {

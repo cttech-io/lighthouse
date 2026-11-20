@@ -344,7 +344,7 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
     val list = platforms ?: run { SettingRow("Checking emulators…", modifier = first) {}; return }
     if (list.isEmpty()) { SettingRow("No ROM platforms yet", note = "Add a ROM folder in Settings → Library.", modifier = first) {}; return }
     list.forEachIndexed { i, p ->
-        key(p.platformId) {
+        key(p.platformId, p.extension) {
             val r = remember { FocusRequester() }
             val active = p.options.firstOrNull { it.profile.id == p.activeId }
             val installed = p.options.filter { it.pkg != null }
@@ -356,12 +356,13 @@ internal fun EmulatorsSection(vm: HomeViewModel, rootAvailable: Boolean, first: 
                 modifier = (if (i == 0) first else Modifier).focusRequester(r),
                 note = when {
                     active == null -> "Install one of: ${p.options.joinToString { it.profile.displayName }}"
-                    installed.size > 1 -> (if (ready) "Ready · " else "") + "A to choose between ${installed.size} installed emulators"
+                    installed.size > 1 && p.extension == null -> (if (ready) "Ready · " else "") + "A to choose between ${installed.size} installed emulators"
                     ready -> "Ready"
                     else -> null
                 },
             ) {
-                if (installed.size > 1) overlay.show(r) {
+                // Settings stores one choice per platform; a file type's own emulators (one so far) have none.
+                if (installed.size > 1 && p.extension == null) overlay.show(r) {
                     OptionPicker(
                         title = "${p.label}: emulator",
                         options = installed,

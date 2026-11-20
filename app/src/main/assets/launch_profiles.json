@@ -1,5 +1,5 @@
 {
-  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {uri} FileProvider URI of the ROM (granted along with the files a .cue/.m3u names), {package} the installed package, {ime} default input method, {core} the installed core (core may be a list of alternatives; the first one installed is used). rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file. website: where to get the emulator, offered when it isn't installed.",
+  "_comment": "How Lighthouse starts each emulator. First profile whose package is installed wins for a platform. Placeholders: {path} ROM file path, {uri} FileProvider URI of the ROM (granted along with the files a .cue/.m3u names), {package} the installed package, {ime} default input method, {core} the installed core (core may be a list of alternatives; the first one installed is used). rom: content = FileProvider URI as intent data; document = document-shaped URI as intent data (for emulators that only accept those, e.g. PPSSPP); extras = path only in extras; steamAppId = app id read from a .steam shortcut file. website: where to get the emulator, offered when it isn't installed. extensions: the only files this profile opens, and the only profile that opens them (e.g. Peanuts Native's .nup on Switch); profiles without it open the platform's other files.",
   "profiles": [
     {
       "id": "eden",
@@ -38,7 +38,8 @@
       "id": "peanuts-native",
       "label": "Peanuts Native",
       "website": "https://github.com/igawa6/peanuts-native/releases",
-      "platforms": ["peanuts"],
+      "platforms": ["switch"],
+      "extensions": ["nup"],
       "packages": ["dev.nxnative.android.peanuts"],
       "activity": "dev.peanuts.launch.LaunchActivity",
       "action": "android.intent.action.MAIN",

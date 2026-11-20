@@ -45,9 +45,22 @@ class LaunchProfilesAssetTest {
     @Test fun peanutsGetsTheNupPathThroughItsFrontendAlias() {
         // Peanuts Native's documented frontend contract: the build-stable alias, the .nup's path in the "game" extra.
         val p = profiles.single { it.getString("id") == "peanuts-native" }
+        assertEquals("switch", p.getJSONArray("platforms").getString(0))
+        assertEquals("nup", p.getJSONArray("extensions").getString(0))
         assertEquals("dev.peanuts.launch.LaunchActivity", p.getString("activity"))
         assertEquals("extras", p.getString("rom"))
         assertEquals("{path}", p.getJSONObject("extras").getString("game"))
+    }
+
+    @Test fun aFileTypeWithItsOwnEmulatorNeverReachesTheOthers() {
+        fun profile(id: String, vararg ext: String) =
+            LaunchProfile(id, id, setOf("switch"), emptyList(), null, "", RomDelivery.CONTENT, null, false, emptyList(), emptyMap(), extensions = ext.toSet())
+        val switch = listOf(profile("eden"), profile("lemon"), profile("peanuts", "nup"))
+        fun ids(ext: String?) = LaunchProfiles.forExtension(switch, ext).map { it.id }
+        assertEquals(listOf("peanuts"), ids("nup"))
+        assertEquals(listOf("peanuts"), ids("NUP"))
+        assertEquals(listOf("eden", "lemon"), ids("xci"))
+        assertEquals(listOf("eden", "lemon"), ids(null)) // the platform's emulator in Settings
     }
 
     @Test fun retroArchProfilesReadAsOneAppWithACore() {

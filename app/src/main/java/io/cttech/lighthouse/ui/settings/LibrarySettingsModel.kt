@@ -5,6 +5,7 @@ import io.cttech.lighthouse.data.db.GameKind
 import io.cttech.lighthouse.data.db.SourceEntity
 import io.cttech.lighthouse.launch.EmulatorStatus
 import io.cttech.lighthouse.launch.GameLauncher
+import io.cttech.lighthouse.launch.LaunchProfiles
 import io.cttech.lighthouse.library.FolderDetector
 import io.cttech.lighthouse.library.LibraryRepository
 import io.cttech.lighthouse.library.PlatformCatalog
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
@@ -38,7 +40,14 @@ data class LibraryInfo(
  */
 data class SyncApp(val platformId: String, val label: String, val pkg: String, val steps: String, val folder: String?, val count: Int)
 
-data class PlatformEmulators(val platformId: String, val label: String, val options: List<EmulatorStatus>, val activeId: String?)
+/** [extension]: set for a file type with emulators of its own (Switch's .nup), which isn't the platform's choice. */
+data class PlatformEmulators(
+    val platformId: String,
+    val label: String,
+    val options: List<EmulatorStatus>,
+    val activeId: String?,
+    val extension: String? = null,
+)
 
 private val SYNC_APPS = listOf(
     SyncApp(
@@ -128,12 +137,23 @@ class LibrarySettingsModel(
 
     /**
      * Emulator status for every platform with games or folders that starts through a launch profile. Android apps,
-     * Moonlight and Shortcuts start themselves, so there's no emulator to show. Checks cores with root, so it suspends.
+     * Moonlight and Shortcuts start themselves, so there's no emulator to show. A file type with an emulator of its own
+     * (Switch's .nup, Peanuts Native) follows its platform once that emulator is installed or there are such games.
+     * Checks cores with root, so it suspends.
      */
     suspend fun emulatorStatus(): List<PlatformEmulators> = withContext(Dispatchers.IO) {
-        info.value.platforms.mapNotNull { row ->
-            val options = launcher.status(row.def.id).ifEmpty { return@mapNotNull null }
-            PlatformEmulators(row.def.id, row.def.tabLabel, options, launcher.activeProfile(row.def.id)?.first?.id)
+        val games = repo.games.first()
+        info.value.platforms.flatMap { row ->
+            val id = row.def.id
+            val platform = launcher.status(id).takeIf { it.isNotEmpty() }
+                ?.let { PlatformEmulators(id, row.def.tabLabel, it, launcher.activeProfile(id)?.first?.id) }
+            val ownTypes = LaunchProfiles.forPlatform(app, id).flatMap { it.extensions }.distinct().mapNotNull { ext ->
+                val options = launcher.status(id, ext)
+                val wanted = options.any { it.pkg != null } || games.any { it.platformId == id && it.locator.endsWith(".$ext", ignoreCase = true) }
+                if (!wanted) null
+                else PlatformEmulators(id, "${row.def.tabLabel} · .$ext games", options, launcher.activeProfile(id, extension = ext)?.first?.id, ext)
+            }
+            listOfNotNull(platform) + ownTypes
         }
     }
 

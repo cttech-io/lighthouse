@@ -56,17 +56,24 @@ class RomScannerTest {
         assertEquals(setOf("ps2", "gamenative", "switch"), found)
     }
 
-    @Test fun peanutsListsEveryNupDespiteItsVersionTag() {
+    @Test fun peanutsGamesAreSwitchGamesDespiteTheirVersionTag() {
         // Peanuts Native's layout: one folder per title ID, the built pack beside the .nup, the builder's icon next to it.
         touch("Peanut Roms/01006BB00C6F0000/The Legend of Zelda- Link's Awakening [01006BB00C6F0000][v131072].nup")
         touch("Peanut Roms/01006BB00C6F0000/The Legend of Zelda- Link's Awakening [01006BB00C6F0000][v131072].png")
         touch("Peanut Roms/01006BB00C6F0000/01006BB00C6F0000-work/android-pack/main")
         touch("Peanut Roms/010093801237C000/Metroid Dread [010093801237C000][v131072].nup")
-        touch("Peanut Roms/Mario.nsp")  // a dump Peanuts builds from, not something it plays
-        val titles = RomScanner.scan(platform("peanuts"), listOf(File(tmp.root, "Peanut Roms"))).map { it.title }
+        touch("Peanut Roms/Mario [0100000000010000][v262144].nsp")  // still an update when it's a dump
+        val titles = RomScanner.scan(platform("switch"), listOf(File(tmp.root, "Peanut Roms"))).map { it.title }
         assertEquals(listOf("The Legend of Zelda: Link's Awakening", "Metroid Dread"), titles)
-        assertEquals(listOf("peanuts"), FolderDetector.detect(listOf(tmp.root)).map { it.platformId })
-        assertEquals("peanuts", FolderDetector.guessPlatform(File(tmp.root, "Peanut Roms")))
+        assertEquals(listOf("switch"), FolderDetector.detect(listOf(tmp.root)).map { it.platformId })
+    }
+
+    @Test fun peanutsBuildReplacesTheDumpItWasMadeFrom() {
+        touch("sd/Switch/Metroid Dread.xci")
+        touch("internal/Peanut Roms/010093801237C000/Metroid Dread [010093801237C000][v131072].nup")
+        touch("sd/Switch/Super Mario Odyssey.xci")
+        val roms = RomScanner.scan(platform("switch"), listOf(File(tmp.root, "sd/Switch"), File(tmp.root, "internal/Peanut Roms")))
+        assertEquals(listOf("Metroid Dread" to "nup", "Super Mario Odyssey" to "xci"), roms.map { it.title to File(it.path).extension })
     }
 
     @Test fun pspFolderAndFormats() {

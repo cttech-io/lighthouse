@@ -280,6 +280,8 @@ class LibraryRepository(
     }
 
     private suspend fun detectSourcesLocked() {
+        // 0.2.0-rc10 gave Peanuts Native's .nup games a tab of their own; their folders are Switch folders now.
+        dao.sources().filter { it.platformId == "peanuts" }.forEach { dao.updateSource(it.copy(platformId = "switch")) }
         val found = FolderDetector.detect(storageRoots())
         dao.insertSources(found.map { SourceEntity(platformId = it.platformId, path = it.dir.absolutePath, autoDetected = true) })
         // Earlier versions auto-detected app install folders (GameNative's own game folder) as shortcut folders.
@@ -288,6 +290,9 @@ class LibraryRepository(
 
     private suspend fun scanAllRomsLocked() {
         val byPlatform = activeSources().groupBy { it.platformId }
+        // ROMs of a platform Lighthouse no longer has (0.2.0-rc10's Peanuts tab) would otherwise stay on HOME.
+        dao.allGames().filter { it.kind == GameKind.ROM && PlatformCatalog.byId(it.platformId) == null }.map { it.id }
+            .takeIf { it.isNotEmpty() }?.let { dao.deleteGames(it) }
         // Every ROM platform, even without folders: a platform whose last folder was removed must empty out.
         for (def in PlatformCatalog.all) {
             if (def.id != PlatformCatalog.ANDROID) scanPlatformLocked(def.id, byPlatform[def.id].orEmpty())
