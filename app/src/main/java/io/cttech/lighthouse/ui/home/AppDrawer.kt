@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import androidx.compose.foundation.layout.widthIn
+import io.cttech.lighthouse.system.ButtonGlyphs
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -112,7 +113,7 @@ fun AppDrawer(hiddenState: (String) -> Boolean?, onSetHidden: (String, Boolean) 
         if (q.isBlank()) apps else apps.filter { TitleCleaner.sortKey(it.label).contains(q) }
     }
     val first = remember { FocusRequester() }
-    ProvideHints(listOf("B" to "Close", "⧉" to "Options", "A" to "Open")) { if (it == "B") onClose() }
+    ProvideHints(listOf("B" to "Close", ButtonGlyphs.SELECT to "Options", "A" to "Open")) { if (it == "B") onClose() }
 
     Box(
         Modifier

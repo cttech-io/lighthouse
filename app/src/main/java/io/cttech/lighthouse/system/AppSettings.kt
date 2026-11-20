@@ -89,6 +89,18 @@ class AppSettings(context: Context) {
         prefs.edit().putBoolean(KEY_SWAP_AB, on).apply()
     }
 
+    /** Labels for the on-screen button hints (Settings → Controls); Auto follows the controller in use. */
+    var glyphStyle by mutableStateOf(enumPref(KEY_GLYPH_STYLE, GlyphStyle.Auto))
+        private set
+
+    fun updateGlyphStyle(style: GlyphStyle) {
+        glyphStyle = style
+        prefs.edit().putString(KEY_GLYPH_STYLE, style.name).apply()
+    }
+
+    /** The glyphs to draw right now: the chosen style, or the detected controller's. */
+    val glyphs: GlyphStyle get() = if (glyphStyle == GlyphStyle.Auto) ButtonGlyphs.detected else glyphStyle
+
     var homeButton by mutableStateOf(enumPref(KEY_HOME_BUTTON, HomeButtonAction.TopLeft))
         private set
 
@@ -339,6 +351,7 @@ class AppSettings(context: Context) {
         const val KEY_HAPTIC_STRENGTH = "haptic_strength"
         const val KEY_SWAP_AB = "swap_ab"
         const val KEY_HOME_BUTTON = "home_button"
+        const val KEY_GLYPH_STYLE = "glyph_style"
         const val KEY_ROOT = "root_extras_enabled"
         const val KEY_SETUP_DONE = "setup_done"
         const val KEY_SETUP_STEP = "setup_step"

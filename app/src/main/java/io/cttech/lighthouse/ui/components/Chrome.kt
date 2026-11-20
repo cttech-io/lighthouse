@@ -61,6 +61,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import io.cttech.lighthouse.model.HomeTab
+import io.cttech.lighthouse.system.ButtonGlyphs
+import io.cttech.lighthouse.system.GlyphStyle
+import io.cttech.lighthouse.system.LocalAppSettings
 import kotlinx.coroutines.delay
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -133,6 +136,7 @@ fun TopBar(
 
 @Composable
 fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, onTap: (button: String) -> Unit = {}) {
+    val settings = LocalAppSettings.current
     // Right-aligned, one line. On narrow screens hints are dropped from the left: the important ones
     // (Play, Favourite…) are listed last, so they're the ones that stay.
     Layout(
@@ -147,7 +151,7 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
                         .clip(RoundedCornerShape(50))
                         .pointerInput(button) { detectTapGestures { onTap(buttons.last()) } }
                         // One announcement per hint ("Select, A button"), not the letters and label separately.
-                        .clearAndSetSemantics { contentDescription = hintDescription(button, label); role = Role.Button; onClick { onTap(buttons.last()); true } }
+                        .clearAndSetSemantics { contentDescription = hintDescription(button, label, settings.glyphs, settings.swapAB); role = Role.Button; onClick { onTap(buttons.last()); true } }
                         .padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -179,17 +183,12 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, on
     }
 }
 
-/** What TalkBack says for a hint: "Select, A button", or "Section, L1 or R1 button" for a pair. */
-fun hintDescription(button: String, label: String): String =
-    "$label, ${button.split(' ').joinToString(" or ") { spokenButton(it) }} button"
-
-/** The symbol glyphs by name, so TalkBack doesn't read "trigram for heaven". */
-private fun spokenButton(glyph: String) = when (glyph) {
-    "☰" -> "Start"
-    "⧉" -> "Select"
-    "◀ ▶" -> "Left or right"
-    else -> glyph
-}
+/**
+ * What TalkBack says for a hint: "Select, A button", or "Section, L1 or R1 button" for a pair; keys by the controller's
+ * own names ("Cross", "Plus"), so it doesn't read the symbols ("trigram for heaven").
+ */
+fun hintDescription(button: String, label: String, style: GlyphStyle = GlyphStyle.Standard, swapAB: Boolean = false): String =
+    "$label, ${button.split(' ').joinToString(" or ") { ButtonGlyphs.spoken(it, style, swapAB) }} button"
 
 /** Height of [HintBar]; full-screen pop-ups leave this much room at the bottom so the bar never covers them. */
 val HintBarHeight = 44.dp
@@ -255,18 +254,28 @@ fun Modifier.fadingEdges(
 /** True inside the top bar on small screens: status icons drop the battery percentage and shrink. */
 val LocalCompactChrome = compositionLocalOf { false }
 
+/**
+ * A controller button, drawn as the controller in use labels it ([ButtonGlyphs]): [button] is Android's name for it
+ * ("A", "L1", [ButtonGlyphs.START]…). [round] is for a single-character label; longer ones ("LB", "Options") get a pill.
+ */
 @Composable
-fun ButtonGlyph(label: String, round: Boolean = false, decorative: Boolean = false) {
+fun ButtonGlyph(button: String, round: Boolean = false, decorative: Boolean = false) {
+    val settings = LocalAppSettings.current
+    val label = ButtonGlyphs.glyph(button, settings.glyphs, settings.swapAB)
+    val circle = round && label.length == 1
     Box(
         Modifier
             // Next to tabs or steps the glyph only says "this button moves along"; TalkBack has its own way to move.
-            .then(if (decorative) Modifier.clearAndSetSemantics {} else Modifier.semantics { contentDescription = "${spokenButton(label)} button" })
-            .then(if (round) Modifier.size(22.dp) else Modifier.height(22.dp))
-            .background(Color.White, if (round) CircleShape else RoundedCornerShape(6.dp))
-            .padding(horizontal = if (round) 0.dp else 5.dp),
+            .then(
+                if (decorative) Modifier.clearAndSetSemantics {}
+                else Modifier.semantics { contentDescription = "${ButtonGlyphs.spoken(button, settings.glyphs, settings.swapAB)} button" },
+            )
+            .then(if (circle) Modifier.size(22.dp) else Modifier.height(22.dp))
+            .background(Color.White, if (circle) CircleShape else RoundedCornerShape(if (round) 11.dp else 6.dp))
+            .padding(horizontal = if (circle) 0.dp else 6.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
     }
 }
 

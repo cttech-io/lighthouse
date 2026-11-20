@@ -1,5 +1,7 @@
 package io.cttech.lighthouse
 
+import io.cttech.lighthouse.system.ButtonGlyphs
+import android.os.Build
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
@@ -45,6 +47,7 @@ open class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         syncWindowState()
         val settings = (application as LighthouseApp).settings
+        ButtonGlyphs.detected = ButtonGlyphs.forDevice(Build.MANUFACTURER, Build.MODEL)
         setContent {
             val themes by home.themes.collectAsStateWithLifecycle()
             val theme = themes.firstOrNull { it.id == settings.themeId } ?: themes.firstOrNull() ?: ThemeRepository.Fallback
@@ -73,6 +76,7 @@ open class MainActivity : ComponentActivity() {
         ) {
             findViewById<android.view.ViewGroup>(android.R.id.content)?.getChildAt(0)?.requestFocusFromTouch()
         }
+        noteController(event)
         val settings = (application as LighthouseApp).settings
         val swapped = when (event.keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_BUTTON_B
@@ -86,6 +90,16 @@ open class MainActivity : ComponentActivity() {
         // Android turns an unhandled Start into DPAD_CENTER (Generic.kcm fallback), which "presses" whatever is
         // focused: Start in the app drawer opened the highlighted app. Start only ever means Settings here.
         return handled || event.keyCode == KeyEvent.KEYCODE_BUTTON_START
+    }
+
+    private var lastControllerId = -1
+
+    /** Button hints follow the controller last used (Settings → Controls → Button glyphs: Automatic). */
+    private fun noteController(event: KeyEvent) {
+        if (event.deviceId == lastControllerId || !KeyEvent.isGamepadButton(event.keyCode)) return
+        val device = event.device ?: return
+        lastControllerId = event.deviceId
+        ButtonGlyphs.detected = ButtonGlyphs.forController(device.vendorId, device.isExternal, Build.MANUFACTURER, Build.MODEL)
     }
 
     /** singleTask: pressing Home while Lighthouse is the home app delivers a new HOME intent here. */

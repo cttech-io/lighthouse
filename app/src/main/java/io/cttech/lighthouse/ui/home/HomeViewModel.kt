@@ -315,8 +315,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             favKeys = favKeys,
             // Only things you play: ROMs and game-like apps (not Bitwarden & co.).
             recentlyPlayed = plays.map { it.gameKey }.filter { key -> byKey[key]?.isGame == true },
+            // Games only, as Continue playing: an app counts if it's game-like or you marked it as a game.
             recentlyAdded = games.filter { System.currentTimeMillis() - it.addedAt < RECENT_WINDOW_MS }
-                .sortedByDescending { it.addedAt }.map { it.key },
+                .sortedByDescending { it.addedAt }.map { it.key }.filter { key -> byKey[key]?.isGame == true },
             order = io.cttech.lighthouse.system.withCollections(settings.homeSectionOrder, collections.map { it.sectionId }),
             hidden = settings.hiddenHomeSections,
             collections = collections,

@@ -1,5 +1,7 @@
 package io.cttech.lighthouse.ui.components
 
+import io.cttech.lighthouse.system.ButtonGlyphs
+import io.cttech.lighthouse.system.GlyphStyle
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -40,7 +42,10 @@ class SpokenDescriptionsTest {
     @Test fun hints() {
         assertEquals("Select, A button", hintDescription("A", "Select"))
         assertEquals("Section, L1 or R1 button", hintDescription("L1 R1", "Section"))
-        assertEquals("Settings, Start button", hintDescription("☰", "Settings"))
-        assertEquals("Options, Select button", hintDescription("⧉", "Options"))
+        assertEquals("Settings, Start button", hintDescription(ButtonGlyphs.START, "Settings"))
+        assertEquals("Options, Select button", hintDescription(ButtonGlyphs.SELECT, "Options"))
+        assertEquals("Move, Left or right button", hintDescription(ButtonGlyphs.LEFT_RIGHT, "Move"))
+        assertEquals("Play, Cross button", hintDescription("A", "Play", GlyphStyle.PlayStation))
+        assertEquals("Settings, Plus button", hintDescription(ButtonGlyphs.START, "Settings", GlyphStyle.Nintendo))
     }
 }

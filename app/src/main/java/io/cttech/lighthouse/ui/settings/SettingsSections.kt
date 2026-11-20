@@ -562,6 +562,16 @@ internal fun ControlsSection(first: Modifier = Modifier) {
     androidx.compose.runtime.LaunchedEffect(settings.haptics) { tick() }
     ButtonLayoutRow()
     ChoiceRow(
+        label = "Button glyphs",
+        options = io.cttech.lighthouse.system.GlyphStyle.entries,
+        selected = settings.glyphStyle,
+        display = {
+            if (it == io.cttech.lighthouse.system.GlyphStyle.Auto) "Automatic: ${io.cttech.lighthouse.system.ButtonGlyphs.detected.label}"
+            else it.label
+        },
+        note = "How the buttons at the bottom of the screen are drawn. Automatic matches the controller you last pressed.",
+    ) { settings.updateGlyphStyle(it) }
+    ChoiceRow(
         label = "Home button",
         options = HomeButtonAction.entries,
         selected = settings.homeButton,

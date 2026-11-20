@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import io.cttech.lighthouse.theme.Lh
+import io.cttech.lighthouse.system.ButtonGlyphs
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -76,7 +77,7 @@ internal fun HomeDashboard(
 ) {
     val requester = remember { FocusRequester() }
     if (movingFavourite != null) {
-        ProvideHints(listOf("◀ ▶" to "Move", "A" to "Done")) { if (it == "A") onDoneMoving() }
+        ProvideHints(listOf(ButtonGlyphs.LEFT_RIGHT to "Move", "A" to "Done")) { if (it == "A") onDoneMoving() }
         // Unfavourited or hidden meanwhile (from another device, a rescan): nothing left to move.
         val stillThere = rows.any { r -> r.id == FAVOURITES_ROW && r.items.any { it.key == movingFavourite } }
         LaunchedEffect(stillThere) { if (!stillThere) onDoneMoving() }

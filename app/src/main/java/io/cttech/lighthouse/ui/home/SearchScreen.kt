@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import androidx.compose.foundation.background
+import io.cttech.lighthouse.system.ButtonGlyphs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -88,7 +89,7 @@ internal fun SearchScreen(
         filters = filters.copy(platformId = ids[(i + delta).mod(ids.size)])
     }
 
-    ProvideHints(listOf("B" to "Close", "Y" to "Type", "⧉" to "Options", "X" to "Favourite", "A" to "Play")) {
+    ProvideHints(listOf("B" to "Close", "Y" to "Type", ButtonGlyphs.SELECT to "Options", "X" to "Favourite", "A" to "Play")) {
         when (it) {
             "B" -> onClose()
             "Y" -> editRequest++

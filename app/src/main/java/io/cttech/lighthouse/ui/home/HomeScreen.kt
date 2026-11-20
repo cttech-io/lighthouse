@@ -1,6 +1,7 @@
 package io.cttech.lighthouse.ui.home
 
 import io.cttech.lighthouse.theme.Lh
+import io.cttech.lighthouse.system.ButtonGlyphs
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -451,15 +452,15 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             onTap = { b ->
                 when (b) {
                     "B" -> drawerOpen = true
-                    "☰" -> { vm.refreshSettingsInfo(); menuOpen = true }
+                    ButtonGlyphs.START -> { vm.refreshSettingsInfo(); menuOpen = true }
                     "Y" -> if (tab is HomeTab.Home) openSearch() else vm.toggleLayout()
                 }
             },
             hints = buildList {
                 add("B" to "Apps")
                 add("Y" to if (tab is HomeTab.Home) "Search" else if (settings.layout == HomeLayout.Carousel) "Grid" else "Carousel")
-                add("☰" to "Settings")
-                add("⧉" to "Options")
+                add(ButtonGlyphs.START to "Settings")
+                add(ButtonGlyphs.SELECT to "Options")
                 add("X" to "Favourite")
                 add("A" to "Play")
             },
